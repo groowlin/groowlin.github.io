@@ -1,0 +1,13 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - link "Go to the homepage" [ref=e7] [cursor=pointer]:
+      - /url: /
+      - img "Gavin Nelson" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - heading "Linear Mobile v1.0" [level=1] [ref=e11]
+        - paragraph [ref=e12]: Product design
+      - link "Linear Mobile on the App Store" [ref=e13] [cursor=pointer]:
+        - /url: https://apps.apple.com/app/linear-mobile/id1645587184
+      - paragraph [ref=e17]: In collaboration with Josh Pyles, Bryan Stern, Alessandro Oddone, Jori Lallo, Tom Moor, Karri Saarinen, Alex Cornell, and the rest of the Linear team.
+  - alert [ref=e18]

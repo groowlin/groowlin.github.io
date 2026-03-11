@@ -1,0 +1,7 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - link "Go to the homepage" [ref=e7] [cursor=pointer]:
+      - /url: /
+      - img "Gavin Nelson" [ref=e8]
+    - img "Steve Jobs quote about carrying craft all the way through." [ref=e11]
+  - alert [ref=e12]

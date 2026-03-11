@@ -1,0 +1,76 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - link "Go to the homepage" [ref=e7] [cursor=pointer]:
+      - /url: /
+      - img "Gavin Nelson" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - heading "Gavin Nelson" [level=1] [ref=e11]
+        - heading "Designer at OpenAI" [level=2] [ref=e12]:
+          - text: Designer at
+          - link "OpenAI" [ref=e13] [cursor=pointer]:
+            - /url: https://openai.com
+      - generic [ref=e14]:
+        - link "About" [ref=e15] [cursor=pointer]:
+          - /url: /about
+        - link "Connect" [ref=e16] [cursor=pointer]:
+          - /url: /connect
+        - link "Features" [ref=e17] [cursor=pointer]:
+          - /url: /features
+      - generic [ref=e18] [cursor=pointer]:
+        - link "Interaction prototypes 2024–present · Interaction design" [ref=e20]:
+          - /url: /work/interaction-prototypes
+          - generic [ref=e21]:
+            - generic [ref=e22]: Interaction prototypes
+            - generic [ref=e23]: 2024–present · Interaction design
+        - link "App icon design 2020–present · iOS and macOS app icons" [ref=e25]:
+          - /url: /icon-design
+          - generic [ref=e26]:
+            - generic [ref=e27]: App icon design
+            - generic [ref=e28]: 2020–present · iOS and macOS app icons
+        - link "Explorations 2020–present · Misc. creative exercises" [ref=e30]:
+          - /url: /explorations
+          - generic [ref=e31]:
+            - generic [ref=e32]: Explorations
+            - generic [ref=e33]: 2020–present · Misc. creative exercises
+        - link "Linear Navigation 2025 · Product and interaction design" [ref=e35]:
+          - /url: /work/linear-26
+          - generic [ref=e36]:
+            - generic [ref=e37]: Linear Navigation
+            - generic [ref=e38]: 2025 · Product and interaction design
+        - link "Linear Search 2025 · Product and interaction design" [ref=e40]:
+          - /url: /work/linear-search
+          - generic [ref=e41]:
+            - generic [ref=e42]: Linear Search
+            - generic [ref=e43]: 2025 · Product and interaction design
+        - link "Linear Documents 2024 · Product and interaction design" [ref=e45]:
+          - /url: /work/linear-documents
+          - generic [ref=e46]:
+            - generic [ref=e47]: Linear Documents
+            - generic [ref=e48]: 2024 · Product and interaction design
+        - link "Linear Mobile v1.0 2024 · Product design" [ref=e50]:
+          - /url: /work/linear-v1
+          - generic [ref=e51]:
+            - generic [ref=e52]: Linear Mobile v1.0
+            - generic [ref=e53]: 2024 · Product design
+        - link "Linear homepage renders 2024 · 3D rendering" [ref=e55]:
+          - /url: /work/linear-renders
+          - generic [ref=e56]:
+            - generic [ref=e57]: Linear homepage renders
+            - generic [ref=e58]: 2024 · 3D rendering
+        - link "GitHub Copilot 2024 · Product and interaction design" [ref=e60]:
+          - /url: /work/github-copilot
+          - generic [ref=e61]:
+            - generic [ref=e62]: GitHub Copilot
+            - generic [ref=e63]: 2024 · Product and interaction design
+        - link "GitHub Achievements 2023 · Interaction design" [ref=e65]:
+          - /url: /work/achievements
+          - generic [ref=e66]:
+            - generic [ref=e67]: GitHub Achievements
+            - generic [ref=e68]: 2023 · Interaction design
+        - link "GitHub Navigation Shortcuts 2022 · Product design" [ref=e70]:
+          - /url: /work/navigation-shortcuts
+          - generic [ref=e71]:
+            - generic [ref=e72]: GitHub Navigation Shortcuts
+            - generic [ref=e73]: 2022 · Product design
+  - alert [ref=e75]

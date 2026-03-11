@@ -1,0 +1,37 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - link "Go to the homepage" [ref=e7] [cursor=pointer]:
+      - /url: /
+      - img "Gavin Nelson" [ref=e8]
+    - generic [ref=e9]:
+      - heading "Features" [level=1] [ref=e10]
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - link "Interview with Gavin Nelson, Lovers Magazine by Spaces" [ref=e13] [cursor=pointer]:
+            - /url: https://spaces.is/loversmagazine/interviews/gavin-nelson
+          - paragraph [ref=e14]: "2025"
+        - generic [ref=e15]:
+          - 'link "Dive Club podcast: Prototyping, interaction design, and SwiftUI" [ref=e16] [cursor=pointer]':
+            - /url: https://www.dive.club/deep-dives/gavin-nelson
+          - paragraph [ref=e17]: "2024"
+        - generic [ref=e18]:
+          - link "iOS & macOS App Icon Book" [ref=e19] [cursor=pointer]:
+            - /url: https://www.appiconbook.com/
+          - paragraph [ref=e20]: "2024"
+        - generic [ref=e21]:
+          - 'link "Workspaces #341" [ref=e22] [cursor=pointer]':
+            - /url: https://www.workspaces.xyz/p/341-gavin-nelson
+          - paragraph [ref=e23]: "2023"
+        - generic [ref=e24]:
+          - link "Interview with Gavin Nelson, Product and Icon Designer" [ref=e25] [cursor=pointer]:
+            - /url: https://manual.withcompound.com/chapters/interview-with-gavin-nelson-product-and-icon-designer
+          - paragraph [ref=e26]: "2023"
+        - generic [ref=e27]:
+          - 'link "Made with Sketch: How Gavin Nelson Puts the Icon in Iconic" [ref=e28] [cursor=pointer]':
+            - /url: https://www.sketch.com/blog/gavin-nelson-icon-design/
+          - paragraph [ref=e29]: "2022"
+        - generic [ref=e30]:
+          - 'link "Workspaces #136" [ref=e31] [cursor=pointer]':
+            - /url: https://www.workspaces.xyz/p/136-gavin-nelson
+          - paragraph [ref=e32]: "2022"
+  - alert [ref=e33]

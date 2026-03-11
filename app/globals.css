@@ -1,0 +1,77 @@
+:root {
+  --page-max-width: 680px;
+  --text-primary: #000000;
+  --text-muted: #71717a;
+  --text-light: #a1a1aa;
+  --line-muted: #eeeff2;
+  --line-hover: #d4d4d8;
+  --bg-page: #ffffff;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --card-bg: #f4f4f5;
+  --card-bg-hover: #e4e4e7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+main {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-color: var(--line-muted);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  text-decoration-color: var(--line-hover);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+h1,
+h3 {
+  font-weight: 500;
+}
+
+p {
+  line-height: 1.65;
+}
+
+ul {
+  margin: 0;
+  padding-left: 1.3rem;
+}
+
+li {
+  padding-top: 0.25rem;
+}
+
+li::marker {
+  color: #cfcfcf;
+}

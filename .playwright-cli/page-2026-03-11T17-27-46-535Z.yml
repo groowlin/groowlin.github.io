@@ -1,0 +1,26 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - link "Go to the homepage" [ref=e7] [cursor=pointer]:
+      - /url: /
+      - img "Gavin Nelson" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - heading "Explorations" [level=1] [ref=e11]
+        - paragraph [ref=e12]: Miscellaneous creative exercises
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - img "Mark" [ref=e25]
+          - img "Chess" [ref=e28]
+          - img "Queen" [ref=e31]
+          - img "Mario" [ref=e34]
+          - img "Music" [ref=e37]
+          - img "Communication" [ref=e40]
+          - img "Tools" [ref=e43]
+        - generic [ref=e44]:
+          - img "Dock icons" [ref=e53]
+          - img "Basic icons" [ref=e56]
+          - img "Apple Pencil" [ref=e59]
+          - img "Refraction" [ref=e62]
+          - img "Weather" [ref=e65]
+          - img "Pearl" [ref=e68]
+  - alert [ref=e69]

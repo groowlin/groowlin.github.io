@@ -1,0 +1,13 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - link "Go to the homepage" [ref=e7] [cursor=pointer]:
+      - /url: /
+      - img "Gavin Nelson" [ref=e8]
+    - generic [ref=e9]:
+      - heading "About" [level=1] [ref=e10]
+      - paragraph [ref=e11]: I am an interaction designer at OpenAI shaping ChatGPT. Previously, I spent time at Linear and GitHub.
+      - paragraph [ref=e12]: I focus on the intersection of form and function to create experiences that effortlessly become an extension of oneself. I believe in ideas over opinions, prototypes as the most valuable tool for collaboration, and exploring one hundred ideas to find the right one.
+      - paragraph [ref=e13]: I am driven by curiosity and strive for a high level of craftsmanship and excellence in my work.
+      - link "Connect" [ref=e15] [cursor=pointer]:
+        - /url: /connect
+  - alert [ref=e16]

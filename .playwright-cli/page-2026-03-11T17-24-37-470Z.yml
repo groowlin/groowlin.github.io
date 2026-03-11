@@ -1,0 +1,28 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - link "Go to the homepage" [ref=e7] [cursor=pointer]:
+      - /url: /
+      - img "Gavin Nelson" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - heading "Linear interaction moments" [level=1] [ref=e11]
+        - paragraph [ref=e12]: Interaction design
+      - paragraph [ref=e13]:
+        - text: A collection of small interaction moments I've designed to make Linear Mobile feel like it blends seamlessly into your workflow. Implementation credit to
+        - link "Josh Pyles" [ref=e14] [cursor=pointer]:
+          - /url: https://x.com/pixelmatrix
+        - text: . More coming soon.
+      - generic [ref=e15]:
+        - generic [ref=e17]:
+          - link [ref=e18] [cursor=pointer]:
+            - /url: https://linear.app/mobile
+          - generic [ref=e20]:
+            - paragraph [ref=e21]: Workspace switching
+            - paragraph [ref=e22]: A transition on the outgoing and incoming workspace views that creates a spatial mapping for the user to understand the workspace switch has happened.
+        - generic [ref=e24]:
+          - link [ref=e25] [cursor=pointer]:
+            - /url: https://linear.app/mobile
+          - generic [ref=e27]:
+            - paragraph [ref=e28]: Get started parallax
+            - paragraph [ref=e29]: A small way to indroduce some delight to the get started screen by adding a floating effect to the Linear app icon created via parallax.
+  - alert [ref=e30]
