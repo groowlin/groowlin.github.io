@@ -1,5 +1,5 @@
 :root {
-  --page-max-width: 680px;
+  --page-max-width: 42rem;
   --text-primary: #000000;
   --text-muted: #71717a;
   --text-light: #a1a1aa;
@@ -18,13 +18,24 @@
 
 html {
   scrollbar-gutter: stable;
+  line-height: 1.5;
 }
 
 body {
   margin: 0;
   background: var(--bg-page);
   color: var(--text-primary);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    sans-serif,
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Segoe UI Symbol",
+    "Noto Color Emoji";
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: inherit;
 }
 
 main {
@@ -33,6 +44,8 @@ main {
 
 a {
   color: inherit;
+  font-size: 1rem;
+  font-weight: 400;
   text-decoration-line: underline;
   text-decoration-color: var(--line-muted);
   text-decoration-thickness: 2px;
@@ -55,11 +68,23 @@ p {
 }
 
 h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+h1,
 h3 {
   font-weight: 500;
 }
 
 p {
+  font-size: 1rem;
+  font-weight: 400;
   line-height: 1.65;
 }
 
@@ -69,6 +94,8 @@ ul {
 }
 
 li {
+  font-size: 1rem;
+  font-weight: 400;
   padding-top: 0.25rem;
 }
 

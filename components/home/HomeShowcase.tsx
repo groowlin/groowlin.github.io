@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { homeWorkEntries, siteIdentity } from "@/lib/content";
+import { homeWorkEntries, metaNav, siteIdentity } from "@/lib/content";
 import { itemRevealVariants, pageRevealVariants } from "@/components/motion/MotionPage";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
 import styles from "@/components/home/home-showcase.module.css";
@@ -150,8 +150,21 @@ export function HomeShowcase() {
     <motion.div className={styles.root} initial="initial" animate="visible" variants={pageRevealVariants}>
       <motion.div className={styles.intro} variants={itemRevealVariants}>
         <h1 className={styles.name}>{siteIdentity.name}</h1>
-        <h2 className={styles.role}>{siteIdentity.role}</h2>
+        <p className={styles.role}>
+          {siteIdentity.rolePrefix}{" "}
+          <Link className={styles.companyLink} href={siteIdentity.roleCompanyHref}>
+            {siteIdentity.roleCompanyLabel}
+          </Link>
+        </p>
       </motion.div>
+
+      <motion.nav className={styles.metaNav} variants={itemRevealVariants} aria-label="Meta navigation">
+        {metaNav.map((item) => (
+          <Link key={item.href} className={styles.metaLink} href={item.href}>
+            {item.label}
+          </Link>
+        ))}
+      </motion.nav>
 
       <motion.div
         className={styles.listWrap}
@@ -208,9 +221,9 @@ export function HomeShowcase() {
                 onFocus={() => openIndex(index)}
                 onBlur={closeIndex}
               >
-                <span>{entry.label}</span>
+                <span className={styles.itemLabel}>{entry.label}</span>
                 <span className={styles.itemMeta}>
-                  {entry.year} - {entry.subtitle}
+                  {entry.year} · {entry.subtitle}
                 </span>
               </Link>
             </motion.span>

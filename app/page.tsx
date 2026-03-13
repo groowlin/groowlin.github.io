@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <SiteShell showMetaNav>
+    <SiteShell showMetaNav={false}>
       <HomeShowcase />
     </SiteShell>
   );
