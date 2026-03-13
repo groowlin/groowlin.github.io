@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { metaNav, siteIdentity } from "@/lib/content";
+import { metaNav } from "@/lib/content";
 import styles from "@/components/shell/site-shell.module.css";
 
 interface SiteShellProps {
@@ -20,7 +20,6 @@ export function SiteShell({
       <div className={styles.inner}>
         <Link className={styles.logoLink} href="/" aria-label="Go to the homepage">
           <span className={styles.logoMark} aria-hidden="true" />
-          <span className={styles.logoText}>{siteIdentity.name}</span>
         </Link>
 
         {(title || subtitle) && (

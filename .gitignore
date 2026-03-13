@@ -1,3 +1,34 @@
-.next
-node_modules
+## Dependencies
+node_modules/
+
+## Next.js / build outputs
+.next/
+out/
+dist/
+build/
+
+## Caches
+.turbo/
+.cache/
+
+## Coverage / reports
+coverage/
+*.lcov
+
+## TypeScript incremental build artifacts
+*.tsbuildinfo
+
+## Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.playwright-cli/
+
+## Environment local files
+.env.local
+.env.*.local
+
+## OS temp files
 .DS_Store

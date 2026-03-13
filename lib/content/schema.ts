@@ -14,6 +14,9 @@ const placeholderLink = "#";
 export const siteIdentity = {
   name: "Gavin Nelson",
   role: "Designer at OpenAI",
+  rolePrefix: "designer at",
+  roleCompanyLabel: "OpenAI",
+  roleCompanyHref: "https://openai.com",
   logoAlt: "Gavin Nelson"
 };
 
@@ -27,21 +30,21 @@ export const homeWorkEntries: HomeWorkEntry[] = [
   {
     label: "Interaction prototypes",
     subtitle: "Interaction design",
-    year: "2024-present",
+    year: "2024–present",
     href: "/work/interaction-prototypes",
     preview: { kind: "video", token: "pinchscrolling", aspectRatio: "9 / 16", centered: true }
   },
   {
     label: "App icon design",
     subtitle: "iOS and macOS app icons",
-    year: "2020-present",
+    year: "2020–present",
     href: "/icon-design",
     preview: { kind: "image", token: "app-icons", aspectRatio: "4 / 3" }
   },
   {
     label: "Explorations",
     subtitle: "Misc. creative exercises",
-    year: "2020-present",
+    year: "2020–present",
     href: "/explorations",
     preview: { kind: "video", token: "finder-shader", aspectRatio: "4 / 3", centered: true }
   },
