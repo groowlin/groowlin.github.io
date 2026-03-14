@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useMotionTemplate, useMotionValue, useSpring } from "framer-motion";
 import { createPortal } from "react-dom";
 import { metaNav, siteIdentity } from "@/lib/content";
 import { itemRevealVariants, pageRevealVariants } from "@/components/motion/MotionPage";
@@ -18,12 +18,19 @@ interface Rect {
 }
 
 const PREVIEW_OFFSET_FALLBACK = 60;
+const ACTIVE_TEXT_SHIFT_SCALE = 0.18;
+const TEXT_ENTER_EASE_IN_MS = 170;
 
 function getRootCssNumberVar(name: string, fallback: number) {
   if (typeof window === "undefined") return fallback;
   const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const value = Number.parseFloat(raw);
   return Number.isFinite(value) ? value : fallback;
+}
+
+function getSoftShift(value: number, power: number) {
+  const normalized = Math.max(-1, Math.min(1, value));
+  return Math.sign(normalized) * (1 - (1 - Math.abs(normalized)) ** (1 / Math.max(1, power)));
 }
 
 interface HomeShowcaseProps {
@@ -33,16 +40,34 @@ interface HomeShowcaseProps {
 export function HomeShowcase({ entries }: HomeShowcaseProps) {
   const [canHover, setCanHover] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [enteringIndex, setEnteringIndex] = useState<number | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [previewLeft, setPreviewLeft] = useState<number | null>(null);
   const [highlightRect, setHighlightRect] = useState<Rect | null>(null);
-  const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
-  const [shift, setShift] = useState({ x: 0, y: 0 });
-  const [origin, setOrigin] = useState({ ox: 50, oy: 50 });
 
   const listWrapRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const enterTextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const shiftXRaw = useMotionValue(0);
+  const shiftYRaw = useMotionValue(0);
+  const tiltXRaw = useMotionValue(0);
+  const tiltYRaw = useMotionValue(0);
+  const originXRaw = useMotionValue(50);
+  const originYRaw = useMotionValue(50);
+
+  const shiftX = useSpring(shiftXRaw, { stiffness: 420, damping: 34, mass: 0.6 });
+  const shiftY = useSpring(shiftYRaw, { stiffness: 420, damping: 34, mass: 0.6 });
+  const tiltX = useSpring(tiltXRaw, { stiffness: 360, damping: 30, mass: 0.65 });
+  const tiltY = useSpring(tiltYRaw, { stiffness: 360, damping: 30, mass: 0.65 });
+  const originX = useSpring(originXRaw, { stiffness: 460, damping: 42, mass: 0.74 });
+  const originY = useSpring(originYRaw, { stiffness: 460, damping: 42, mass: 0.74 });
+
+  const highlightTransformOrigin = useMotionTemplate`${originX}% ${originY}%`;
+  const listShiftXVar = useMotionTemplate`${shiftX}px`;
+  const listShiftYVar = useMotionTemplate`${shiftY}px`;
+  const highlightYVar = useMotionTemplate`${originY}%`;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -117,6 +142,9 @@ export function HomeShowcase({ entries }: HomeShowcaseProps) {
       if (closeTimerRef.current) {
         clearTimeout(closeTimerRef.current);
       }
+      if (enterTextTimerRef.current) {
+        clearTimeout(enterTextTimerRef.current);
+      }
     },
     []
   );
@@ -141,6 +169,16 @@ export function HomeShowcase({ entries }: HomeShowcaseProps) {
       closeTimerRef.current = null;
     }
 
+    if (activeIndex !== index) {
+      setEnteringIndex(index);
+      if (enterTextTimerRef.current) {
+        clearTimeout(enterTextTimerRef.current);
+      }
+      enterTextTimerRef.current = setTimeout(() => {
+        setEnteringIndex((current) => (current === index ? null : current));
+      }, TEXT_ENTER_EASE_IN_MS);
+    }
+
     setActiveIndex(index);
     setPreviewIndex(index);
     syncHighlight(index);
@@ -150,9 +188,7 @@ export function HomeShowcase({ entries }: HomeShowcaseProps) {
   function closeIndex() {
     closeTimerRef.current = setTimeout(() => {
       setActiveIndex(null);
-      setTilt({ rx: 0, ry: 0 });
-      setShift({ x: 0, y: 0 });
-      setOrigin({ ox: 50, oy: 50 });
+      setEnteringIndex(null);
       setPreviewIndex(null);
     }, 380);
   }
@@ -179,14 +215,20 @@ export function HomeShowcase({ entries }: HomeShowcaseProps) {
 
       const ox = Math.max(0, Math.min(1, (event.clientX - cardX) / tx));
       const oy = Math.max(0, Math.min(1, (event.clientY - cardY) / ty));
-      setOrigin({ ox: 30 + 40 * ox, oy: 30 + 40 * oy });
+      originXRaw.set(30 + 40 * ox);
+      originYRaw.set(30 + 40 * oy);
+    } else {
+      originXRaw.set(50);
+      originYRaw.set(50);
     }
 
     nx = Math.max(-1, Math.min(1, nx));
     ny = Math.max(-1, Math.min(1, ny));
 
-    setTilt({ rx: -ny * 1.25, ry: nx * 0.85 });
-    setShift({ x: nx * 12, y: ny * 8 });
+    tiltXRaw.set(-ny * 1.25);
+    tiltYRaw.set(nx * 0.85);
+    shiftXRaw.set(12 * getSoftShift(nx, 2));
+    shiftYRaw.set(8 * getSoftShift(ny, 2));
   }
 
   return (
@@ -213,24 +255,44 @@ export function HomeShowcase({ entries }: HomeShowcaseProps) {
         className={styles.listWrap}
         ref={listWrapRef}
         onMouseMove={onMouseMove}
-        onMouseLeave={closeIndex}
+        style={
+          {
+            ["--item-shift-x" as string]: listShiftXVar,
+            ["--item-shift-y" as string]: listShiftYVar,
+            ["--item-shift-scale" as string]: ACTIVE_TEXT_SHIFT_SCALE
+          } as unknown as CSSProperties
+        }
+        onMouseLeave={() => {
+          tiltXRaw.set(0);
+          tiltYRaw.set(0);
+          shiftXRaw.set(0);
+          shiftYRaw.set(0);
+          originXRaw.set(50);
+          originYRaw.set(50);
+          closeIndex();
+        }}
         variants={itemRevealVariants}
       >
         <AnimatePresence>
           {highlightRect && activeIndex !== null && (
             <motion.div
               className={styles.glass}
-              initial={{ opacity: 0 }}
-              animate={{
-                opacity: 1,
+              initial={{
+                opacity: 0,
+                // filter: "blur(10px)",
+                scale: 0.1,
                 top: highlightRect.top,
                 left: highlightRect.left,
                 width: highlightRect.width,
-                height: highlightRect.height,
-                rotateX: tilt.rx,
-                rotateY: tilt.ry,
-                x: shift.x,
-                y: shift.y
+                height: highlightRect.height
+              }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                top: highlightRect.top,
+                left: highlightRect.left,
+                width: highlightRect.width,
+                height: highlightRect.height
               }}
               exit={{ opacity: 0 }}
               transition={{
@@ -238,15 +300,20 @@ export function HomeShowcase({ entries }: HomeShowcaseProps) {
                 left: { type: "spring", duration: 0.6, bounce: 0.15 },
                 width: { type: "spring", duration: 0.6, bounce: 0 },
                 height: { type: "spring", duration: 0.6, bounce: 0 },
-                rotateX: { type: "spring", duration: 0.45, bounce: 0.06 },
-                rotateY: { type: "spring", duration: 0.45, bounce: 0.06 },
-                x: { type: "spring", duration: 0.6, bounce: 0.15 },
-                y: { type: "spring", duration: 0.6, bounce: 0.15 },
                 opacity: { duration: 0.28 }
               }}
-              style={{ transformOrigin: `${origin.ox}% ${origin.oy}%` }}
+              style={{
+                transformOrigin: highlightTransformOrigin,
+                rotateX: tiltX,
+                rotateY: tiltY,
+                x: shiftX,
+                y: shiftY
+              }}
             >
-              <span className={styles.glassHighlight} style={{ ["--lgy" as string]: `${origin.oy}%` }} />
+              <span
+                className={styles.glassHighlight}
+                style={{ ["--lgy" as string]: highlightYVar } as unknown as CSSProperties}
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -259,14 +326,22 @@ export function HomeShowcase({ entries }: HomeShowcaseProps) {
                 ref={(node) => {
                   itemRefs.current[index] = node;
                 }}
-                className={styles.item}
+                className={[
+                  styles.item,
+                  activeIndex === index ? styles.itemActive : "",
+                  enteringIndex === index ? styles.itemEntering : ""
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
                 onMouseEnter={() => openIndex(index)}
                 onFocus={() => openIndex(index)}
                 onBlur={closeIndex}
               >
-                <span className={styles.itemLabel}>{entry.label}</span>
-                <span className={styles.itemMeta}>
-                  {entry.year} · {entry.category}
+                <span className={styles.itemContent}>
+                  <span className={styles.itemLabel}>{entry.label}</span>
+                  <span className={styles.itemMeta}>
+                    {entry.year} · {entry.category}
+                  </span>
                 </span>
               </Link>
             </motion.span>
@@ -289,14 +364,24 @@ export function HomeShowcase({ entries }: HomeShowcaseProps) {
               >
                 <div className={styles.contentArea}>
                   <div className={styles.previewStage}>
-                    <MediaPlaceholderView
-                      key={previewIndex}
-                      media={previewMedia}
-                      variant="homePreview"
-                      className={styles.previewCard}
-                      frame="square"
-                      fit="contain"
-                    />
+                    <AnimatePresence mode="popLayout">
+                      <motion.div
+                        key={previewIndex ?? -1}
+                        className={styles.previewMediaFrame}
+                        initial={{ opacity: 0, filter: "blur(10px)", scale: 0.97 }}
+                        animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
+                        exit={{ opacity: 0, filter: "blur(10px)", scale: 0.97 }}
+                        transition={{ type: "spring", duration: 0.6, bounce: 0 }}
+                      >
+                        <MediaPlaceholderView
+                          media={previewMedia}
+                          variant="homePreview"
+                          className={styles.previewCard}
+                          frame="square"
+                          fit="contain"
+                        />
+                      </motion.div>
+                    </AnimatePresence>
                   </div>
                 </div>
               </motion.aside>
