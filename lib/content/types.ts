@@ -6,6 +6,13 @@ export interface PageMeta {
   ogType?: "website" | "article";
 }
 
+export interface WorkCaseMeta {
+  title: string;
+  description: string;
+  ogImage?: string;
+  ogType?: "article" | "website";
+}
+
 export type NavSection = "work" | "meta" | "contact";
 
 export interface NavEntry {
@@ -22,13 +29,14 @@ export interface RedirectRule {
   permanent: boolean;
 }
 
-export type MediaKind = "image" | "video";
+export type MediaKind = "image" | "video" | "gif";
 
 export interface MediaPlaceholder {
   kind: MediaKind;
-  aspectRatio: string;
+  aspectRatio?: string;
   caption?: string;
-  posterToken: string;
+  src?: string;
+  placeholderToken?: string;
 }
 
 export interface ParagraphSection {
@@ -45,8 +53,6 @@ export interface ListSection {
 
 export interface MediaSection {
   type: "media";
-  title?: string;
-  body?: string;
   media: MediaPlaceholder;
 }
 
@@ -63,40 +69,96 @@ export interface CtaSection {
   body?: string;
 }
 
-export type SectionBlock =
+export interface GallerySection {
+  type: "gallery";
+  title?: string;
+  body?: string;
+  layout?: "grid" | "carousel";
+  items: MediaPlaceholder[];
+}
+
+export interface MetricItem {
+  value: string;
+  label: string;
+  note?: string;
+}
+
+export interface MetricsSection {
+  type: "metrics";
+  title?: string;
+  items: MetricItem[];
+}
+
+export interface TimelineItem {
+  title: string;
+  period?: string;
+  body?: string;
+  media?: MediaPlaceholder;
+}
+
+export interface TimelineSection {
+  type: "timeline";
+  title?: string;
+  items: TimelineItem[];
+}
+
+export type SimpleSectionBlock =
   | ParagraphSection
   | ListSection
   | MediaSection
   | QuoteSection
   | CtaSection;
 
+export interface TwoColumnSection {
+  type: "twoColumn";
+  title?: string;
+  left: SimpleSectionBlock[];
+  right: SimpleSectionBlock[];
+}
+
+export type SectionBlock =
+  | ParagraphSection
+  | ListSection
+  | MediaSection
+  | QuoteSection
+  | CtaSection
+  | GallerySection
+  | MetricsSection
+  | TimelineSection
+  | TwoColumnSection;
+
 export interface HomePreview {
   kind: MediaKind;
-  token: string;
+  src?: string;
+  placeholderToken?: string;
   aspectRatio: string;
   centered?: boolean;
 }
 
 export interface HomeWorkEntry {
   label: string;
-  subtitle: string;
   year: string;
+  category: string;
   href: string;
   preview: HomePreview;
 }
 
-export interface WorkCase {
-  slug: string;
+export type WorkCaseStatus = "published" | "hidden";
+
+export interface WorkCaseSummary {
   title: string;
-  subtitle: string;
   year: string;
   category: string;
-  meta: PageMeta;
-  heroMedia: MediaPlaceholder;
-  sections: SectionBlock[];
+  preview: HomePreview;
 }
 
-export interface CmsContentAdapter {
-  getWorkCases(): WorkCase[];
-  getWorkCaseBySlug(slug: string): WorkCase | undefined;
+export interface WorkCase {
+  schemaVersion: "1.0";
+  id: string;
+  slug: string;
+  status: WorkCaseStatus;
+  sortOrder: number;
+  summary: WorkCaseSummary;
+  meta: WorkCaseMeta;
+  sections: SectionBlock[];
 }

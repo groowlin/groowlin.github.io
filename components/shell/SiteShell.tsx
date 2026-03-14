@@ -6,6 +6,7 @@ interface SiteShellProps {
   children: React.ReactNode;
   title?: string;
   subtitle?: string;
+  subtitleMuted?: boolean;
   showMetaNav?: boolean;
 }
 
@@ -13,6 +14,7 @@ export function SiteShell({
   children,
   title,
   subtitle,
+  subtitleMuted = true,
   showMetaNav = true
 }: SiteShellProps) {
   return (
@@ -25,7 +27,11 @@ export function SiteShell({
         {(title || subtitle) && (
           <header className={styles.headerBlock}>
             {title && <h1 className={styles.title}>{title}</h1>}
-            {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
+            {subtitle && (
+              <p className={[styles.subtitle, subtitleMuted ? styles.subtitleMuted : styles.subtitleStrong].join(" ")}>
+                {subtitle}
+              </p>
+            )}
           </header>
         )}
 

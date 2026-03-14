@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { homeWorkEntries, metaNav, siteIdentity } from "@/lib/content";
+import { createPortal } from "react-dom";
+import { metaNav, siteIdentity } from "@/lib/content";
 import { itemRevealVariants, pageRevealVariants } from "@/components/motion/MotionPage";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
+import { type HomeWorkEntry } from "@/lib/content/types";
 import styles from "@/components/home/home-showcase.module.css";
 
 interface Rect {
@@ -15,10 +17,24 @@ interface Rect {
   height: number;
 }
 
-export function HomeShowcase() {
+const PREVIEW_OFFSET_FALLBACK = 60;
+
+function getRootCssNumberVar(name: string, fallback: number) {
+  if (typeof window === "undefined") return fallback;
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const value = Number.parseFloat(raw);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+interface HomeShowcaseProps {
+  entries: HomeWorkEntry[];
+}
+
+export function HomeShowcase({ entries }: HomeShowcaseProps) {
   const [canHover, setCanHover] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [previewLeft, setPreviewLeft] = useState<number | null>(null);
   const [highlightRect, setHighlightRect] = useState<Rect | null>(null);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
   const [shift, setShift] = useState({ x: 0, y: 0 });
@@ -58,6 +74,14 @@ export function HomeShowcase() {
     });
   }, []);
 
+  const syncPreviewPosition = useCallback(() => {
+    const list = listWrapRef.current;
+    if (!list) return;
+    const rect = list.getBoundingClientRect();
+    const offset = getRootCssNumberVar("--layout-preview-offset-x", PREVIEW_OFFSET_FALLBACK);
+    setPreviewLeft(rect.right + offset);
+  }, []);
+
   useEffect(() => {
     if (activeIndex === null) return;
 
@@ -73,6 +97,21 @@ export function HomeShowcase() {
     };
   }, [activeIndex, syncHighlight]);
 
+  useEffect(() => {
+    if (!canHover) return;
+
+    const onLayoutChange = () => syncPreviewPosition();
+    onLayoutChange();
+
+    window.addEventListener("resize", onLayoutChange);
+    window.addEventListener("scroll", onLayoutChange, true);
+
+    return () => {
+      window.removeEventListener("resize", onLayoutChange);
+      window.removeEventListener("scroll", onLayoutChange, true);
+    };
+  }, [canHover, syncPreviewPosition]);
+
   useEffect(
     () => () => {
       if (closeTimerRef.current) {
@@ -84,14 +123,17 @@ export function HomeShowcase() {
 
   const previewMedia = useMemo(() => {
     if (previewIndex === null) return null;
-    const entry = homeWorkEntries[previewIndex];
+    const entry = entries[previewIndex];
 
     return {
       kind: entry.preview.kind,
-      aspectRatio: entry.preview.aspectRatio,
-      posterToken: entry.preview.token
+      src: entry.preview.src,
+      aspectRatio: entry.preview.src ? entry.preview.aspectRatio : "2 / 1",
+      placeholderToken: entry.preview.placeholderToken
     } as const;
-  }, [previewIndex]);
+  }, [previewIndex, entries]);
+
+  const portalTarget = typeof document === "undefined" ? null : document.body;
 
   function openIndex(index: number) {
     if (closeTimerRef.current) {
@@ -102,6 +144,7 @@ export function HomeShowcase() {
     setActiveIndex(index);
     setPreviewIndex(index);
     syncHighlight(index);
+    syncPreviewPosition();
   }
 
   function closeIndex() {
@@ -209,7 +252,7 @@ export function HomeShowcase() {
         </AnimatePresence>
 
         <div className={styles.list}>
-          {homeWorkEntries.map((entry, index) => (
+          {entries.map((entry, index) => (
             <motion.span key={entry.href} variants={itemRevealVariants}>
               <Link
                 href={entry.href}
@@ -223,7 +266,7 @@ export function HomeShowcase() {
               >
                 <span className={styles.itemLabel}>{entry.label}</span>
                 <span className={styles.itemMeta}>
-                  {entry.year} · {entry.subtitle}
+                  {entry.year} · {entry.category}
                 </span>
               </Link>
             </motion.span>
@@ -231,19 +274,36 @@ export function HomeShowcase() {
         </div>
       </motion.div>
 
-      <AnimatePresence>
-        {canHover && previewMedia && previewIndex !== null && (
-          <motion.aside
-            className={styles.previewPane}
-            initial={{ opacity: 0, filter: "blur(10px)", scale: 0.97 }}
-            animate={{ opacity: 1, filter: "blur(0)", scale: 1 }}
-            exit={{ opacity: 0, filter: "blur(10px)", scale: 0.97 }}
-            transition={{ type: "spring", duration: 0.6, bounce: 0 }}
-          >
-            <MediaPlaceholderView media={previewMedia} className={styles.previewCard} />
-          </motion.aside>
+      {portalTarget &&
+        createPortal(
+          <AnimatePresence>
+            {canHover && activeIndex !== null && previewMedia && previewLeft !== null && (
+              <motion.aside
+                className={styles.previewPane}
+                style={{ left: `${previewLeft}px` }}
+                aria-label="Content area"
+                initial={{ opacity: 0, filter: "blur(10px)" }}
+                animate={{ opacity: 1, filter: "blur(0)" }}
+                exit={{ opacity: 0, filter: "blur(10px)" }}
+                transition={{ type: "spring", duration: 0.6, bounce: 0 }}
+              >
+                <div className={styles.contentArea}>
+                  <div className={styles.previewStage}>
+                    <MediaPlaceholderView
+                      key={previewIndex}
+                      media={previewMedia}
+                      variant="homePreview"
+                      className={styles.previewCard}
+                      frame="square"
+                      fit="contain"
+                    />
+                  </div>
+                </div>
+              </motion.aside>
+            )}
+          </AnimatePresence>,
+          portalTarget
         )}
-      </AnimatePresence>
     </motion.div>
   );
 }

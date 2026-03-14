@@ -1,6 +1,6 @@
 .main {
   min-height: 100vh;
-  padding: 6rem 2rem;
+  padding: var(--layout-main-padding-y) var(--layout-main-padding-x);
 }
 
 .inner {
@@ -8,7 +8,7 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: var(--layout-content-gap);
 }
 
 .logoLink {
@@ -19,32 +19,40 @@
 }
 
 .logoMark {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #111111, #555555);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  width: var(--space-3xl);
+  height: var(--space-3xl);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--logo-gradient-start), var(--logo-gradient-end));
+  box-shadow: inset 0 0 0 1px var(--white-25);
 }
 
 .headerBlock {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--layout-header-gap);
 }
 
 .title {
-  font-weight: 500;
-  font-size: 1rem;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-body);
 }
 
 .subtitle {
+  line-height: var(--line-height-reading);
+}
+
+.subtitleMuted {
   color: var(--text-muted);
+}
+
+.subtitleStrong {
+  color: var(--text-primary);
 }
 
 .metaNav {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--space-lg);
 }
 
 .metaLink {
@@ -58,7 +66,7 @@
   }
 
   .inner {
-    min-width: 512px;
+    min-width: var(--layout-inner-min-width);
     width: 100%;
   }
 }

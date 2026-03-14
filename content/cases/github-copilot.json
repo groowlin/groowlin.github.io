@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "1.0",
+  "id": "case_github_copilot_2024",
+  "slug": "github-copilot",
+  "status": "published",
+  "sortOrder": 70,
+  "summary": {
+    "title": "GitHub Copilot",
+    "year": "2024",
+    "category": "Product and interaction design",
+    "preview": {
+      "kind": "image",
+      "aspectRatio": "16 / 10",
+      "placeholderToken": "github-copilot"
+    }
+  },
+  "meta": {
+    "title": "GitHub Copilot",
+    "description": "Copilot interaction case study with placeholders.",
+    "ogType": "article"
+  },
+  "sections": [
+    {
+      "type": "paragraph",
+      "title": "Context",
+      "body": "The work focused on making Copilot feel predictable and composable inside existing developer workflows."
+    },
+    {
+      "type": "media",
+      "media": {
+        "kind": "video",
+        "placeholderToken": "copilot-interaction"
+      }
+    },
+    {
+      "type": "list",
+      "title": "Design principles",
+      "items": [
+        "Persistent mental model",
+        "Fast context switching",
+        "Low-friction input and revision"
+      ]
+    }
+  ]
+}

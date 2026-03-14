@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { MotionItem } from "@/components/motion/MotionItem";
 import { MotionPage } from "@/components/motion/MotionPage";
 import { SiteShell } from "@/components/shell/SiteShell";
@@ -28,6 +29,11 @@ export default function AboutPage() {
             This clone preserves the editorial rhythm and interaction model of the original site while using
             placeholder media assets for phase 1 delivery.
           </p>
+        </MotionItem>
+        <MotionItem>
+          <Link className={styles.listLink} href="/connect">
+            Connect
+          </Link>
         </MotionItem>
       </MotionPage>
     </SiteShell>

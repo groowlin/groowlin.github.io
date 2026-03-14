@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0",
+  "id": "case_linear_search_2025",
+  "slug": "linear-search",
+  "status": "published",
+  "sortOrder": 30,
+  "summary": {
+    "title": "Linear Search",
+    "year": "2025",
+    "category": "Product and interaction design",
+    "preview": {
+      "kind": "video",
+      "aspectRatio": "9 / 16",
+      "placeholderToken": "linear-search",
+      "centered": true
+    }
+  },
+  "meta": {
+    "title": "Linear Search",
+    "description": "Search overlay redesign with placeholder media.",
+    "ogType": "article"
+  },
+  "sections": [
+    {
+      "type": "paragraph",
+      "title": "Problem",
+      "body": "The old flow blended navigation and search responsibilities. Users lost confidence in what mode they were in."
+    },
+    {
+      "type": "media",
+      "media": {
+        "kind": "image",
+        "placeholderToken": "linear-search-scope"
+      }
+    },
+    {
+      "type": "paragraph",
+      "title": "Solution",
+      "body": "A dedicated search layer clarified focus states, query intent, and result ranking while reducing interaction overhead."
+    },
+    {
+      "type": "media",
+      "media": {
+        "kind": "video",
+        "placeholderToken": "linear-search-options"
+      }
+    }
+  ]
+}

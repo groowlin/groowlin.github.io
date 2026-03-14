@@ -1,0 +1,118 @@
+{
+  "site": "portfolio",
+  "pages": [
+    {
+      "page": "home",
+      "path": "/",
+      "legacy": false,
+      "sections": [
+        {
+          "name": "intro",
+          "components": ["designer-name", "role-text", "role-company-link"]
+        },
+        {
+          "name": "meta-navigation",
+          "components": ["meta-link-about", "meta-link-connect"]
+        },
+        {
+          "name": "work-showcase-list",
+          "components": ["case-item", "case-item-label", "case-item-meta", "glass-highlight-layer"]
+        },
+        {
+          "name": "hover-preview",
+          "components": ["preview-pane", "preview-media-placeholder"]
+        }
+      ]
+    },
+    {
+      "page": "work-detail",
+      "path": "/work/[slug]",
+      "legacy": false,
+      "sections": [
+        {
+          "name": "page-header",
+          "components": ["work-title", "work-category"]
+        },
+        {
+          "name": "work-meta",
+          "components": ["work-year", "work-subtitle"]
+        },
+        {
+          "name": "work-article",
+          "components": [
+            "hero-media",
+            "section-paragraph",
+            "section-list",
+            "section-media",
+            "section-quote",
+            "section-cta"
+          ]
+        }
+      ]
+    },
+    {
+      "page": "about",
+      "path": "/about",
+      "legacy": false,
+      "sections": [
+        {
+          "name": "page-header",
+          "components": ["title"]
+        },
+        {
+          "name": "about-content",
+          "components": ["lead-paragraph", "lead-paragraph"]
+        },
+        {
+          "name": "about-cta",
+          "components": ["connect-link"]
+        }
+      ]
+    },
+    {
+      "page": "connect",
+      "path": "/connect",
+      "legacy": false,
+      "sections": [
+        {
+          "name": "page-header",
+          "components": ["title"]
+        },
+        {
+          "name": "contact-links",
+          "components": ["contact-link", "contact-link", "contact-link", "contact-link"]
+        }
+      ]
+    },
+    {
+      "page": "icon-design",
+      "path": "/icon-design",
+      "legacy": true,
+      "sections": [
+        {
+          "name": "page-header",
+          "components": ["title", "subtitle"]
+        },
+        {
+          "name": "icon-grid",
+          "components": ["icon-card", "icon-media", "icon-title"]
+        }
+      ]
+    },
+    {
+      "page": "explorations",
+      "path": "/explorations",
+      "legacy": true,
+      "sections": [
+        {
+          "name": "page-header",
+          "components": ["title", "subtitle"]
+        },
+        {
+          "name": "exploration-masonry",
+          "components": ["media-item"]
+        }
+      ]
+    }
+  ]
+}

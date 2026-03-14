@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { MotionPage } from "@/components/motion/MotionPage";
 import { WorkArticle } from "@/components/sections/WorkArticle";
 import { SiteShell } from "@/components/shell/SiteShell";
-import { getWorkCase, workSlugs } from "@/lib/content";
+import { getWorkCase, getWorkSlugs } from "@/lib/content/work.server";
 import styles from "@/app/page-content.module.css";
 
 interface WorkPageProps {
@@ -11,7 +11,7 @@ interface WorkPageProps {
 }
 
 export function generateStaticParams() {
-  return workSlugs.map((slug) => ({ slug }));
+  return getWorkSlugs().map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: WorkPageProps): Promise<Metadata> {
@@ -24,15 +24,17 @@ export async function generateMetadata({ params }: WorkPageProps): Promise<Metad
     };
   }
 
+  const canonical = `/work/${entry.slug}`;
+
   return {
     title: entry.meta.title,
     description: entry.meta.description,
-    alternates: { canonical: entry.meta.canonical },
+    alternates: { canonical },
     openGraph: {
       title: entry.meta.title,
       description: entry.meta.description,
       type: entry.meta.ogType ?? "article",
-      url: entry.meta.canonical
+      url: canonical
     }
   };
 }
@@ -46,11 +48,13 @@ export default async function WorkPage({ params }: WorkPageProps) {
   }
 
   return (
-    <SiteShell title={entry.title} subtitle={`${entry.year} - ${entry.category}`} showMetaNav={false}>
+    <SiteShell
+      title={entry.summary.title}
+      subtitle={`${entry.summary.year} · ${entry.summary.category}`}
+      subtitleMuted={false}
+      showMetaNav={false}
+    >
       <MotionPage className={styles.stack}>
-        <div className={styles.workMeta}>
-          <span>{entry.subtitle}</span>
-        </div>
         <div>
           <WorkArticle entry={entry} />
         </div>

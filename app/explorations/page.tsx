@@ -19,7 +19,7 @@ export default function ExplorationsPage() {
     <SiteShell title="Explorations" subtitle="2020-present - Misc. creative exercises" showMetaNav={false}>
       <MotionPage className={styles.masonry}>
         {explorationItems.map((media, index) => (
-          <MotionItem key={`${media.posterToken}-${index}`} className={styles.masonryItem}>
+          <MotionItem key={`${media.placeholderToken ?? "media"}-${index}`} className={styles.masonryItem}>
             <MediaPlaceholderView media={media} />
           </MotionItem>
         ))}

@@ -1,14 +1,29 @@
 # AGENTS.md
 
 ## 1) Цель проекта
-Клон `https://nelson.co/` на React/Next.js с максимально близким визуалом и интерактивностью.
+Перевести текущую кодовую базу в персональное портфолио продуктового дизайнера (владелец проекта), без привязки к исходному референсу.
 
-Текущий статус:
-- Phase 1 реализован (основные страницы + redirects).
-- Используются плейсхолдеры медиа и плейсхолдеры внешних ссылок.
-- EN-only контент.
+Целевая структура:
+- Главная: список кейсов с превью.
+- Страницы кейсов: контентные блоки (текст, медиа и дополнительные секции).
+- Обо мне: отдельная страница с текстовым профилем.
+- Контакты: отдельная страница с ссылками.
 
-## 2) Технологический стек
+## 2) Соответствие текущей реализации (актуально на 2026-03-11)
+Соответствие высокое по каркасу: примерно `75-80%`.
+
+Что уже соответствует:
+- Есть главная `/` с интерактивным списком кейсов и превью (`components/home/HomeShowcase.tsx`).
+- Есть динамические страницы кейсов `/work/[slug]` с типизированными секциями (`WorkCase`, `SectionBlock`).
+- Есть отдельные страницы `/about` и `/connect`.
+
+Что не соответствует новой цели:
+- В контенте/метаданных и identity остались данные другого дизайнера.
+- Присутствуют legacy-разделы `/features`, `/icon-design`, `/explorations`, которые не входят в целевую структуру.
+- В `next.config.mjs` и `lib/content/schema.ts` остались legacy-redirects от старой IA.
+- Контент в основном EN-only и с плейсхолдерами.
+
+## 3) Технологический стек
 - Next.js App Router (`next@16.1.6`)
 - React 19
 - TypeScript (strict)
@@ -16,7 +31,7 @@
 - ESLint v9 (flat config)
 - pnpm
 
-## 3) Важные команды
+## 4) Важные команды
 ```bash
 pnpm install
 pnpm dev
@@ -25,109 +40,77 @@ pnpm lint
 pnpm build
 ```
 
-Проверка ключевых редиректов:
+Проверка legacy-redirects (выполнять только если редиректы менялись):
 ```bash
 for p in /navigation /product-design /work/linear-interaction-moments /icon-design/quote /downloads/figma-icon /product-design/github-copilot /product-design/navigation-shortcuts /product-design/achievements; do
   curl -s -o /dev/null -w "$p -> %{http_code} %{redirect_url}\n" "http://127.0.0.1:3000$p"
 done
 ```
 
-## 4) Текущее покрытие маршрутов (Phase 1)
-Основные:
-- `/`
-- `/about`
-- `/connect`
-- `/features`
-- `/icon-design`
-- `/explorations`
-- `/work/interaction-prototypes`
-- `/work/linear-26`
-- `/work/linear-search`
-- `/work/linear-documents`
-- `/work/linear-v1`
-- `/work/linear-renders`
-- `/work/github-copilot`
-- `/work/achievements`
-- `/work/navigation-shortcuts`
-
-Redirects (permanent 308):
-- `/navigation` -> `/`
-- `/product-design` -> `/`
-- `/work/linear-interaction-moments` -> `/work/interaction-prototypes`
-- `/icon-design/quote` -> `/icon-design`
-- `/downloads/figma-icon` -> `/icon-design`
-- `/product-design/github-copilot` -> `/work/github-copilot`
-- `/product-design/navigation-shortcuts` -> `/work/navigation-shortcuts`
-- `/product-design/achievements` -> `/work/achievements`
-
 ## 5) Где что лежит
 - App routes: `app/**`
-- Основной layout/meta: `app/layout.tsx`
-- Главная интерактивность: `components/home/HomeShowcase.tsx`
-- UI shell: `components/shell/SiteShell.tsx`
-- Motion primitives: `components/motion/*`
-- Work article renderer: `components/sections/WorkArticle.tsx`
-- Content schema/types: `lib/content/types.ts`, `lib/content/schema.ts`, `lib/content/index.ts`
+- Глобальный layout/metadata: `app/layout.tsx`
+- Главная (список кейсов + preview): `components/home/HomeShowcase.tsx`
+- Стили preview на главной: `components/home/home-showcase.module.css`
+- Базовые стили media-placeholder (включая радиусы): `components/media/media-placeholder.module.css`
+- Страницы кейсов: `app/work/[slug]/page.tsx`
+- Рендер блоков кейса: `components/sections/WorkArticle.tsx`
+- Контент и типы: `lib/content/types.ts`, `lib/content/schema.ts`, `lib/content/index.ts`
 - Redirect config: `next.config.mjs`
-- Спецификация: `docs/specs/nelson-co-react-clone.md`
 
-## 6) Контент и архитектурные правила
-- Контент редактируется через typed-layer в `lib/content/*`, не хардкодить новый контент по страницам.
-- Для кейсов использовать существующий контракт `WorkCase` и `SectionBlock`.
-- Новые страницы должны иметь metadata (title/description/canonical).
-- По умолчанию не добавлять analytics/cookies scripts.
-- По умолчанию сохранять placeholder link policy (`#`), если пользователь явно не попросил заменить.
+## 6) Контентная модель (обязательно)
+- Главный источник контента: `lib/content/*`.
+- Не хардкодить новый контент по страницам, добавлять/менять через typed-layer.
+- Для кейсов использовать существующий контракт `WorkCase`.
+- Для секций кейса использовать `SectionBlock` (`paragraph`, `media`, `list`, `quote`, `cta`).
+- Любая новая/измененная страница должна иметь metadata (title/description/canonical).
 
-## 7) UI/UX и motion требования
-- Сохранять визуальный стиль минималистичным, светлая тема.
-- Не ломать hover-интерактив на главной: glass-highlight, tilt/shift, preview-pane.
-- На touch-устройствах поведение должно быть безопасным (без зависимости от hover).
-- При правках motion проверять, что нет явных regressions по плавности/иерархии переходов.
+## 7) Правила миграции к личному портфолио
+- Убирать клон-идентичность поэтапно: `siteIdentity`, page metadata, тексты, названия кейсов.
+- Сохранять текущую интерактивность главной (glass-highlight, tilt/shift, preview-pane), если не было отдельного запроса на редизайн.
+- Для главной на desktop: preview-pane должен быть визуально фиксирован по вертикали (относительно viewport), но его `left` должен пересчитываться от списка кейсов (`right + 60px`).
+- Для главной: скругление медиа в preview фиксировано `24px` (через `--placeholder-radius` для `MediaPlaceholderView`).
+- Из-за `transform` у motion-контейнера превью на главной рендерить через portal (`document.body`), иначе `position: fixed` привязывается к предку, а не к viewport.
+- На touch-устройствах не вводить поведение, зависящее только от hover.
+- По умолчанию сохранять placeholder policy для внешних ссылок (`#`), пока пользователь явно не предоставил реальные URL.
+- Изменения делать минимально инвазивно, без ненужных рефакторов.
 
-## 8) Чеклист перед сдачей изменений
+## 8) Целевые маршруты (новая IA)
+Базовые маршруты, которые должны быть в фокусе:
+- `/`
+- `/work/[slug]`
+- `/about`
+- `/connect`
+
+Маршруты вне целевой IA (`/features`, `/icon-design`, `/explorations` и legacy redirects) считать кандидатами на удаление или переиспользование по отдельному решению.
+
+## 9) Чеклист перед сдачей изменений
 1. `pnpm typecheck` проходит.
 2. `pnpm lint` проходит.
 3. `pnpm build` проходит.
-4. Проверены основные маршруты.
-5. Проверены redirects (308).
-6. Если были UI-правки на главной - ручной smoke hover/preview.
+4. Проверены маршруты новой IA (`/`, `/work/[slug]`, `/about`, `/connect`).
+5. Если затрагивались редиректы - проверены соответствующие 308.
+6. Если менялась главная - ручной smoke-test hover/preview.
+7. Для правок preview на главной: при скролле preview остается по центру viewport по вертикали.
+8. Для правок preview на главной: отступ по горизонтали от списка кейсов равен `60px` и корректно пересчитывается при resize/scroll.
+9. Для правок preview на главной: у медиа в preview скругление `24px` без "квадратных" внутренних углов.
 
-## 9) Планируемый Phase 2
-- Реальные медиа-ассеты (вместо плейсхолдеров).
-- Полная поддержка extras-страниц без редиректов.
-- RU localization (и при необходимости переключатель языков).
+## 10) Поведение агента в следующих сессиях
+- При вопросах по библиотекам/API/конфигу обязательно использовать Context7.
+- Если меняется контракт данных, обновлять типы и все места использования.
+- Если затронуты маршруты/редиректы, синхронизировать `lib/content/schema.ts` и `next.config.mjs`.
 
-## 10) Интеграция UI Kit из Figma (обязательные входные)
-Что нужно от пользователя:
-- Ссылка на Figma (view + inspect/dev mode).
-- Список приоритетных компонентов.
-- Решение по темам (light only или multi-theme).
-- Решение по policy ассетов/иконок.
+## 11) Правила дизайн-системы и структуры (обязательно)
+1. Never invent spacing values.
+2. Follow component structure and use tokens from `design-system-spec.md`.
+3. If something conflicts with design tokens, tokens win.
+4. Если агент считает, что необходимы правки в дизайн-системе (токены, структура, правила), он обязан сначала запросить явное разрешение пользователя. Без явного разрешения вносить изменения в дизайн-систему нельзя.
+5. Если по явному требованию пользователя вносятся изменения в дизайн-систему или структуру, обязательно актуализировать `design-system-spec.md` и `portoflio-structure.json`.
 
-Что должно быть в Figma:
-- Component Set + Variants.
-- Состояния: default, hover, focus, disabled, error, loading (где применимо).
-- Auto Layout и корректные constraints.
-- Базовые компоненты: Button, Input, Select, Checkbox, Radio, Switch, Tabs, Modal/Drawer, Menu, Toast, Tooltip, Card, Table (если нужна), Pagination (если нужна).
-- Иконки в экспортируемом формате (предпочтительно SVG).
-
-Токены нужны обязательно (минимум):
-- Colors (primitive + semantic)
-- Typography
-- Spacing scale
-- Radius / Border / Shadow
-- Motion (duration, easing)
-- Z-index
-
-Рекомендуемый путь интеграции:
-1. Сначала токены -> CSS variables (или design token pipeline).
-2. Затем базовые primitives.
-3. Затем composed components.
-4. Только потом экранные шаблоны.
-
-## 11) Поведение агента в следующих сессиях
-- При вопросах по библиотекам/API/конфигу - обязательно использовать Context7.
-- Изменения делать минимально инвазивно, без ненужных рефакторов.
-- Если меняется контракт данных - обновлять типы и все места использования.
-- Если затронуты маршруты/редиректы - обновлять `next.config.mjs` и прогонять redirect-check.
-
+## 12) Спецификация JSON-кейсов
+- Актуальная спецификация структуры данных кейсов: `docs/specs/portfolio-case-json-structure.md`
+- Справочник блоков и полей для `sections`: `docs/specs/case-blocks-reference.md`
+- При изменениях контракта JSON обновлять одновременно:
+  - `lib/content/types.ts`
+  - `lib/content/work.server.ts`
+  - `docs/specs/portfolio-case-json-structure.md`

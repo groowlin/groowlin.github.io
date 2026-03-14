@@ -20,7 +20,7 @@ export default function IconDesignPage() {
       <MotionPage className={styles.iconGrid}>
         {iconDesignItems.map((item) => (
           <MotionItem key={item} className={styles.iconCard}>
-            <MediaPlaceholderView media={{ kind: "image", aspectRatio: "1 / 1", posterToken: item }} />
+            <MediaPlaceholderView media={{ kind: "image", aspectRatio: "1 / 1", placeholderToken: item }} />
             <p className={styles.iconTitle}>{item}</p>
           </MotionItem>
         ))}

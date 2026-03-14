@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0",
+  "id": "case_linear_renders_2024",
+  "slug": "linear-renders",
+  "status": "published",
+  "sortOrder": 60,
+  "summary": {
+    "title": "Linear homepage renders",
+    "year": "2024",
+    "category": "3D rendering",
+    "preview": {
+      "kind": "image",
+      "aspectRatio": "16 / 10",
+      "placeholderToken": "linear-renders"
+    }
+  },
+  "meta": {
+    "title": "Linear homepage renders",
+    "description": "Render process breakdown with placeholders.",
+    "ogType": "article"
+  },
+  "sections": [
+    {
+      "type": "paragraph",
+      "title": "Background",
+      "body": "This case study documents visual direction, iteration loops, and post-processing tradeoffs that led to launch quality."
+    },
+    {
+      "type": "media",
+      "media": {
+        "kind": "image",
+        "placeholderToken": "linear-renders-board"
+      }
+    },
+    {
+      "type": "quote",
+      "quote": "The best render was rarely the most complex one. It was the most legible one.",
+      "attribution": "Design note"
+    },
+    {
+      "type": "media",
+      "media": {
+        "kind": "video",
+        "placeholderToken": "linear-renders-lighting"
+      }
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "id": "case_hidden_playground",
+  "slug": "hidden-playground",
+  "status": "published",
+  "sortOrder": 999,
+  "summary": {
+    "title": "Hidden Playground",
+    "year": "2026",
+    "category": "Internal",
+    "preview": {
+      "kind": "image",
+      "aspectRatio": "16 / 10",
+      "placeholderToken": "hidden-playground"
+    }
+  },
+  "meta": {
+    "title": "Hidden Playground",
+    "description": "Internal hidden case used to validate hidden status behavior.",
+    "ogType": "article"
+  },
+  "sections": [
+    {
+      "type": "paragraph",
+      "body": "This case is hidden and should not be reachable from public routes."
+    }
+  ]
+}
