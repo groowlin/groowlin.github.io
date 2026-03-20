@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { metaNav } from "@/lib/content";
+import { getSiteHeaderContent } from "@/lib/content/site.server";
 import styles from "@/components/shell/site-shell.module.css";
 
 interface SiteShellProps {
@@ -10,13 +10,15 @@ interface SiteShellProps {
   showMetaNav?: boolean;
 }
 
-export function SiteShell({
+export async function SiteShell({
   children,
   title,
   subtitle,
   subtitleMuted = true,
   showMetaNav = true
 }: SiteShellProps) {
+  const header = showMetaNav ? await getSiteHeaderContent() : null;
+
   return (
     <main className={styles.main}>
       <div className={styles.inner}>
@@ -37,7 +39,7 @@ export function SiteShell({
 
         {showMetaNav && (
           <nav className={styles.metaNav} aria-label="Meta navigation">
-            {metaNav.map((item) => (
+            {header?.metaNav.map((item) => (
               <Link key={item.href} className={styles.metaLink} href={item.href}>
                 {item.label}
               </Link>

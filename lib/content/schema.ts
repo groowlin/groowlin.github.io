@@ -1,4 +1,11 @@
-import { type MediaPlaceholder, type NavEntry, type PageMeta, type RedirectRule } from "@/lib/content/types";
+import {
+  type MediaPlaceholder,
+  type NavEntry,
+  type PageMeta,
+  type RedirectRule,
+  type SiteHeaderContent,
+  type StaticPageContent
+} from "@/lib/content/types";
 
 const placeholderLink = "#";
 
@@ -15,6 +22,11 @@ export const metaNav: NavEntry[] = [
   { label: "About", href: "/about", section: "meta" },
   { label: "Connect", href: "/connect", section: "meta" }
 ];
+
+export const defaultSiteHeaderContent: SiteHeaderContent = {
+  identity: siteIdentity,
+  metaNav
+};
 
 export const connectLinks: NavEntry[] = [
   { label: "Email", href: placeholderLink, section: "contact" },
@@ -151,5 +163,36 @@ export const staticPageMeta: Record<"about" | "connect" | "iconDesign" | "explor
     title: "Explorations",
     description: "Miscellaneous design explorations in a masonry-style placeholder grid.",
     canonical: "/explorations"
+  }
+};
+
+export const staticPageContentDefaults: Record<"about" | "connect", StaticPageContent> = {
+  about: {
+    key: "about",
+    meta: staticPageMeta.about,
+    blocks: [
+      {
+        type: "paragraph",
+        body: "Product and interaction designer focused on visual systems, motion language, and expressive yet clear user interfaces."
+      },
+      {
+        type: "paragraph",
+        body: "This clone preserves the editorial rhythm and interaction model of the original site while using placeholder media assets for phase 1 delivery."
+      },
+      {
+        type: "links",
+        items: [{ label: "Connect", href: "/connect" }]
+      }
+    ]
+  },
+  connect: {
+    key: "connect",
+    meta: staticPageMeta.connect,
+    blocks: [
+      {
+        type: "links",
+        items: connectLinks.map((entry) => ({ label: entry.label, href: entry.href }))
+      }
+    ]
   }
 };

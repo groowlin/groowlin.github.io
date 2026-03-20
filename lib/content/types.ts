@@ -23,6 +23,20 @@ export interface NavEntry {
   section: NavSection;
 }
 
+export interface SiteIdentity {
+  name: string;
+  role: string;
+  rolePrefix: string;
+  roleCompanyLabel: string;
+  roleCompanyHref: string;
+  logoAlt: string;
+}
+
+export interface SiteHeaderContent {
+  identity: SiteIdentity;
+  metaNav: NavEntry[];
+}
+
 export interface RedirectRule {
   source: string;
   destination: string;
@@ -161,4 +175,42 @@ export interface WorkCase {
   summary: WorkCaseSummary;
   meta: WorkCaseMeta;
   sections: SectionBlock[];
+}
+
+export type StaticPageKey = "about" | "connect";
+
+export interface StaticPageParagraphBlock {
+  type: "paragraph";
+  title?: string;
+  body: string;
+}
+
+export interface StaticPageListBlock {
+  type: "list";
+  title?: string;
+  items: string[];
+}
+
+export interface StaticPageQuoteBlock {
+  type: "quote";
+  quote: string;
+  attribution?: string;
+}
+
+export interface StaticPageLinksBlock {
+  type: "links";
+  title?: string;
+  items: Array<{ label: string; href: string }>;
+}
+
+export type StaticPageBlock =
+  | StaticPageParagraphBlock
+  | StaticPageListBlock
+  | StaticPageQuoteBlock
+  | StaticPageLinksBlock;
+
+export interface StaticPageContent {
+  key: StaticPageKey;
+  meta: PageMeta;
+  blocks: StaticPageBlock[];
 }

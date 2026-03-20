@@ -2,139 +2,17 @@ import "server-only";
 
 import fs from "node:fs";
 import path from "node:path";
-import { z } from "zod";
 import type { HomeWorkEntry, WorkCase } from "@/lib/content/types";
+import { workCaseSchema } from "@/lib/content/work-schema";
+import {
+  getHomeEntriesFromDb,
+  getPublishedCaseBySlugFromDb,
+  getPublishedCasesFromDb,
+  getPublishedSlugsFromDb
+} from "@/lib/cms/db.server";
+import { isCmsReadFromDbEnabled } from "@/lib/cms/env";
 
 const CASES_DIR = path.join(process.cwd(), "content", "cases");
-
-const mediaSchema = z.object({
-  kind: z.enum(["image", "video", "gif"]),
-  aspectRatio: z.string().min(1).optional(),
-  caption: z.string().min(1).optional(),
-  src: z.string().min(1).optional(),
-  placeholderToken: z.string().min(1).optional()
-});
-
-const paragraphSectionSchema = z.object({
-  type: z.literal("paragraph"),
-  title: z.string().min(1).optional(),
-  body: z.string().min(1)
-});
-
-const listSectionSchema = z.object({
-  type: z.literal("list"),
-  title: z.string().min(1).optional(),
-  items: z.array(z.string().min(1)).min(1)
-});
-
-const mediaSectionSchema = z.object({
-  type: z.literal("media"),
-  media: mediaSchema
-});
-
-const quoteSectionSchema = z.object({
-  type: z.literal("quote"),
-  quote: z.string().min(1),
-  attribution: z.string().min(1).optional()
-});
-
-const ctaSectionSchema = z.object({
-  type: z.literal("cta"),
-  label: z.string().min(1),
-  href: z.string().min(1),
-  body: z.string().min(1).optional()
-});
-
-const simpleSectionSchema = z.discriminatedUnion("type", [
-  paragraphSectionSchema,
-  listSectionSchema,
-  mediaSectionSchema,
-  quoteSectionSchema,
-  ctaSectionSchema
-]);
-
-const gallerySectionSchema = z.object({
-  type: z.literal("gallery"),
-  title: z.string().min(1).optional(),
-  body: z.string().min(1).optional(),
-  layout: z.enum(["grid", "carousel"]).optional(),
-  items: z.array(mediaSchema).min(1)
-});
-
-const metricsSectionSchema = z.object({
-  type: z.literal("metrics"),
-  title: z.string().min(1).optional(),
-  items: z
-    .array(
-      z.object({
-        value: z.string().min(1),
-        label: z.string().min(1),
-        note: z.string().min(1).optional()
-      })
-    )
-    .min(1)
-});
-
-const timelineSectionSchema = z.object({
-  type: z.literal("timeline"),
-  title: z.string().min(1).optional(),
-  items: z
-    .array(
-      z.object({
-        title: z.string().min(1),
-        period: z.string().min(1).optional(),
-        body: z.string().min(1).optional(),
-        media: mediaSchema.optional()
-      })
-    )
-    .min(1)
-});
-
-const twoColumnSectionSchema = z.object({
-  type: z.literal("twoColumn"),
-  title: z.string().min(1).optional(),
-  left: z.array(simpleSectionSchema).min(1),
-  right: z.array(simpleSectionSchema).min(1)
-});
-
-const sectionSchema = z.discriminatedUnion("type", [
-  paragraphSectionSchema,
-  listSectionSchema,
-  mediaSectionSchema,
-  quoteSectionSchema,
-  ctaSectionSchema,
-  gallerySectionSchema,
-  metricsSectionSchema,
-  timelineSectionSchema,
-  twoColumnSectionSchema
-]);
-
-const workCaseSchema = z.object({
-  schemaVersion: z.literal("1.0"),
-  id: z.string().min(1),
-  slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-  status: z.enum(["published", "hidden"]),
-  sortOrder: z.number().int(),
-  summary: z.object({
-    title: z.string().min(1),
-    year: z.string().min(1),
-    category: z.string().min(1),
-    preview: z.object({
-      kind: z.enum(["image", "video", "gif"]),
-      src: z.string().min(1).optional(),
-      placeholderToken: z.string().min(1).optional(),
-      aspectRatio: z.string().min(1),
-      centered: z.boolean().optional()
-    })
-  }),
-  meta: z.object({
-    title: z.string().min(1),
-    description: z.string().min(1),
-    ogImage: z.string().min(1).optional(),
-    ogType: z.enum(["article", "website"]).optional()
-  }),
-  sections: z.array(sectionSchema)
-});
 
 let cachedCases: WorkCase[] | null = null;
 
@@ -164,7 +42,7 @@ function parseCaseFile(filepath: string, filename: string) {
   return caseData;
 }
 
-function loadCases() {
+function loadCasesFromFiles() {
   const isProduction = process.env.NODE_ENV === "production";
 
   if (isProduction && cachedCases) {
@@ -206,24 +84,44 @@ function loadCases() {
   return sortedCases;
 }
 
-function getPublishedCases() {
-  return loadCases().filter((entry) => entry.status === "published");
+function getPublishedCasesFromFiles() {
+  return loadCasesFromFiles().filter((entry) => entry.status === "published");
 }
 
-export function getAllWorkCases() {
-  return getPublishedCases();
+async function getPublishedCasesFromSource() {
+  if (isCmsReadFromDbEnabled()) {
+    return getPublishedCasesFromDb();
+  }
+
+  return getPublishedCasesFromFiles();
 }
 
-export function getWorkCase(slug: string) {
-  return getPublishedCases().find((entry) => entry.slug === slug);
+export async function getAllWorkCases() {
+  return getPublishedCasesFromSource();
 }
 
-export function getWorkSlugs() {
-  return getPublishedCases().map((entry) => entry.slug);
+export async function getWorkCase(slug: string) {
+  if (isCmsReadFromDbEnabled()) {
+    return getPublishedCaseBySlugFromDb(slug);
+  }
+
+  return getPublishedCasesFromFiles().find((entry) => entry.slug === slug);
 }
 
-export function getHomeWorkEntries(): HomeWorkEntry[] {
-  return getPublishedCases().map((entry) => ({
+export async function getWorkSlugs() {
+  if (isCmsReadFromDbEnabled()) {
+    return getPublishedSlugsFromDb();
+  }
+
+  return getPublishedCasesFromFiles().map((entry) => entry.slug);
+}
+
+export async function getHomeWorkEntries(): Promise<HomeWorkEntry[]> {
+  if (isCmsReadFromDbEnabled()) {
+    return getHomeEntriesFromDb();
+  }
+
+  return getPublishedCasesFromFiles().map((entry) => ({
     label: entry.summary.title,
     year: entry.summary.year,
     category: entry.summary.category,

@@ -1,39 +1,27 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { MotionItem } from "@/components/motion/MotionItem";
 import { MotionPage } from "@/components/motion/MotionPage";
+import { StaticPageBlocks } from "@/components/sections/StaticPageBlocks";
 import { SiteShell } from "@/components/shell/SiteShell";
-import { staticPageMeta } from "@/lib/content";
+import { getStaticPageContent } from "@/lib/content/site.server";
 import styles from "@/app/page-content.module.css";
 
-const meta = staticPageMeta.about;
+export async function generateMetadata(): Promise<Metadata> {
+  const content = await getStaticPageContent("about");
+  return {
+    title: content.meta.title,
+    description: content.meta.description,
+    alternates: { canonical: content.meta.canonical }
+  };
+}
 
-export const metadata: Metadata = {
-  title: meta.title,
-  description: meta.description,
-  alternates: { canonical: meta.canonical }
-};
-
-export default function AboutPage() {
+export default async function AboutPage() {
+  const content = await getStaticPageContent("about");
   return (
     <SiteShell title="About" showMetaNav={false}>
       <MotionPage className={styles.stack}>
         <MotionItem>
-          <p className={styles.lead}>
-            Product and interaction designer focused on visual systems, motion language, and expressive yet clear user
-            interfaces.
-          </p>
-        </MotionItem>
-        <MotionItem>
-          <p className={styles.lead}>
-            This clone preserves the editorial rhythm and interaction model of the original site while using
-            placeholder media assets for phase 1 delivery.
-          </p>
-        </MotionItem>
-        <MotionItem>
-          <Link className={styles.listLink} href="/connect">
-            Connect
-          </Link>
+          <StaticPageBlocks content={content} />
         </MotionItem>
       </MotionPage>
     </SiteShell>

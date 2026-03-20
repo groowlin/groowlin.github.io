@@ -4,10 +4,9 @@ import Link from "next/link";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionTemplate, useMotionValue, useSpring } from "framer-motion";
 import { createPortal } from "react-dom";
-import { metaNav, siteIdentity } from "@/lib/content";
 import { itemRevealVariants, pageRevealVariants } from "@/components/motion/MotionPage";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
-import { type HomeWorkEntry } from "@/lib/content/types";
+import { type HomeWorkEntry, type SiteHeaderContent } from "@/lib/content/types";
 import styles from "@/components/home/home-showcase.module.css";
 
 interface Rect {
@@ -35,9 +34,10 @@ function getSoftShift(value: number, power: number) {
 
 interface HomeShowcaseProps {
   entries: HomeWorkEntry[];
+  header: SiteHeaderContent;
 }
 
-export function HomeShowcase({ entries }: HomeShowcaseProps) {
+export function HomeShowcase({ entries, header }: HomeShowcaseProps) {
   const [canHover, setCanHover] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [enteringIndex, setEnteringIndex] = useState<number | null>(null);
@@ -234,17 +234,17 @@ export function HomeShowcase({ entries }: HomeShowcaseProps) {
   return (
     <motion.div className={styles.root} initial="initial" animate="visible" variants={pageRevealVariants}>
       <motion.div className={styles.intro} variants={itemRevealVariants}>
-        <h1 className={styles.name}>{siteIdentity.name}</h1>
+        <h1 className={styles.name}>{header.identity.name}</h1>
         <p className={styles.role}>
-          {siteIdentity.rolePrefix}{" "}
-          <Link className={styles.companyLink} href={siteIdentity.roleCompanyHref}>
-            {siteIdentity.roleCompanyLabel}
+          {header.identity.rolePrefix}{" "}
+          <Link className={styles.companyLink} href={header.identity.roleCompanyHref}>
+            {header.identity.roleCompanyLabel}
           </Link>
         </p>
       </motion.div>
 
       <motion.nav className={styles.metaNav} variants={itemRevealVariants} aria-label="Meta navigation">
-        {metaNav.map((item) => (
+        {header.metaNav.map((item) => (
           <Link key={item.href} className={styles.metaLink} href={item.href}>
             {item.label}
           </Link>

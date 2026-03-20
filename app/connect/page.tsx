@@ -1,30 +1,28 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { MotionItem } from "@/components/motion/MotionItem";
 import { MotionPage } from "@/components/motion/MotionPage";
+import { StaticPageBlocks } from "@/components/sections/StaticPageBlocks";
 import { SiteShell } from "@/components/shell/SiteShell";
-import { connectLinks, staticPageMeta } from "@/lib/content";
+import { getStaticPageContent } from "@/lib/content/site.server";
 import styles from "@/app/page-content.module.css";
 
-const meta = staticPageMeta.connect;
+export async function generateMetadata(): Promise<Metadata> {
+  const content = await getStaticPageContent("connect");
+  return {
+    title: content.meta.title,
+    description: content.meta.description,
+    alternates: { canonical: content.meta.canonical }
+  };
+}
 
-export const metadata: Metadata = {
-  title: meta.title,
-  description: meta.description,
-  alternates: { canonical: meta.canonical }
-};
-
-export default function ConnectPage() {
+export default async function ConnectPage() {
+  const content = await getStaticPageContent("connect");
   return (
     <SiteShell title="Connect" showMetaNav={false}>
       <MotionPage className={styles.list}>
-        {connectLinks.map((entry) => (
-          <MotionItem key={entry.label}>
-            <Link className={styles.listLink} href={entry.href}>
-              {entry.label}
-            </Link>
-          </MotionItem>
-        ))}
+        <MotionItem>
+          <StaticPageBlocks content={content} />
+        </MotionItem>
       </MotionPage>
     </SiteShell>
   );

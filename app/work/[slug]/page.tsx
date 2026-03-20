@@ -10,13 +10,14 @@ interface WorkPageProps {
   params: Promise<{ slug: string }>;
 }
 
-export function generateStaticParams() {
-  return getWorkSlugs().map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  const slugs = await getWorkSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: WorkPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const entry = getWorkCase(slug);
+  const entry = await getWorkCase(slug);
 
   if (!entry) {
     return {
@@ -41,7 +42,7 @@ export async function generateMetadata({ params }: WorkPageProps): Promise<Metad
 
 export default async function WorkPage({ params }: WorkPageProps) {
   const { slug } = await params;
-  const entry = getWorkCase(slug);
+  const entry = await getWorkCase(slug);
 
   if (!entry) {
     notFound();
