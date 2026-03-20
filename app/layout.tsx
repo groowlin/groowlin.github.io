@@ -1,22 +1,42 @@
 import type { Metadata } from "next";
+import { getSiteMetadataSettingsContent } from "@/lib/content/site.server";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://example.com"),
-  title: {
-    default: "Gavin Nelson, Designer",
-    template: "%s | Gavin Nelson"
-  },
-  description:
-    "A pixel-accurate React clone of the Nelson portfolio with motion-rich interactions and editorial case study layouts.",
-  openGraph: {
-    title: "Gavin Nelson, Designer",
-    description:
-      "A pixel-accurate React clone of the Nelson portfolio with motion-rich interactions and editorial case study layouts.",
-    type: "website",
-    url: "https://example.com/"
-  }
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteMetadataSettingsContent();
+  const siteUrl = settings.siteUrl.endsWith("/") ? settings.siteUrl : `${settings.siteUrl}/`;
+  const faviconUrl = settings.faviconUrl?.trim();
+  const robots = settings.robotsIndexByDefault
+    ? undefined
+    : {
+        index: false,
+        follow: false
+      };
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: settings.defaultTitle,
+      template: settings.titleTemplate
+    },
+    description: settings.defaultDescription,
+    icons: faviconUrl
+      ? {
+          icon: faviconUrl,
+          shortcut: faviconUrl
+        }
+      : undefined,
+    robots,
+    openGraph: {
+      title: settings.defaultTitle,
+      siteName: settings.siteName,
+      description: settings.defaultDescription,
+      type: "website",
+      url: siteUrl,
+      images: settings.defaultOgImage ? [settings.defaultOgImage] : undefined
+    }
+  };
+}
 
 export default function RootLayout({
   children

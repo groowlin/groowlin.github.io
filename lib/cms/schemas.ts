@@ -63,6 +63,17 @@ export const siteHeaderSchema = z.object({
     .min(1)
 });
 
+export const siteMetadataSettingsSchema = z.object({
+  siteUrl: z.string().url(),
+  siteName: z.string().min(1),
+  defaultTitle: z.string().min(1),
+  titleTemplate: z.string().min(1),
+  defaultDescription: z.string().min(1),
+  defaultOgImage: z.string().min(1).or(z.literal("")).optional(),
+  faviconUrl: z.string().min(1).or(z.literal("")).optional(),
+  robotsIndexByDefault: z.boolean()
+});
+
 export const createCaseSchema = z.object({
   payload: workCaseSchema
 });

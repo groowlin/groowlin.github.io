@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type {
   MediaPlaceholder,
   SectionBlock,
   SimpleSectionBlock,
   SiteHeaderContent,
+  SiteMetadataSettings,
   StaticPageBlock,
   StaticPageContent,
   WorkCase
@@ -13,14 +14,35 @@ import type {
 import type { AdminCaseListItem, AdminCasePayload, AdminInitialData, CmsMediaAsset } from "@/lib/cms/types";
 import styles from "@/app/admin/admin.module.css";
 
-type AdminTab = "cases" | "header" | "about" | "connect" | "media";
+type AdminTab = "cases" | "header" | "siteMeta" | "about" | "connect" | "media";
 
 type ApiResponse<T> = {
   ok: boolean;
   status: number;
   data?: T;
   message?: string;
+  issues?: ApiIssue[];
 };
+
+type ApiIssue = {
+  path: Array<string | number>;
+  message: string;
+};
+
+type ApiErrorPayload = {
+  message?: string;
+  issues?: ApiIssue[];
+};
+
+type ToastTone = "info" | "success" | "error";
+
+type ToastMessage = {
+  id: number;
+  tone: ToastTone;
+  text: string;
+};
+
+const TOAST_LIFETIME_MS = 4500;
 
 const SECTION_TYPES: SectionBlock["type"][] = [
   "paragraph",
@@ -59,27 +81,24 @@ function joinLines(items: string[]) {
 function makeEmptyMedia(): MediaPlaceholder {
   return {
     kind: "image",
-    aspectRatio: "16 / 9",
-    src: "",
-    placeholderToken: "",
-    caption: ""
+    aspectRatio: "16 / 9"
   };
 }
 
 function makeEmptySimpleBlock(type: SimpleSectionBlock["type"]): SimpleSectionBlock {
   if (type === "paragraph") {
-    return { type, title: "", body: "" };
+    return { type, body: "Добавьте описание кейса." };
   }
   if (type === "list") {
-    return { type, title: "", items: [""] };
+    return { type, items: ["Пункт списка"] };
   }
   if (type === "media") {
     return { type, media: makeEmptyMedia() };
   }
   if (type === "quote") {
-    return { type, quote: "", attribution: "" };
+    return { type, quote: "Добавьте цитату." };
   }
-  return { type, label: "", href: "#", body: "" };
+  return { type, label: "Подробнее", href: "#", body: "Добавьте пояснение." };
 }
 
 function makeEmptySection(type: SectionBlock["type"]): SectionBlock {
@@ -90,8 +109,6 @@ function makeEmptySection(type: SectionBlock["type"]): SectionBlock {
   if (type === "gallery") {
     return {
       type,
-      title: "",
-      body: "",
       layout: "grid",
       items: [makeEmptyMedia()]
     };
@@ -100,22 +117,19 @@ function makeEmptySection(type: SectionBlock["type"]): SectionBlock {
   if (type === "metrics") {
     return {
       type,
-      title: "",
-      items: [{ value: "", label: "", note: "" }]
+      items: [{ value: "0", label: "Метрика" }]
     };
   }
 
   if (type === "timeline") {
     return {
       type,
-      title: "",
-      items: [{ title: "", period: "", body: "", media: makeEmptyMedia() }]
+      items: [{ title: "Новый этап", media: makeEmptyMedia() }]
     };
   }
 
   return {
     type,
-    title: "",
     left: [makeEmptySimpleBlock("paragraph")],
     right: [makeEmptySimpleBlock("paragraph")]
   };
@@ -135,15 +149,12 @@ function makeEmptyWorkCase(): WorkCase {
       preview: {
         kind: "image",
         aspectRatio: "16 / 9",
-        src: "",
-        placeholderToken: "",
         centered: true
       }
     },
     meta: {
       title: "New Case",
-      description: "",
-      ogImage: "",
+      description: "Краткое описание кейса.",
       ogType: "article"
     },
     sections: [makeEmptySection("paragraph")]
@@ -160,20 +171,22 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<ApiRespo
   });
 
   const isJson = response.headers.get("content-type")?.includes("application/json");
-  const data = isJson ? ((await response.json()) as T & { message?: string }) : undefined;
+  const payload = isJson ? ((await response.json()) as unknown) : undefined;
 
   if (!response.ok) {
+    const errorPayload = payload as ApiErrorPayload | undefined;
     return {
       ok: false,
       status: response.status,
-      message: data && "message" in data ? data.message : `Request failed with ${response.status}`
+      message: errorPayload?.message ?? `Request failed with ${response.status}`,
+      issues: Array.isArray(errorPayload?.issues) ? errorPayload.issues : undefined
     };
   }
 
   return {
     ok: true,
     status: response.status,
-    data
+    data: payload as T
   };
 }
 
@@ -187,46 +200,94 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(initialData.cases[0]?.id ?? null);
   const [selectedCase, setSelectedCase] = useState<AdminCasePayload | null>(null);
   const [headerForm, setHeaderForm] = useState<SiteHeaderContent>(initialData.header);
+  const [siteMetadataForm, setSiteMetadataForm] = useState<SiteMetadataSettings>(initialData.siteMetadata);
   const [aboutPage, setAboutPage] = useState<StaticPageContent>(initialData.about);
   const [connectPage, setConnectPage] = useState<StaticPageContent>(initialData.connect);
   const [mediaAssets, setMediaAssets] = useState<CmsMediaAsset[]>(initialData.media);
-  const [statusMessage, setStatusMessage] = useState("Готово");
   const [isBusy, setIsBusy] = useState(false);
   const [draggedCaseId, setDraggedCaseId] = useState<string | null>(null);
   const [previewLink, setPreviewLink] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const toastIdRef = useRef(0);
 
   const selectedCaseSummary = useMemo(
     () => cases.find((entry) => entry.id === selectedCaseId) ?? null,
     [cases, selectedCaseId]
   );
 
-  async function withBusy(label: string, action: () => Promise<void>) {
+  function formatIssuePath(path: Array<string | number>) {
+    return path
+      .map((segment) => (typeof segment === "number" ? `[${segment}]` : segment))
+      .join(".")
+      .replace(".[", "[");
+  }
+
+  function formatApiError(response: ApiResponse<unknown>, fallback: string) {
+    if (!response.issues?.length) {
+      return response.message ?? fallback;
+    }
+
+    const issueText = response.issues
+      .slice(0, 3)
+      .map((issue) => `${formatIssuePath(issue.path)}: ${issue.message}`)
+      .join(" · ");
+
+    return `${response.message ?? fallback} (${issueText})`;
+  }
+
+  function pushToast(text: string, tone: ToastTone = "info") {
+    const id = toastIdRef.current + 1;
+    toastIdRef.current = id;
+
+    setToasts((current) => [...current, { id, tone, text }]);
+
+    window.setTimeout(() => {
+      setToasts((current) => current.filter((entry) => entry.id !== id));
+    }, TOAST_LIFETIME_MS);
+  }
+
+  function dismissToast(id: number) {
+    setToasts((current) => current.filter((entry) => entry.id !== id));
+  }
+
+  function getToastToneClassName(tone: ToastTone) {
+    if (tone === "success") {
+      return styles.toastSuccess;
+    }
+    if (tone === "error") {
+      return styles.toastError;
+    }
+    return styles.toastInfo;
+  }
+
+  async function withBusy(action: () => Promise<void>) {
     setIsBusy(true);
-    setStatusMessage(label);
     try {
       await action();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Неожиданная ошибка";
+      pushToast(message, "error");
     } finally {
       setIsBusy(false);
     }
   }
 
   async function loadCase(caseId: string) {
-    await withBusy("Загрузка кейса...", async () => {
+    await withBusy(async () => {
       const response = await requestJson<{ case: AdminCasePayload }>(`/api/admin/cases/${caseId}`);
       if (!response.ok || !response.data) {
-        setStatusMessage(response.message ?? "Не удалось загрузить кейс");
+        pushToast(formatApiError(response, "Не удалось загрузить кейс"), "error");
         return;
       }
 
       setSelectedCase(response.data.case);
       setSelectedCaseId(caseId);
       setPreviewLink(null);
-      setStatusMessage("Кейс загружен");
     });
   }
 
   async function createCase() {
-    await withBusy("Создание кейса...", async () => {
+    await withBusy(async () => {
       const payload = makeEmptyWorkCase();
       const response = await requestJson<{ caseId: string }>("/api/admin/cases", {
         method: "POST",
@@ -234,7 +295,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
       });
 
       if (!response.ok || !response.data) {
-        setStatusMessage(response.message ?? "Не удалось создать кейс");
+        pushToast(formatApiError(response, "Не удалось создать кейс"), "error");
         return;
       }
 
@@ -244,21 +305,21 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
       }
 
       await loadCase(response.data.caseId);
-      setStatusMessage("Кейс создан");
+      pushToast("Кейс создан", "success");
     });
   }
 
   async function saveCaseDraft() {
     if (!selectedCase) return;
 
-    await withBusy("Сохранение черновика...", async () => {
+    await withBusy(async () => {
       const response = await requestJson<{ payload: WorkCase }>(`/api/admin/cases/${selectedCase.id}`, {
         method: "PATCH",
         body: JSON.stringify({ payload: selectedCase.draft })
       });
 
       if (!response.ok) {
-        setStatusMessage(response.message ?? "Не удалось сохранить черновик");
+        pushToast(formatApiError(response, "Не удалось сохранить черновик"), "error");
         return;
       }
 
@@ -267,20 +328,20 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
         setCases(listResponse.data.cases);
       }
 
-      setStatusMessage("Черновик сохранен");
+      pushToast("Черновик сохранен", "success");
     });
   }
 
   async function publishCase() {
     if (!selectedCase) return;
 
-    await withBusy("Публикация кейса...", async () => {
+    await withBusy(async () => {
       const response = await requestJson<{ ok: true }>(`/api/admin/cases/${selectedCase.id}/publish`, {
         method: "POST"
       });
 
       if (!response.ok) {
-        setStatusMessage(response.message ?? "Не удалось опубликовать кейс");
+        pushToast(formatApiError(response, "Не удалось опубликовать кейс"), "error");
         return;
       }
 
@@ -290,20 +351,20 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
       }
 
       await loadCase(selectedCase.id);
-      setStatusMessage("Кейс опубликован");
+      pushToast("Кейс опубликован", "success");
     });
   }
 
   async function duplicateCase() {
     if (!selectedCase) return;
 
-    await withBusy("Дублирование кейса...", async () => {
+    await withBusy(async () => {
       const response = await requestJson<{ caseId: string }>(`/api/admin/cases/${selectedCase.id}/duplicate`, {
         method: "POST"
       });
 
       if (!response.ok || !response.data) {
-        setStatusMessage(response.message ?? "Не удалось дублировать кейс");
+        pushToast(formatApiError(response, "Не удалось дублировать кейс"), "error");
         return;
       }
 
@@ -313,7 +374,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
       }
 
       await loadCase(response.data.caseId);
-      setStatusMessage("Кейс дублирован");
+      pushToast("Кейс дублирован", "success");
     });
   }
 
@@ -323,13 +384,13 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
     const confirmed = window.confirm("Удалить кейс навсегда? Восстановление невозможно.");
     if (!confirmed) return;
 
-    await withBusy("Удаление кейса...", async () => {
+    await withBusy(async () => {
       const response = await requestJson<unknown>(`/api/admin/cases/${selectedCase.id}`, {
         method: "DELETE"
       });
 
       if (!response.ok) {
-        setStatusMessage(response.message ?? "Не удалось удалить кейс");
+        pushToast(formatApiError(response, "Не удалось удалить кейс"), "error");
         return;
       }
 
@@ -344,12 +405,12 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
         }
       }
 
-      setStatusMessage("Кейс удален");
+      pushToast("Кейс удален", "success");
     });
   }
 
   async function saveCaseOrder() {
-    await withBusy("Сохранение порядка кейсов...", async () => {
+    await withBusy(async () => {
       const ids = cases.map((entry) => entry.id);
       const response = await requestJson<{ ok: true }>("/api/admin/cases/reorder", {
         method: "POST",
@@ -357,7 +418,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
       });
 
       if (!response.ok) {
-        setStatusMessage(response.message ?? "Не удалось сохранить порядок");
+        pushToast(formatApiError(response, "Не удалось сохранить порядок"), "error");
         return;
       }
 
@@ -366,55 +427,72 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
         setCases(listResponse.data.cases);
       }
 
-      setStatusMessage("Порядок сохранен");
+      pushToast("Порядок сохранен", "success");
     });
   }
 
   async function generatePreview() {
     if (!selectedCase) return;
 
-    await withBusy("Генерация preview-ссылки...", async () => {
+    await withBusy(async () => {
       const response = await requestJson<{ url: string }>("/api/admin/preview-token", {
         method: "POST",
         body: JSON.stringify({ entityType: "case", entityId: selectedCase.id })
       });
 
       if (!response.ok || !response.data) {
-        setStatusMessage(response.message ?? "Не удалось создать preview-ссылку");
+        pushToast(formatApiError(response, "Не удалось создать preview-ссылку"), "error");
         return;
       }
 
       setPreviewLink(response.data.url);
-      setStatusMessage("Одноразовая preview-ссылка создана");
+      pushToast("Одноразовая preview-ссылка создана", "success");
     });
   }
 
   async function saveHeader() {
-    await withBusy("Сохранение шапки...", async () => {
+    await withBusy(async () => {
       const response = await requestJson<{ header: SiteHeaderContent }>("/api/admin/header", {
         method: "PATCH",
         body: JSON.stringify(headerForm)
       });
 
       if (!response.ok || !response.data) {
-        setStatusMessage(response.message ?? "Не удалось сохранить шапку");
+        pushToast(formatApiError(response, "Не удалось сохранить шапку"), "error");
         return;
       }
 
       setHeaderForm(response.data.header);
-      setStatusMessage("Шапка сохранена");
+      pushToast("Шапка сохранена", "success");
+    });
+  }
+
+  async function saveSiteMetadata() {
+    await withBusy(async () => {
+      const response = await requestJson<{ settings: SiteMetadataSettings }>("/api/admin/site-metadata", {
+        method: "PATCH",
+        body: JSON.stringify(siteMetadataForm)
+      });
+
+      if (!response.ok || !response.data) {
+        pushToast(formatApiError(response, "Не удалось сохранить SEO настройки"), "error");
+        return;
+      }
+
+      setSiteMetadataForm(response.data.settings);
+      pushToast("SEO настройки сохранены", "success");
     });
   }
 
   async function saveStaticPage(page: StaticPageContent, key: "about" | "connect") {
-    await withBusy(`Сохранение страницы ${key}...`, async () => {
+    await withBusy(async () => {
       const response = await requestJson<{ page: StaticPageContent }>(`/api/admin/pages/${key}`, {
         method: "PATCH",
         body: JSON.stringify(page)
       });
 
       if (!response.ok || !response.data) {
-        setStatusMessage(response.message ?? `Не удалось сохранить страницу ${key}`);
+        pushToast(formatApiError(response, `Не удалось сохранить страницу ${key}`), "error");
         return;
       }
 
@@ -424,12 +502,12 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
         setConnectPage(response.data.page);
       }
 
-      setStatusMessage(`Страница ${key} сохранена`);
+      pushToast(`Страница ${key} сохранена`, "success");
     });
   }
 
   async function uploadMedia(file: File) {
-    await withBusy("Загрузка медиа...", async () => {
+    await withBusy(async () => {
       const formData = new FormData();
       formData.append("file", file);
 
@@ -440,13 +518,13 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
 
       if (!response.ok) {
         const json = (await response.json().catch(() => null)) as { message?: string } | null;
-        setStatusMessage(json?.message ?? `Ошибка загрузки (${response.status})`);
+        pushToast(json?.message ?? `Ошибка загрузки (${response.status})`, "error");
         return;
       }
 
       const payload = (await response.json()) as { asset: CmsMediaAsset };
       setMediaAssets((current) => [payload.asset, ...current]);
-      setStatusMessage("Медиа загружено");
+      pushToast("Медиа загружено", "success");
     });
   }
 
@@ -833,6 +911,72 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
     );
   }
 
+  function renderSiteMetadataEditor() {
+    return (
+      <section className={styles.card}>
+        <h2 className={styles.cardTitle}>Глобальные SEO настройки</h2>
+
+        <div className={styles.formGrid}>
+          <FormField
+            label="Site name"
+            value={siteMetadataForm.siteName}
+            onChange={(value) => setSiteMetadataForm((current) => ({ ...current, siteName: value }))}
+          />
+          <FormField
+            label="Default title"
+            value={siteMetadataForm.defaultTitle}
+            onChange={(value) => setSiteMetadataForm((current) => ({ ...current, defaultTitle: value }))}
+          />
+          <FormField
+            label="Title template"
+            value={siteMetadataForm.titleTemplate}
+            onChange={(value) => setSiteMetadataForm((current) => ({ ...current, titleTemplate: value }))}
+          />
+          <FormField
+            label="Default description"
+            value={siteMetadataForm.defaultDescription}
+            onChange={(value) => setSiteMetadataForm((current) => ({ ...current, defaultDescription: value }))}
+          />
+          <FormField
+            label="Default OG image"
+            value={siteMetadataForm.defaultOgImage ?? ""}
+            onChange={(value) => setSiteMetadataForm((current) => ({ ...current, defaultOgImage: value }))}
+          />
+          <FormField
+            label="Favicon URL"
+            value={siteMetadataForm.faviconUrl ?? ""}
+            onChange={(value) => setSiteMetadataForm((current) => ({ ...current, faviconUrl: value }))}
+          />
+          <p className={styles.notice}>
+            Для OG/Favicon: загрузите файл во вкладке «Медиа», скопируйте `public_url` и вставьте сюда.
+          </p>
+          <label className={styles.formRow}>
+            <span className={styles.label}>Robots default</span>
+            <select
+              className={styles.select}
+              value={siteMetadataForm.robotsIndexByDefault ? "index" : "noindex"}
+              onChange={(event) =>
+                setSiteMetadataForm((current) => ({
+                  ...current,
+                  robotsIndexByDefault: event.target.value === "index"
+                }))
+              }
+            >
+              <option value="index">index, follow</option>
+              <option value="noindex">noindex, nofollow</option>
+            </select>
+          </label>
+        </div>
+
+        <div className={styles.inlineActions}>
+          <button type="button" className={styles.primaryButton} onClick={saveSiteMetadata} disabled={isBusy}>
+            Сохранить SEO настройки
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   function renderStaticPageEditor(page: StaticPageContent, onChange: (next: StaticPageContent) => void, key: "about" | "connect") {
     return (
       <section className={styles.card}>
@@ -954,8 +1098,12 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
                 type="button"
                 className={styles.secondaryButton}
                 onClick={async () => {
-                  await navigator.clipboard.writeText(asset.public_url);
-                  setStatusMessage("URL скопирован в буфер обмена");
+                  try {
+                    await navigator.clipboard.writeText(asset.public_url);
+                    pushToast("URL скопирован в буфер обмена", "success");
+                  } catch {
+                    pushToast("Не удалось скопировать URL", "error");
+                  }
                 }}
               >
                 Copy URL
@@ -972,13 +1120,14 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
       <header className={styles.consoleHeader}>
         <div className={styles.titleGroup}>
           <h1 className={styles.consoleTitle}>CMS портфолио</h1>
-          <p className={styles.consoleSubtitle}>Визуальный редактор кейсов, header, about, connect</p>
+          <p className={styles.consoleSubtitle}>Визуальный редактор кейсов, шапки, SEO, about, connect</p>
         </div>
 
         <div className={styles.tabRow}>
           {([
             ["cases", "Кейсы"],
             ["header", "Шапка"],
+            ["siteMeta", "SEO"],
             ["about", "About"],
             ["connect", "Connect"],
             ["media", "Медиа"]
@@ -997,11 +1146,26 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
 
       {tab === "cases" && renderCaseEditor()}
       {tab === "header" && renderHeaderEditor()}
+      {tab === "siteMeta" && renderSiteMetadataEditor()}
       {tab === "about" && renderStaticPageEditor(aboutPage, setAboutPage, "about")}
       {tab === "connect" && renderStaticPageEditor(connectPage, setConnectPage, "connect")}
       {tab === "media" && renderMediaLibrary()}
 
-      <p className={styles.statusLine}>{isBusy ? "Выполняется..." : statusMessage}</p>
+      <div className={styles.toastViewport} aria-live="polite">
+        {isBusy && (
+          <div className={[styles.toast, styles.toastInfo].join(" ")} role="status">
+            Выполняется...
+          </div>
+        )}
+        {toasts.map((toast) => (
+          <div key={toast.id} className={[styles.toast, getToastToneClassName(toast.tone)].join(" ")} role="status">
+            <span>{toast.text}</span>
+            <button type="button" className={styles.toastClose} onClick={() => dismissToast(toast.id)} aria-label="Закрыть уведомление">
+              Закрыть
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

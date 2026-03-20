@@ -9,12 +9,14 @@ import type {
   HomeWorkEntry,
   NavEntry,
   SiteHeaderContent,
+  SiteMetadataSettings,
   StaticPageContent,
   StaticPageKey,
   WorkCase
 } from "@/lib/content/types";
+import { defaultSiteHeaderContent, defaultSiteMetadataSettings } from "@/lib/content";
 import type { AdminCaseListItem } from "@/lib/cms/types";
-import { siteHeaderSchema, staticPageContentSchema } from "@/lib/cms/schemas";
+import { siteHeaderSchema, siteMetadataSettingsSchema, staticPageContentSchema } from "@/lib/cms/schemas";
 import { getStorageBucketName } from "@/lib/cms/env";
 import { createSupabaseAdminClient } from "@/lib/cms/supabase.server";
 
@@ -43,6 +45,14 @@ interface CmsSiteHeaderRow {
   role_company_href: string;
   logo_alt: string;
   meta_nav: unknown;
+  site_url: string;
+  site_name: string;
+  default_title: string;
+  title_template: string;
+  default_description: string;
+  default_og_image: string | null;
+  favicon_url: string | null;
+  robots_index_by_default: boolean;
 }
 
 interface CmsStaticPageRow {
@@ -67,6 +77,18 @@ interface CmsPreviewTokenRow {
   entity_id: string;
   created_at: string;
   used_at: string | null;
+}
+
+function isMissingSiteMetadataColumnsError(error: { code?: string; message?: string } | null) {
+  if (!error) {
+    return false;
+  }
+
+  if (error.code === "42703") {
+    return true;
+  }
+
+  return Boolean(error.message?.includes("site_url"));
 }
 
 function parseWorkCase(payload: unknown) {
@@ -121,6 +143,25 @@ function formatStaticPage(row: CmsStaticPageRow): StaticPageContent {
     meta: parsed.data.meta,
     blocks: parsed.data.blocks
   };
+}
+
+function formatSiteMetadataSettings(row: CmsSiteHeaderRow): SiteMetadataSettings {
+  const parsed = siteMetadataSettingsSchema.safeParse({
+    siteUrl: row.site_url,
+    siteName: row.site_name,
+    defaultTitle: row.default_title,
+    titleTemplate: row.title_template,
+    defaultDescription: row.default_description,
+    defaultOgImage: row.default_og_image ?? "",
+    faviconUrl: row.favicon_url ?? "",
+    robotsIndexByDefault: row.robots_index_by_default
+  });
+
+  if (!parsed.success) {
+    throw new Error(`Invalid site metadata payload in DB: ${parsed.error.message}`);
+  }
+
+  return parsed.data;
 }
 
 async function getCaseOrdersMap() {
@@ -528,12 +569,30 @@ export async function duplicateCaseInDb(caseId: string) {
 
 export async function reorderDraftCasesInDb(ids: string[]) {
   const client = createSupabaseAdminClient();
+  const { data: caseRows, error: casesError } = await client
+    .from("cms_cases")
+    .select("id,is_published")
+    .in("id", ids);
+
+  if (casesError) {
+    throw new Error(`Failed to load cases for reorder: ${casesError.message}`);
+  }
+
+  const publishedMap = new Map((caseRows ?? []).map((row) => [row.id, row.is_published]));
 
   const updates = ids.map((caseId, index) =>
-    client
-      .from("cms_case_order")
-      .update({ draft_sort_order: (index + 1) * 10 })
-      .eq("case_id", caseId)
+    {
+      const nextSortOrder = (index + 1) * 10;
+      const updatePayload: { draft_sort_order: number; published_sort_order?: number } = {
+        draft_sort_order: nextSortOrder
+      };
+
+      if (publishedMap.get(caseId)) {
+        updatePayload.published_sort_order = nextSortOrder;
+      }
+
+      return client.from("cms_case_order").update(updatePayload).eq("case_id", caseId);
+    }
   );
 
   const results = await Promise.all(updates);
@@ -591,6 +650,88 @@ export async function updateSiteHeaderInDb(payload: SiteHeaderContent) {
   }
 
   return normalized;
+}
+
+export async function getSiteMetadataSettingsFromDb() {
+  const client = createSupabaseAdminClient();
+  const { data, error } = await client
+    .from("cms_site_header")
+    .select(
+      "id,name,role_prefix,role_company_label,role_company_href,logo_alt,meta_nav,site_url,site_name,default_title,title_template,default_description,default_og_image,favicon_url,robots_index_by_default"
+    )
+    .eq("id", "site")
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingSiteMetadataColumnsError(error)) {
+      return null;
+    }
+    throw new Error(`Failed to load site metadata settings: ${error.message}`);
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return formatSiteMetadataSettings(data as CmsSiteHeaderRow);
+}
+
+export async function updateSiteMetadataSettingsInDb(payload: SiteMetadataSettings) {
+  const parsed = siteMetadataSettingsSchema.parse(payload);
+  const client = createSupabaseAdminClient();
+
+  const { data: existing, error: existingError } = await client
+    .from("cms_site_header")
+    .select("name,role_prefix,role_company_label,role_company_href,logo_alt,meta_nav")
+    .eq("id", "site")
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(`Failed to load existing site header while updating metadata: ${existingError.message}`);
+  }
+
+  const identityFallback = existing
+    ? {
+        name: existing.name,
+        rolePrefix: existing.role_prefix,
+        roleCompanyLabel: existing.role_company_label,
+        roleCompanyHref: existing.role_company_href,
+        logoAlt: existing.logo_alt
+      }
+    : defaultSiteHeaderContent.identity;
+  const metaNavFallback = (existing?.meta_nav as NavEntry[] | undefined) ?? defaultSiteHeaderContent.metaNav;
+
+  const { error } = await client.from("cms_site_header").upsert({
+    id: "site",
+    name: identityFallback.name,
+    role_prefix: identityFallback.rolePrefix,
+    role_company_label: identityFallback.roleCompanyLabel,
+    role_company_href: identityFallback.roleCompanyHref,
+    logo_alt: identityFallback.logoAlt,
+    meta_nav: metaNavFallback,
+    site_url: parsed.siteUrl,
+    site_name: parsed.siteName,
+    default_title: parsed.defaultTitle,
+    title_template: parsed.titleTemplate,
+    default_description: parsed.defaultDescription,
+    default_og_image: parsed.defaultOgImage?.trim() ? parsed.defaultOgImage : null,
+    favicon_url: parsed.faviconUrl?.trim() ? parsed.faviconUrl : null,
+    robots_index_by_default: parsed.robotsIndexByDefault
+  });
+
+  if (error) {
+    if (isMissingSiteMetadataColumnsError(error)) {
+      throw new Error(
+        "Missing CMS columns for site metadata. Run migrations 20260321_add_site_metadata_settings.sql and 20260321_add_favicon_to_site_metadata.sql, then try again."
+      );
+    }
+    throw new Error(`Failed to update site metadata settings: ${error.message}`);
+  }
+
+  return {
+    ...defaultSiteMetadataSettings,
+    ...parsed
+  };
 }
 
 export async function getStaticPageFromDb(key: StaticPageKey) {

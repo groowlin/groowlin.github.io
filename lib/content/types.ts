@@ -32,6 +32,17 @@ export interface SiteIdentity {
   logoAlt: string;
 }
 
+export interface SiteMetadataSettings {
+  siteUrl: string;
+  siteName: string;
+  defaultTitle: string;
+  titleTemplate: string;
+  defaultDescription: string;
+  defaultOgImage?: string;
+  faviconUrl?: string;
+  robotsIndexByDefault: boolean;
+}
+
 export interface SiteHeaderContent {
   identity: SiteIdentity;
   metaNav: NavEntry[];

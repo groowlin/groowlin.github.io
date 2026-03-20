@@ -6,10 +6,11 @@ import { isCmsDbEnabled } from "@/lib/cms/env";
 import {
   getAdminCasesFromDb,
   getSiteHeaderFromDb,
+  getSiteMetadataSettingsFromDb,
   getStaticPageFromDb,
   listMediaAssetsFromDb
 } from "@/lib/cms/db.server";
-import { defaultSiteHeaderContent, staticPageContentDefaults } from "@/lib/content";
+import { defaultSiteHeaderContent, defaultSiteMetadataSettings, staticPageContentDefaults } from "@/lib/content";
 
 export const dynamic = "force-dynamic";
 
@@ -32,9 +33,10 @@ export default async function AdminPage() {
     );
   }
 
-  const [cases, headerFromDb, aboutFromDb, connectFromDb, media] = await Promise.all([
+  const [cases, headerFromDb, siteMetadataFromDb, aboutFromDb, connectFromDb, media] = await Promise.all([
     getAdminCasesFromDb(),
     getSiteHeaderFromDb(),
+    getSiteMetadataSettingsFromDb(),
     getStaticPageFromDb("about"),
     getStaticPageFromDb("connect"),
     listMediaAssetsFromDb()
@@ -59,6 +61,7 @@ export default async function AdminPage() {
           initialData={{
             cases,
             header: headerFromDb ?? defaultSiteHeaderContent,
+            siteMetadata: siteMetadataFromDb ?? defaultSiteMetadataSettings,
             about: aboutFromDb ?? staticPageContentDefaults.about,
             connect: connectFromDb ?? staticPageContentDefaults.connect,
             media

@@ -1,4 +1,4 @@
-import type { SiteHeaderContent, StaticPageContent, WorkCase } from "@/lib/content/types";
+import type { SiteHeaderContent, SiteMetadataSettings, StaticPageContent, WorkCase } from "@/lib/content/types";
 
 export interface AdminCaseListItem {
   id: string;
@@ -32,6 +32,7 @@ export interface CmsMediaAsset {
 export interface AdminInitialData {
   cases: AdminCaseListItem[];
   header: SiteHeaderContent;
+  siteMetadata: SiteMetadataSettings;
   about: StaticPageContent;
   connect: StaticPageContent;
   media: CmsMediaAsset[];

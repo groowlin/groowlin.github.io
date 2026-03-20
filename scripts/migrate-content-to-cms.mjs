@@ -87,11 +87,19 @@ async function upsertCase(casePayload) {
 async function upsertHeader() {
   const payload = {
     id: "site",
-    name: "Gavin Nelson",
-    role_prefix: "designer at",
-    role_company_label: "OpenAI",
-    role_company_href: "https://openai.com",
-    logo_alt: "Gavin Nelson",
+    name: "Designer Name",
+    role_prefix: "product designer at",
+    role_company_label: "Your Company",
+    role_company_href: "#",
+    logo_alt: "Designer Name",
+    site_url: "https://example.com",
+    site_name: "Portfolio",
+    default_title: "Portfolio",
+    title_template: "%s | Portfolio",
+    default_description: "Personal portfolio with selected product design case studies.",
+    default_og_image: null,
+    favicon_url: null,
+    robots_index_by_default: true,
     meta_nav: [
       { label: "About", href: "/about", section: "meta" },
       { label: "Connect", href: "/connect", section: "meta" }
@@ -109,7 +117,7 @@ async function upsertStaticPages() {
     key: "about",
     meta: {
       title: "About",
-      description: "About profile page for the Nelson-inspired portfolio clone.",
+      description: "Background, approach, and design principles.",
       canonical: "/about"
     },
     content_blocks: [
@@ -119,7 +127,7 @@ async function upsertStaticPages() {
       },
       {
         type: "paragraph",
-        body: "This clone preserves the editorial rhythm and interaction model of the original site while using placeholder media assets for phase 1 delivery."
+        body: "Selected work with a focus on product outcomes, craft, and collaboration."
       },
       {
         type: "links",
@@ -132,7 +140,7 @@ async function upsertStaticPages() {
     key: "connect",
     meta: {
       title: "Connect",
-      description: "Contact and profile links for the portfolio clone.",
+      description: "Contact links and ways to connect.",
       canonical: "/connect"
     },
     content_blocks: [

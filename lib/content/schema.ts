@@ -4,18 +4,19 @@ import {
   type PageMeta,
   type RedirectRule,
   type SiteHeaderContent,
+  type SiteMetadataSettings,
   type StaticPageContent
 } from "@/lib/content/types";
 
 const placeholderLink = "#";
 
 export const siteIdentity = {
-  name: "Gavin Nelson",
-  role: "Designer at OpenAI",
-  rolePrefix: "designer at",
-  roleCompanyLabel: "OpenAI",
-  roleCompanyHref: "https://openai.com",
-  logoAlt: "Gavin Nelson"
+  name: "Designer Name",
+  role: "product designer at Your Company",
+  rolePrefix: "product designer at",
+  roleCompanyLabel: "Your Company",
+  roleCompanyHref: placeholderLink,
+  logoAlt: "Designer Name"
 };
 
 export const metaNav: NavEntry[] = [
@@ -26,6 +27,17 @@ export const metaNav: NavEntry[] = [
 export const defaultSiteHeaderContent: SiteHeaderContent = {
   identity: siteIdentity,
   metaNav
+};
+
+export const defaultSiteMetadataSettings: SiteMetadataSettings = {
+  siteUrl: "https://example.com",
+  siteName: "Portfolio",
+  defaultTitle: "Portfolio",
+  titleTemplate: "%s | Portfolio",
+  defaultDescription: "Personal portfolio with selected product design case studies.",
+  defaultOgImage: "",
+  faviconUrl: "",
+  robotsIndexByDefault: true
 };
 
 export const connectLinks: NavEntry[] = [
@@ -146,12 +158,12 @@ export const redirectRules: RedirectRule[] = [
 export const staticPageMeta: Record<"about" | "connect" | "iconDesign" | "explorations", PageMeta> = {
   about: {
     title: "About",
-    description: "About profile page for the Nelson-inspired portfolio clone.",
+    description: "Background, approach, and design principles.",
     canonical: "/about"
   },
   connect: {
     title: "Connect",
-    description: "Contact and profile links for the portfolio clone.",
+    description: "Contact links and ways to connect.",
     canonical: "/connect"
   },
   iconDesign: {
@@ -177,7 +189,7 @@ export const staticPageContentDefaults: Record<"about" | "connect", StaticPageCo
       },
       {
         type: "paragraph",
-        body: "This clone preserves the editorial rhythm and interaction model of the original site while using placeholder media assets for phase 1 delivery."
+        body: "Selected work with a focus on product outcomes, craft, and collaboration."
       },
       {
         type: "links",

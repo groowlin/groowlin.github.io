@@ -5,8 +5,8 @@ import { getHomeWorkEntries } from "@/lib/content/work.server";
 import { getSiteHeaderContent } from "@/lib/content/site.server";
 
 export const metadata: Metadata = {
-  title: "Gavin Nelson, Designer",
-  description: "Portfolio home with interactive work list and motion-driven previews.",
+  title: "Home",
+  description: "Selected product design cases and recent work.",
   alternates: {
     canonical: "/"
   }
