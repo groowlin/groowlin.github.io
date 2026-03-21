@@ -24,16 +24,21 @@ export async function SiteShell({
     <main className={styles.main}>
       <div className={styles.inner}>
         <Link className={styles.logoLink} href="/" aria-label="Go to the homepage">
-          {avatarUrl ? (
-            <span
-              className={styles.logoImage}
-              role="img"
-              aria-label={header?.identity.logoAlt ?? "Site avatar"}
-              style={{ backgroundImage: `url("${avatarUrl}")` }}
-            />
-          ) : (
-            <span className={styles.logoMark} aria-hidden="true" />
-          )}
+          <span
+            className={styles.logoMark}
+            role={avatarUrl ? "img" : undefined}
+            aria-label={avatarUrl ? (header?.identity.logoAlt ?? "Site avatar") : undefined}
+            aria-hidden={avatarUrl ? undefined : true}
+            style={
+              avatarUrl
+                ? {
+                    backgroundImage: `url("${avatarUrl}")`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center"
+                  }
+                : undefined
+            }
+          />
         </Link>
 
         {(title || subtitle) && (
