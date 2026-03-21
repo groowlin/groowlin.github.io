@@ -17,7 +17,7 @@ export async function SiteShell({
   subtitleMuted = true,
   showMetaNav = true
 }: SiteShellProps) {
-  const header = showMetaNav ? await getSiteHeaderContent() : null;
+  const header = await getSiteHeaderContent();
   const avatarUrl = header?.identity.avatarUrl?.trim() ?? "";
 
   return (
