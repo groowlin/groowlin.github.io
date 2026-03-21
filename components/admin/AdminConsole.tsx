@@ -57,6 +57,49 @@ const SECTION_TYPES: SectionBlock["type"][] = [
 ];
 
 const SIMPLE_SECTION_TYPES: SimpleSectionBlock["type"][] = ["paragraph", "list", "media", "quote", "cta"];
+const PLACEHOLDER_TOKEN_OPTIONS = [
+  "achievements",
+  "achievements-final",
+  "appmesh",
+  "apple-pencil",
+  "basic-icons",
+  "chess",
+  "communication",
+  "copilot-interaction",
+  "coverflow",
+  "dock-icons",
+  "findershader",
+  "github-copilot",
+  "hidden-playground",
+  "linear-26",
+  "linear-docs-context",
+  "linear-docs-proto",
+  "linear-documents",
+  "linear-renders",
+  "linear-renders-board",
+  "linear-renders-lighting",
+  "linear-search",
+  "linear-search-options",
+  "linear-search-scope",
+  "linear-v1",
+  "linear26-details",
+  "mark",
+  "mario",
+  "music",
+  "navigation-shortcuts",
+  "pearl",
+  "personas",
+  "pinchscrolling",
+  "prototype-gallery-a",
+  "prototype-gallery-b",
+  "prototype-reel",
+  "queen",
+  "refraction",
+  "shortcuts-anatomy",
+  "stretchymenu",
+  "tools",
+  "weather"
+] as const;
 
 function toSlug(value: string) {
   return value
@@ -145,7 +188,7 @@ function makeEmptyWorkCase(): WorkCase {
     schemaVersion: "1.0",
     id: "temp",
     slug: "new-case",
-    status: "hidden",
+    status: "published",
     sortOrder: 9999,
     summary: {
       title: "New Case",
@@ -1295,6 +1338,10 @@ interface MediaFieldsProps {
 }
 
 function MediaFields({ value, onChange }: MediaFieldsProps) {
+  const placeholderTokenOptions = value.placeholderToken
+    ? Array.from(new Set([value.placeholderToken, ...PLACEHOLDER_TOKEN_OPTIONS]))
+    : [...PLACEHOLDER_TOKEN_OPTIONS];
+
   return (
     <div className={styles.formGrid}>
       <label className={styles.formRow}>
@@ -1312,11 +1359,26 @@ function MediaFields({ value, onChange }: MediaFieldsProps) {
 
       <FormField label="Aspect ratio" value={value.aspectRatio ?? ""} onChange={(next) => onChange({ ...value, aspectRatio: next })} />
       <FormField label="Src" value={value.src ?? ""} onChange={(next) => onChange({ ...value, src: next })} />
-      <FormField
-        label="Placeholder token"
-        value={value.placeholderToken ?? ""}
-        onChange={(next) => onChange({ ...value, placeholderToken: next })}
-      />
+      <label className={styles.formRow}>
+        <span className={styles.label}>Placeholder token</span>
+        <select
+          className={styles.select}
+          value={value.placeholderToken ?? ""}
+          onChange={(event) =>
+            onChange({
+              ...value,
+              placeholderToken: optionalText(event.target.value)
+            })
+          }
+        >
+          <option value="">Auto (placeholder)</option>
+          {placeholderTokenOptions.map((token) => (
+            <option key={token} value={token}>
+              {token}
+            </option>
+          ))}
+        </select>
+      </label>
       <FormField label="Caption" value={value.caption ?? ""} onChange={(next) => onChange({ ...value, caption: next })} />
     </div>
   );

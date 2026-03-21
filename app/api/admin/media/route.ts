@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/cms/auth/require-admin.server";
 import { handleApiError } from "@/lib/cms/api.server";
 import { assertCmsEnabled } from "@/lib/cms/env";
-import { listMediaAssetsFromDb, uploadMediaToStorageAndDb } from "@/lib/cms/db.server";
+import { listMediaAssetsFromDb, syncMediaAssetsFromStorageToDb, uploadMediaToStorageAndDb } from "@/lib/cms/db.server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -11,6 +11,7 @@ export async function GET() {
   try {
     assertCmsEnabled();
     await requireAdminSession();
+    await syncMediaAssetsFromStorageToDb();
     const assets = await listMediaAssetsFromDb();
     return NextResponse.json(
       { assets },

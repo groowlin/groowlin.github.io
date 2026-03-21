@@ -79,6 +79,14 @@ interface CmsPreviewTokenRow {
   used_at: string | null;
 }
 
+interface StorageObjectRow {
+  name: string;
+  metadata: {
+    mimetype?: unknown;
+    size?: unknown;
+  } | null;
+}
+
 function isMissingSiteMetadataColumnsError(error: { code?: string; message?: string } | null) {
   if (!error) {
     return false;
@@ -496,8 +504,7 @@ export async function publishCaseFromDraftInDb(caseId: string) {
   const draftPayload = parseWorkCase(caseRowResult.data.draft_payload);
   const publishedPayload = {
     ...draftPayload,
-    sortOrder: draftSortOrder,
-    status: "published" as const
+    sortOrder: draftSortOrder
   };
 
   const now = new Date().toISOString();
@@ -806,6 +813,36 @@ function getMediaKindFromMime(mime: string): "image" | "video" | "gif" {
   return "image";
 }
 
+function inferMimeTypeFromPath(objectPath: string) {
+  const ext = path.extname(objectPath).toLowerCase();
+
+  if (ext === ".gif") return "image/gif";
+  if (ext === ".png") return "image/png";
+  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
+  if (ext === ".webp") return "image/webp";
+  if (ext === ".svg") return "image/svg+xml";
+  if (ext === ".mp4") return "video/mp4";
+  if (ext === ".webm") return "video/webm";
+  if (ext === ".mov") return "video/quicktime";
+
+  return "application/octet-stream";
+}
+
+function parseSizeBytes(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return Math.round(value);
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return parsed;
+    }
+  }
+
+  return 0;
+}
+
 export async function listMediaAssetsFromDb() {
   const client = createSupabaseAdminClient();
   const { data, error } = await client
@@ -818,6 +855,77 @@ export async function listMediaAssetsFromDb() {
   }
 
   return (data ?? []) as CmsMediaAssetRow[];
+}
+
+export async function syncMediaAssetsFromStorageToDb() {
+  const client = createSupabaseAdminClient();
+  const bucket = getStorageBucketName();
+
+  const { data: existingRows, error: existingError } = await client.from("cms_media_assets").select("path");
+  if (existingError) {
+    throw new Error(`Failed to load existing media paths: ${existingError.message}`);
+  }
+
+  const existingPaths = new Set((existingRows ?? []).map((row) => row.path));
+  const storageObjects: StorageObjectRow[] = [];
+  const pageSize = 1000;
+  let from = 0;
+
+  while (true) {
+    const { data: page, error: pageError } = await client
+      .schema("storage")
+      .from("objects")
+      .select("name,metadata")
+      .eq("bucket_id", bucket)
+      .order("name", { ascending: true })
+      .range(from, from + pageSize - 1);
+
+    if (pageError) {
+      throw new Error(`Failed to load storage objects for sync: ${pageError.message}`);
+    }
+
+    if (!page?.length) {
+      break;
+    }
+
+    storageObjects.push(...((page as StorageObjectRow[]) ?? []));
+
+    if (page.length < pageSize) {
+      break;
+    }
+
+    from += pageSize;
+  }
+
+  const rowsToInsert = storageObjects
+    .filter((object) => object.name && !existingPaths.has(object.name))
+    .map((object) => {
+      const mime =
+        typeof object.metadata?.mimetype === "string" && object.metadata.mimetype.length > 0
+          ? object.metadata.mimetype
+          : inferMimeTypeFromPath(object.name);
+      const size = parseSizeBytes(object.metadata?.size);
+      const publicUrlResult = client.storage.from(bucket).getPublicUrl(object.name);
+
+      return {
+        path: object.name,
+        public_url: publicUrlResult.data.publicUrl,
+        kind: getMediaKindFromMime(mime),
+        mime,
+        size
+      };
+    });
+
+  if (!rowsToInsert.length) {
+    return { inserted: 0 };
+  }
+
+  const { error: insertError } = await client.from("cms_media_assets").insert(rowsToInsert);
+  if (insertError) {
+    throw new Error(`Failed to insert synced media assets: ${insertError.message}`);
+  }
+
+  return { inserted: rowsToInsert.length };
 }
 
 export async function uploadMediaToStorageAndDb(file: File) {
