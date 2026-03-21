@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   MediaPlaceholder,
   SectionBlock,
@@ -76,6 +76,11 @@ function splitLines(value: string) {
 
 function joinLines(items: string[]) {
   return items.join("\n");
+}
+
+function optionalText(value: string) {
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
 }
 
 function makeEmptyMedia(): MediaPlaceholder {
@@ -311,15 +316,38 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
 
   async function saveCaseDraft() {
     if (!selectedCase) return;
+    const caseId = selectedCase.id;
+    const draft = selectedCase.draft;
 
-    await withBusy(async () => {
-      const response = await requestJson<{ payload: WorkCase }>(`/api/admin/cases/${selectedCase.id}`, {
+    async function persistDraft() {
+      const response = await requestJson<{ payload: WorkCase }>(`/api/admin/cases/${caseId}`, {
         method: "PATCH",
-        body: JSON.stringify({ payload: selectedCase.draft })
+        body: JSON.stringify({ payload: draft })
       });
 
-      if (!response.ok) {
+      if (!response.ok || !response.data) {
         pushToast(formatApiError(response, "Не удалось сохранить черновик"), "error");
+        return false;
+      }
+      const savedDraft = response.data.payload;
+
+      setSelectedCase((current) => {
+        if (!current || current.id !== caseId) {
+          return current;
+        }
+
+        return {
+          ...current,
+          draft: savedDraft
+        };
+      });
+
+      return true;
+    }
+
+    await withBusy(async () => {
+      const isSaved = await persistDraft();
+      if (!isSaved) {
         return;
       }
 
@@ -334,9 +362,33 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
 
   async function publishCase() {
     if (!selectedCase) return;
+    const caseId = selectedCase.id;
+    const draft = selectedCase.draft;
 
     await withBusy(async () => {
-      const response = await requestJson<{ ok: true }>(`/api/admin/cases/${selectedCase.id}/publish`, {
+      const saveResponse = await requestJson<{ payload: WorkCase }>(`/api/admin/cases/${caseId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ payload: draft })
+      });
+
+      if (!saveResponse.ok || !saveResponse.data) {
+        pushToast(formatApiError(saveResponse, "Не удалось сохранить черновик перед публикацией"), "error");
+        return;
+      }
+      const savedDraft = saveResponse.data.payload;
+
+      setSelectedCase((current) => {
+        if (!current || current.id !== caseId) {
+          return current;
+        }
+
+        return {
+          ...current,
+          draft: savedDraft
+        };
+      });
+
+      const response = await requestJson<{ ok: true }>(`/api/admin/cases/${caseId}/publish`, {
         method: "POST"
       });
 
@@ -350,7 +402,7 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
         setCases(listResponse.data.cases);
       }
 
-      await loadCase(selectedCase.id);
+      await loadCase(caseId);
       pushToast("Кейс опубликован", "success");
     });
   }
@@ -505,6 +557,42 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
       pushToast(`Страница ${key} сохранена`, "success");
     });
   }
+
+  async function refreshMediaAssets(options?: { silent?: boolean }) {
+    const response = await requestJson<{ assets: CmsMediaAsset[] }>("/api/admin/media", {
+      cache: "no-store"
+    });
+
+    if (!response.ok || !response.data) {
+      if (!options?.silent) {
+        pushToast(formatApiError(response, "Не удалось обновить список медиа"), "error");
+      }
+      return false;
+    }
+
+    setMediaAssets(response.data.assets);
+    return true;
+  }
+
+  useEffect(() => {
+    let isAlive = true;
+
+    void (async () => {
+      const response = await requestJson<{ assets: CmsMediaAsset[] }>("/api/admin/media", {
+        cache: "no-store"
+      });
+
+      if (!response.ok || !response.data || !isAlive) {
+        return;
+      }
+
+      setMediaAssets(response.data.assets);
+    })();
+
+    return () => {
+      isAlive = false;
+    };
+  }, []);
 
   async function uploadMedia(file: File) {
     await withBusy(async () => {
@@ -1009,12 +1097,12 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
               onClick={() => {
                 const nextBlock: StaticPageBlock =
                   type === "paragraph"
-                    ? { type, title: "", body: "" }
+                    ? { type, body: "" }
                     : type === "list"
-                      ? { type, title: "", items: [""] }
+                      ? { type, items: [""] }
                       : type === "quote"
-                        ? { type, quote: "", attribution: "" }
-                        : { type, title: "", items: [{ label: "", href: "#" }] };
+                        ? { type, quote: "" }
+                        : { type, items: [{ label: "", href: "#" }] };
 
                 onChange({
                   ...page,
@@ -1067,20 +1155,36 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
       <section className={styles.card}>
         <h2 className={styles.cardTitle}>Медиатека</h2>
         <p className={styles.notice}>Загрузите файл и вставьте URL в поля `src` нужного блока.</p>
-
-        <label className={styles.ghostButton}>
-          Выбрать файл
-          <input
-            type="file"
-            style={{ display: "none" }}
-            onChange={async (event) => {
-              const file = event.target.files?.[0];
-              if (!file) return;
-              await uploadMedia(file);
-              event.target.value = "";
+        <div className={styles.inlineActions}>
+          <label className={styles.ghostButton}>
+            Выбрать файл
+            <input
+              type="file"
+              style={{ display: "none" }}
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                await uploadMedia(file);
+                event.target.value = "";
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            disabled={isBusy}
+            onClick={async () => {
+              await withBusy(async () => {
+                const success = await refreshMediaAssets();
+                if (success) {
+                  pushToast("Список медиа обновлен", "success");
+                }
+              });
             }}
-          />
-        </label>
+          >
+            Обновить список
+          </button>
+        </div>
 
         <div className={styles.assetList}>
           {mediaAssets.map((asset) => (
@@ -1672,7 +1776,11 @@ function StaticBlockEditor({ block, onChange, onDelete }: StaticBlockEditorProps
       </header>
 
       {(block.type === "paragraph" || block.type === "list" || block.type === "links") && (
-        <FormField label="Title" value={block.title ?? ""} onChange={(value) => onChange({ ...block, title: value } as StaticPageBlock)} />
+        <FormField
+          label="Title"
+          value={block.title ?? ""}
+          onChange={(value) => onChange({ ...block, title: optionalText(value) } as StaticPageBlock)}
+        />
       )}
 
       {block.type === "paragraph" && (
@@ -1710,7 +1818,7 @@ function StaticBlockEditor({ block, onChange, onDelete }: StaticBlockEditorProps
           <FormField
             label="Attribution"
             value={block.attribution ?? ""}
-            onChange={(value) => onChange({ ...block, attribution: value })}
+            onChange={(value) => onChange({ ...block, attribution: optionalText(value) })}
           />
         </>
       )}
