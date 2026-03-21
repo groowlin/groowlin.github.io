@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { unstable_noStore as noStore } from "next/cache";
 import { getSiteMetadataSettingsContent } from "@/lib/content/site.server";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
+  noStore();
   const settings = await getSiteMetadataSettingsContent();
   const siteUrl = settings.siteUrl.endsWith("/") ? settings.siteUrl : `${settings.siteUrl}/`;
   const faviconUrl = settings.faviconUrl?.trim();

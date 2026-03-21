@@ -1,16 +1,32 @@
 import type { Metadata } from "next";
+import { unstable_noStore as noStore } from "next/cache";
 import { HomeShowcase } from "@/components/home/HomeShowcase";
 import { SiteShell } from "@/components/shell/SiteShell";
 import { getHomeWorkEntries } from "@/lib/content/work.server";
-import { getSiteHeaderContent } from "@/lib/content/site.server";
+import { getSiteHeaderContent, getSiteMetadataSettingsContent } from "@/lib/content/site.server";
 
-export const metadata: Metadata = {
-  title: "Home",
-  description: "Selected product design cases and recent work.",
-  alternates: {
-    canonical: "/"
-  }
-};
+export async function generateMetadata(): Promise<Metadata> {
+  noStore();
+  const settings = await getSiteMetadataSettingsContent();
+
+  return {
+    title: {
+      absolute: settings.defaultTitle
+    },
+    description: settings.defaultDescription,
+    alternates: {
+      canonical: "/"
+    },
+    openGraph: {
+      title: settings.defaultTitle,
+      description: settings.defaultDescription,
+      siteName: settings.siteName,
+      type: "website",
+      url: "/",
+      images: settings.defaultOgImage ? [settings.defaultOgImage] : undefined
+    }
+  };
+}
 
 export default async function HomePage() {
   const [entries, header] = await Promise.all([getHomeWorkEntries(), getSiteHeaderContent()]);

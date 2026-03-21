@@ -3,7 +3,11 @@ export function isCmsDbEnabled() {
 }
 
 export function isCmsReadFromDbEnabled() {
-  return process.env.CMS_DB_READ_ENABLED === "true";
+  const explicitValue = process.env.CMS_DB_READ_ENABLED;
+  if (explicitValue === undefined) {
+    return isCmsDbEnabled();
+  }
+  return explicitValue === "true";
 }
 
 export function assertCmsEnabled() {

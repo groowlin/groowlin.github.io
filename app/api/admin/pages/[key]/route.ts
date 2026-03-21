@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { staticPageContentSchema } from "@/lib/cms/schemas";
 import { requireAdminSession } from "@/lib/cms/auth/require-admin.server";
 import { handleApiError, readJsonBody } from "@/lib/cms/api.server";
@@ -46,6 +47,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     });
 
     const updated = await updateStaticPageInDb(parsed);
+    revalidatePath(`/${key}`, "page");
     return NextResponse.json({ page: updated });
   } catch (error) {
     return handleApiError(error);

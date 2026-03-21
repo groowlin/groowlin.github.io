@@ -106,6 +106,19 @@ function withSortOrder(entry: WorkCase, sortOrder: number): WorkCase {
   };
 }
 
+function normalizeSiteUrl(value: string) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    if (host === "example.com" || host === "www.example.com") {
+      return defaultSiteMetadataSettings.siteUrl;
+    }
+    return value;
+  } catch {
+    return defaultSiteMetadataSettings.siteUrl;
+  }
+}
+
 function formatSiteHeader(row: CmsSiteHeaderRow): SiteHeaderContent {
   const role = `${row.role_prefix} ${row.role_company_label}`.trim();
   const parsed = siteHeaderSchema.safeParse({
@@ -147,7 +160,7 @@ function formatStaticPage(row: CmsStaticPageRow): StaticPageContent {
 
 function formatSiteMetadataSettings(row: CmsSiteHeaderRow): SiteMetadataSettings {
   const parsed = siteMetadataSettingsSchema.safeParse({
-    siteUrl: row.site_url,
+    siteUrl: normalizeSiteUrl(row.site_url),
     siteName: row.site_name,
     defaultTitle: row.default_title,
     titleTemplate: row.title_template,
@@ -483,7 +496,8 @@ export async function publishCaseFromDraftInDb(caseId: string) {
   const draftPayload = parseWorkCase(caseRowResult.data.draft_payload);
   const publishedPayload = {
     ...draftPayload,
-    sortOrder: draftSortOrder
+    sortOrder: draftSortOrder,
+    status: "published" as const
   };
 
   const now = new Date().toISOString();
@@ -678,6 +692,7 @@ export async function getSiteMetadataSettingsFromDb() {
 
 export async function updateSiteMetadataSettingsInDb(payload: SiteMetadataSettings) {
   const parsed = siteMetadataSettingsSchema.parse(payload);
+  const normalizedSiteUrl = normalizeSiteUrl(parsed.siteUrl);
   const client = createSupabaseAdminClient();
 
   const { data: existing, error: existingError } = await client
@@ -709,7 +724,7 @@ export async function updateSiteMetadataSettingsInDb(payload: SiteMetadataSettin
     role_company_href: identityFallback.roleCompanyHref,
     logo_alt: identityFallback.logoAlt,
     meta_nav: metaNavFallback,
-    site_url: parsed.siteUrl,
+    site_url: normalizedSiteUrl,
     site_name: parsed.siteName,
     default_title: parsed.defaultTitle,
     title_template: parsed.titleTemplate,
@@ -730,7 +745,8 @@ export async function updateSiteMetadataSettingsInDb(payload: SiteMetadataSettin
 
   return {
     ...defaultSiteMetadataSettings,
-    ...parsed
+    ...parsed,
+    siteUrl: normalizedSiteUrl
   };
 }
 

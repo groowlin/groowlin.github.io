@@ -30,7 +30,7 @@ export const defaultSiteHeaderContent: SiteHeaderContent = {
 };
 
 export const defaultSiteMetadataSettings: SiteMetadataSettings = {
-  siteUrl: "https://example.com",
+  siteUrl: "https://rodyukov.art",
   siteName: "Portfolio",
   defaultTitle: "Portfolio",
   titleTemplate: "%s | Portfolio",

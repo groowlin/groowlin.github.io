@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { signOut } from "@/auth";
 import { AdminConsole } from "@/components/admin/AdminConsole";
 import styles from "@/app/admin/admin.module.css";
@@ -13,6 +14,12 @@ import {
 import { defaultSiteHeaderContent, defaultSiteMetadataSettings, staticPageContentDefaults } from "@/lib/content";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false
+  }
+};
 
 async function signOutAction() {
   "use server";
