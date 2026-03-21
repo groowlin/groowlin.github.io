@@ -44,6 +44,7 @@ interface CmsSiteHeaderRow {
   role_company_label: string;
   role_company_href: string;
   logo_alt: string;
+  avatar_url?: string | null;
   meta_nav: unknown;
   site_url: string;
   site_name: string;
@@ -99,6 +100,18 @@ function isMissingSiteMetadataColumnsError(error: { code?: string; message?: str
   return Boolean(error.message?.includes("site_url"));
 }
 
+function isMissingAvatarColumnError(error: { code?: string; message?: string } | null) {
+  if (!error) {
+    return false;
+  }
+
+  if (error.code === "42703") {
+    return true;
+  }
+
+  return Boolean(error.message?.includes("avatar_url"));
+}
+
 function parseWorkCase(payload: unknown) {
   const parsed = workCaseSchema.safeParse(payload);
   if (!parsed.success) {
@@ -136,7 +149,8 @@ function formatSiteHeader(row: CmsSiteHeaderRow): SiteHeaderContent {
       rolePrefix: row.role_prefix,
       roleCompanyLabel: row.role_company_label,
       roleCompanyHref: row.role_company_href,
-      logoAlt: row.logo_alt
+      logoAlt: row.logo_alt,
+      avatarUrl: row.avatar_url ?? ""
     },
     metaNav: row.meta_nav
   });
@@ -630,9 +644,30 @@ export async function getSiteHeaderFromDb() {
   const client = createSupabaseAdminClient();
   const { data, error } = await client
     .from("cms_site_header")
-    .select("id,name,role_prefix,role_company_label,role_company_href,logo_alt,meta_nav")
+    .select("id,name,role_prefix,role_company_label,role_company_href,logo_alt,avatar_url,meta_nav")
     .eq("id", "site")
     .maybeSingle();
+
+  if (error && isMissingAvatarColumnError(error)) {
+    const fallback = await client
+      .from("cms_site_header")
+      .select("id,name,role_prefix,role_company_label,role_company_href,logo_alt,meta_nav")
+      .eq("id", "site")
+      .maybeSingle();
+
+    if (fallback.error) {
+      throw new Error(`Failed to load site header: ${fallback.error.message}`);
+    }
+
+    if (!fallback.data) {
+      return null;
+    }
+
+    return formatSiteHeader({
+      ...(fallback.data as CmsSiteHeaderRow),
+      avatar_url: null
+    });
+  }
 
   if (error) {
     throw new Error(`Failed to load site header: ${error.message}`);
@@ -656,15 +691,43 @@ export async function updateSiteHeaderInDb(payload: SiteHeaderContent) {
   } satisfies SiteHeaderContent;
   const client = createSupabaseAdminClient();
 
-  const { error } = await client.from("cms_site_header").upsert({
+  const payloadWithAvatar = {
     id: "site",
     name: normalized.identity.name,
     role_prefix: normalized.identity.rolePrefix,
     role_company_label: normalized.identity.roleCompanyLabel,
     role_company_href: normalized.identity.roleCompanyHref,
     logo_alt: normalized.identity.logoAlt,
+    avatar_url: normalized.identity.avatarUrl?.trim() ? normalized.identity.avatarUrl : null,
     meta_nav: normalized.metaNav as NavEntry[]
-  });
+  };
+
+  const { error } = await client.from("cms_site_header").upsert(payloadWithAvatar);
+
+  if (error && isMissingAvatarColumnError(error)) {
+    const avatarValue = normalized.identity.avatarUrl?.trim() ?? "";
+    if (avatarValue.length > 0) {
+      throw new Error(
+        "Missing CMS column for avatar. Run migration 20260321_add_avatar_url_to_site_header.sql, then try again."
+      );
+    }
+
+    const { error: fallbackError } = await client.from("cms_site_header").upsert({
+      id: "site",
+      name: normalized.identity.name,
+      role_prefix: normalized.identity.rolePrefix,
+      role_company_label: normalized.identity.roleCompanyLabel,
+      role_company_href: normalized.identity.roleCompanyHref,
+      logo_alt: normalized.identity.logoAlt,
+      meta_nav: normalized.metaNav as NavEntry[]
+    });
+
+    if (fallbackError) {
+      throw new Error(`Failed to update site header: ${fallbackError.message}`);
+    }
+
+    return normalized;
+  }
 
   if (error) {
     throw new Error(`Failed to update site header: ${error.message}`);
@@ -868,33 +931,50 @@ export async function syncMediaAssetsFromStorageToDb() {
 
   const existingPaths = new Set((existingRows ?? []).map((row) => row.path));
   const storageObjects: StorageObjectRow[] = [];
-  const pageSize = 1000;
-  let from = 0;
+  const pageSize = 100;
+  const foldersQueue: string[] = [""];
 
-  while (true) {
-    const { data: page, error: pageError } = await client
-      .schema("storage")
-      .from("objects")
-      .select("name,metadata")
-      .eq("bucket_id", bucket)
-      .order("name", { ascending: true })
-      .range(from, from + pageSize - 1);
+  while (foldersQueue.length > 0) {
+    const folder = foldersQueue.shift() ?? "";
+    let offset = 0;
 
-    if (pageError) {
-      throw new Error(`Failed to load storage objects for sync: ${pageError.message}`);
+    while (true) {
+      const { data: page, error: pageError } = await client.storage.from(bucket).list(folder, {
+        limit: pageSize,
+        offset,
+        sortBy: { column: "name", order: "asc" }
+      });
+
+      if (pageError) {
+        throw new Error(`Failed to load storage objects for sync: ${pageError.message}`);
+      }
+
+      if (!page?.length) {
+        break;
+      }
+
+      for (const item of page) {
+        const fullPath = folder ? `${folder}/${item.name}` : item.name;
+        const hasMetadata = typeof item.metadata === "object" && item.metadata !== null;
+        const isFolder = item.id == null && !hasMetadata;
+
+        if (isFolder) {
+          foldersQueue.push(fullPath);
+          continue;
+        }
+
+        storageObjects.push({
+          name: fullPath,
+          metadata: hasMetadata ? (item.metadata as StorageObjectRow["metadata"]) : null
+        });
+      }
+
+      if (page.length < pageSize) {
+        break;
+      }
+
+      offset += pageSize;
     }
-
-    if (!page?.length) {
-      break;
-    }
-
-    storageObjects.push(...((page as StorageObjectRow[]) ?? []));
-
-    if (page.length < pageSize) {
-      break;
-    }
-
-    from += pageSize;
   }
 
   const rowsToInsert = storageObjects

@@ -162,6 +162,7 @@ export function HomeShowcase({ entries, header }: HomeShowcaseProps) {
   }, [previewIndex, entries]);
 
   const portalTarget = typeof document === "undefined" ? null : document.body;
+  const avatarUrl = header.identity.avatarUrl?.trim() ?? "";
 
   function openIndex(index: number) {
     if (closeTimerRef.current) {
@@ -234,13 +235,27 @@ export function HomeShowcase({ entries, header }: HomeShowcaseProps) {
   return (
     <motion.div className={styles.root} initial="initial" animate="visible" variants={pageRevealVariants}>
       <motion.div className={styles.intro} variants={itemRevealVariants}>
-        <h1 className={styles.name}>{header.identity.name}</h1>
-        <p className={styles.role}>
-          {header.identity.rolePrefix}{" "}
-          <Link className={styles.companyLink} href={header.identity.roleCompanyHref}>
-            {header.identity.roleCompanyLabel}
-          </Link>
-        </p>
+        <div className={styles.identityRow}>
+          {avatarUrl ? (
+            <span
+              className={styles.avatarImage}
+              role="img"
+              aria-label={header.identity.logoAlt}
+              style={{ backgroundImage: `url("${avatarUrl}")` }}
+            />
+          ) : (
+            <span className={styles.avatarFallback} aria-hidden="true" />
+          )}
+          <div className={styles.identityText}>
+            <h1 className={styles.name}>{header.identity.name}</h1>
+            <p className={styles.role}>
+              {header.identity.rolePrefix}{" "}
+              <Link className={styles.companyLink} href={header.identity.roleCompanyHref}>
+                {header.identity.roleCompanyLabel}
+              </Link>
+            </p>
+          </div>
+        </div>
       </motion.div>
 
       <motion.nav className={styles.metaNav} variants={itemRevealVariants} aria-label="Meta navigation">

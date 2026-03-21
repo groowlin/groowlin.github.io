@@ -126,6 +126,18 @@ function optionalText(value: string) {
   return normalized.length > 0 ? normalized : undefined;
 }
 
+function formatFileSize(size: number) {
+  if (size < 1024) {
+    return `${size} B`;
+  }
+
+  if (size < 1024 * 1024) {
+    return `${Math.round(size / 1024)} KB`;
+  }
+
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function makeEmptyMedia(): MediaPlaceholder {
   return {
     kind: "image",
@@ -261,6 +273,10 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
   const selectedCaseSummary = useMemo(
     () => cases.find((entry) => entry.id === selectedCaseId) ?? null,
     [cases, selectedCaseId]
+  );
+  const mediaImageUrls = useMemo(
+    () => mediaAssets.filter((asset) => asset.kind === "image").map((asset) => asset.public_url),
+    [mediaAssets]
   );
 
   function formatIssuePath(path: Array<string | number>) {
@@ -1001,6 +1017,26 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
               }))
             }
           />
+          <label className={styles.formRow}>
+            <span className={styles.label}>Avatar URL (из Media)</span>
+            <input
+              className={styles.input}
+              list="site-header-avatar-url-options"
+              value={headerForm.identity.avatarUrl ?? ""}
+              onChange={(event) =>
+                setHeaderForm((current) => ({
+                  ...current,
+                  identity: { ...current.identity, avatarUrl: event.target.value }
+                }))
+              }
+            />
+            <datalist id="site-header-avatar-url-options">
+              {mediaImageUrls.map((url) => (
+                <option key={url} value={url} />
+              ))}
+            </datalist>
+          </label>
+          <p className={styles.notice}>Загрузите картинку во вкладке «Медиа» и выберите `public_url` из подсказок.</p>
         </div>
 
         <h3>Meta navigation</h3>
@@ -1232,14 +1268,18 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
         <div className={styles.assetList}>
           {mediaAssets.map((asset) => (
             <div key={asset.id} className={styles.assetItem}>
-              <div>
-                <p>
-                  <strong>{asset.kind}</strong> · {Math.round(asset.size / 1024)} KB
-                </p>
-                <p className={styles.notice}>{asset.path}</p>
-                <a href={asset.public_url} target="_blank" rel="noreferrer">
-                  {asset.public_url}
-                </a>
+              <div className={styles.assetInfo}>
+                <MediaAssetPreview asset={asset} />
+                <div className={styles.assetMeta}>
+                  <p>
+                    <strong>{asset.kind}</strong> · {formatFileSize(asset.size)}
+                  </p>
+                  <p className={styles.notice}>{asset.path}</p>
+                  <p className={styles.notice}>{asset.mime}</p>
+                  <a className={styles.assetUrl} href={asset.public_url} target="_blank" rel="noreferrer">
+                    {asset.public_url}
+                  </a>
+                </div>
               </div>
               <button
                 type="button"
@@ -1313,6 +1353,51 @@ export function AdminConsole({ initialData }: AdminConsoleProps) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+interface MediaAssetPreviewProps {
+  asset: CmsMediaAsset;
+}
+
+function MediaAssetPreview({ asset }: MediaAssetPreviewProps) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <div className={styles.assetPreviewFallback}>
+        <span className={styles.notice}>Preview unavailable</span>
+      </div>
+    );
+  }
+
+  if (asset.kind === "video") {
+    return (
+      <div className={styles.assetPreviewFrame}>
+        <video
+          className={styles.assetPreviewMedia}
+          src={asset.public_url}
+          preload="metadata"
+          controls
+          muted
+          playsInline
+          onError={() => setFailed(true)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.assetPreviewFrame}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- dynamic CMS media URLs are rendered directly in admin preview */}
+      <img
+        className={styles.assetPreviewMedia}
+        src={asset.public_url}
+        alt={asset.path}
+        loading="lazy"
+        onError={() => setFailed(true)}
+      />
     </div>
   );
 }

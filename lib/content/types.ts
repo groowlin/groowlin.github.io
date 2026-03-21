@@ -30,6 +30,7 @@ export interface SiteIdentity {
   roleCompanyLabel: string;
   roleCompanyHref: string;
   logoAlt: string;
+  avatarUrl?: string;
 }
 
 export interface SiteMetadataSettings {

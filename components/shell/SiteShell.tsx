@@ -18,12 +18,22 @@ export async function SiteShell({
   showMetaNav = true
 }: SiteShellProps) {
   const header = showMetaNav ? await getSiteHeaderContent() : null;
+  const avatarUrl = header?.identity.avatarUrl?.trim() ?? "";
 
   return (
     <main className={styles.main}>
       <div className={styles.inner}>
         <Link className={styles.logoLink} href="/" aria-label="Go to the homepage">
-          <span className={styles.logoMark} aria-hidden="true" />
+          {avatarUrl ? (
+            <span
+              className={styles.logoImage}
+              role="img"
+              aria-label={header?.identity.logoAlt ?? "Site avatar"}
+              style={{ backgroundImage: `url("${avatarUrl}")` }}
+            />
+          ) : (
+            <span className={styles.logoMark} aria-hidden="true" />
+          )}
         </Link>
 
         {(title || subtitle) && (

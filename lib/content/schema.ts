@@ -16,7 +16,8 @@ export const siteIdentity = {
   rolePrefix: "product designer at",
   roleCompanyLabel: "Your Company",
   roleCompanyHref: placeholderLink,
-  logoAlt: "Designer Name"
+  logoAlt: "Designer Name",
+  avatarUrl: ""
 };
 
 export const metaNav: NavEntry[] = [

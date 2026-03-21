@@ -50,7 +50,8 @@ export const siteHeaderSchema = z.object({
     rolePrefix: z.string().min(1),
     roleCompanyLabel: z.string().min(1),
     roleCompanyHref: z.string().min(1),
-    logoAlt: z.string().min(1)
+    logoAlt: z.string().min(1),
+    avatarUrl: z.union([z.string().url(), z.literal("")]).optional()
   }),
   metaNav: z
     .array(

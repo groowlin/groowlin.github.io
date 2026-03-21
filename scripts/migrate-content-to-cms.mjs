@@ -92,6 +92,7 @@ async function upsertHeader() {
     role_company_label: "Your Company",
     role_company_href: "#",
     logo_alt: "Designer Name",
+    avatar_url: null,
     site_url: "https://example.com",
     site_name: "Portfolio",
     default_title: "Portfolio",
