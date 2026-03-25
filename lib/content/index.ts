@@ -1,27 +1,14 @@
-import {
-  connectLinks,
-  explorationItems,
-  iconDesignItems,
-  metaNav,
-  defaultSiteHeaderContent,
-  defaultSiteMetadataSettings,
-  phaseOneRouteManifest,
-  redirectRules,
-  siteIdentity,
-  staticPageContentDefaults,
-  staticPageMeta
-} from "@/lib/content/schema";
-
-export {
-  connectLinks,
-  explorationItems,
-  iconDesignItems,
-  metaNav,
-  defaultSiteHeaderContent,
-  defaultSiteMetadataSettings,
-  phaseOneRouteManifest,
-  redirectRules,
-  siteIdentity,
-  staticPageContentDefaults,
-  staticPageMeta
-};
+export type {
+  HomeFrontmatter,
+  HomePreview,
+  HomeWorkEntry,
+  NavEntry,
+  PageMeta,
+  SiteHeaderContent,
+  SiteMetadataSettings,
+  StaticPageContent,
+  StaticPageFrontmatter,
+  StaticPageKey,
+  WorkCase,
+  WorkFrontmatter
+} from "@/lib/content/types";

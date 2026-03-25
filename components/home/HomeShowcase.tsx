@@ -235,12 +235,7 @@ export function HomeShowcase({ entries, header }: HomeShowcaseProps) {
     <motion.div className={styles.root} initial="initial" animate="visible" variants={pageRevealVariants}>
       <motion.div className={styles.intro} variants={itemRevealVariants}>
         <h1 className={styles.name}>{header.identity.name}</h1>
-        <p className={styles.role}>
-          {header.identity.rolePrefix}{" "}
-          <Link className={styles.companyLink} href={header.identity.roleCompanyHref}>
-            {header.identity.roleCompanyLabel}
-          </Link>
-        </p>
+        <p className={styles.role}>{header.identity.role}</p>
       </motion.div>
 
       <motion.nav className={styles.metaNav} variants={itemRevealVariants} aria-label="Meta navigation">

@@ -1,131 +1,95 @@
 import "server-only";
 
-import fs from "node:fs";
 import path from "node:path";
-import type { HomeWorkEntry, WorkCase } from "@/lib/content/types";
-import { workCaseSchema } from "@/lib/content/work-schema";
-import {
-  getHomeEntriesFromDb,
-  getPublishedCaseBySlugFromDb,
-  getPublishedCasesFromDb,
-  getPublishedSlugsFromDb
-} from "@/lib/cms/db.server";
-import { isCmsReadFromDbEnabled } from "@/lib/cms/env";
+import { cache } from "react";
+import { parseMdxFrontmatter, listMdxFilenames, renderMdx, getContentDir } from "@/lib/content/mdx.server";
+import { workFrontmatterSchema } from "@/lib/content/schemas";
+import type { HomeWorkEntry, WorkCase, WorkFrontmatter } from "@/lib/content/types";
 
-const CASES_DIR = path.join(process.cwd(), "content", "cases");
+const WORK_DIR = getContentDir("work");
 
-let cachedCases: WorkCase[] | null = null;
+async function loadWorkFrontmatterByFilename(filename: string): Promise<{ filename: string; data: WorkFrontmatter }> {
+  const filePath = path.join(WORK_DIR, filename);
+  const { frontmatter } = await parseMdxFrontmatter(filePath, workFrontmatterSchema);
+  const expectedFilename = `${frontmatter.slug}.mdx`;
 
-function parseCaseFile(filepath: string, filename: string) {
-  const raw = fs.readFileSync(filepath, "utf-8");
-  let json: unknown;
-
-  try {
-    json = JSON.parse(raw);
-  } catch (error) {
-    throw new Error(`Invalid JSON in ${filename}: ${(error as Error).message}`);
+  if (expectedFilename !== filename) {
+    throw new Error(`MDX filename mismatch for slug \"${frontmatter.slug}\": expected \"${expectedFilename}\", got \"${filename}\"`);
   }
 
-  const parsed = workCaseSchema.safeParse(json);
-
-  if (!parsed.success) {
-    throw new Error(`Invalid case schema in ${filename}: ${parsed.error.message}`);
-  }
-
-  const caseData = parsed.data;
-  const expectedName = `${caseData.slug}.json`;
-
-  if (filename !== expectedName) {
-    throw new Error(`Filename mismatch for slug "${caseData.slug}": expected "${expectedName}", got "${filename}"`);
-  }
-
-  return caseData;
+  return { filename, data: frontmatter };
 }
 
-function loadCasesFromFiles() {
-  const isProduction = process.env.NODE_ENV === "production";
+const loadAllWorkFrontmatters = cache(async () => {
+  const filenames = await listMdxFilenames(WORK_DIR);
+  const parsed = await Promise.all(filenames.map((filename) => loadWorkFrontmatterByFilename(filename)));
 
-  if (isProduction && cachedCases) {
-    return cachedCases;
-  }
-
-  if (!fs.existsSync(CASES_DIR)) {
-    throw new Error(`Missing content directory: ${CASES_DIR}`);
-  }
-
-  const filenames = fs
-    .readdirSync(CASES_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
-    .map((entry) => entry.name)
-    .sort((a, b) => a.localeCompare(b));
-
-  const parsedCases = filenames.map((filename) => parseCaseFile(path.join(CASES_DIR, filename), filename));
-
-  const seenIds = new Set<string>();
   const seenSlugs = new Set<string>();
 
-  for (const entry of parsedCases) {
-    if (seenIds.has(entry.id)) {
-      throw new Error(`Duplicate case id "${entry.id}"`);
+  for (const { data } of parsed) {
+    if (seenSlugs.has(data.slug)) {
+      throw new Error(`Duplicate work slug found: \"${data.slug}\"`);
     }
-    if (seenSlugs.has(entry.slug)) {
-      throw new Error(`Duplicate case slug "${entry.slug}"`);
-    }
-    seenIds.add(entry.id);
-    seenSlugs.add(entry.slug);
+
+    seenSlugs.add(data.slug);
   }
 
-  const sortedCases = parsedCases.sort((a, b) => a.sortOrder - b.sortOrder);
+  return parsed.map((item) => item.data);
+});
 
-  if (isProduction) {
-    cachedCases = sortedCases;
-  }
-
-  return sortedCases;
-}
-
-function getPublishedCasesFromFiles() {
-  return loadCasesFromFiles().filter((entry) => entry.status === "published");
-}
-
-async function getPublishedCasesFromSource() {
-  if (isCmsReadFromDbEnabled()) {
-    return getPublishedCasesFromDb();
-  }
-
-  return getPublishedCasesFromFiles();
-}
-
-export async function getAllWorkCases() {
-  return getPublishedCasesFromSource();
-}
-
-export async function getWorkCase(slug: string) {
-  if (isCmsReadFromDbEnabled()) {
-    return getPublishedCaseBySlugFromDb(slug);
-  }
-
-  return getPublishedCasesFromFiles().find((entry) => entry.slug === slug);
-}
-
-export async function getWorkSlugs() {
-  if (isCmsReadFromDbEnabled()) {
-    return getPublishedSlugsFromDb();
-  }
-
-  return getPublishedCasesFromFiles().map((entry) => entry.slug);
+async function getPublishedWorkFrontmatters() {
+  const all = await loadAllWorkFrontmatters();
+  return all.filter((item) => item.status === "published");
 }
 
 export async function getHomeWorkEntries(): Promise<HomeWorkEntry[]> {
-  if (isCmsReadFromDbEnabled()) {
-    return getHomeEntriesFromDb();
+  const published = await getPublishedWorkFrontmatters();
+
+  return published.map((item) => ({
+    label: item.title,
+    year: item.year,
+    category: item.category,
+    href: `/work/${item.slug}`,
+    preview: item.preview
+  }));
+}
+
+export async function getWorkSlugs() {
+  const published = await getPublishedWorkFrontmatters();
+  return published.map((item) => item.slug);
+}
+
+export async function getWorkCase(slug: string): Promise<WorkCase | null> {
+  const frontmatters = await loadAllWorkFrontmatters();
+  const current = frontmatters.find((item) => item.slug === slug && item.status === "published");
+
+  if (!current) {
+    return null;
   }
 
-  return getPublishedCasesFromFiles().map((entry) => ({
-    label: entry.summary.title,
-    year: entry.summary.year,
-    category: entry.summary.category,
-    href: `/work/${entry.slug}`,
-    preview: entry.summary.preview
-  }));
+  const filePath = path.join(WORK_DIR, `${slug}.mdx`);
+  const { body } = await parseMdxFrontmatter(filePath, workFrontmatterSchema);
+
+  return {
+    slug: current.slug,
+    canonical: current.canonical,
+    summary: {
+      title: current.title,
+      year: current.year,
+      category: current.category,
+      preview: current.preview
+    },
+    meta: {
+      title: current.title,
+      description: current.description,
+      ogImage: current.ogImage,
+      ogType: current.ogType ?? "article"
+    },
+    content: renderMdx(body, "work")
+  };
+}
+
+export async function getAllWorkCases() {
+  const slugs = await getWorkSlugs();
+  return Promise.all(slugs.map((slug) => getWorkCase(slug))).then((entries) => entries.filter(Boolean) as WorkCase[]);
 }

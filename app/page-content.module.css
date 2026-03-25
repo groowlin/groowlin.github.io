@@ -20,46 +20,34 @@
   color: var(--text-primary);
 }
 
-.iconGrid {
+.mdxContent {
   display: grid;
-  gap: var(--space-lg);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2xl);
 }
 
-.iconCard {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md-compact);
+.mdxContent :global(h2),
+.mdxContent :global(h3) {
+  font-weight: var(--font-weight-medium);
 }
 
-.iconTitle {
-  color: var(--text-muted);
-  font-size: var(--font-size-caption);
-}
-
-.masonry {
-  column-count: 1;
-  column-gap: var(--space-lg);
-}
-
-.masonryItem {
-  break-inside: avoid;
-  margin-bottom: var(--space-lg);
-}
-
-.workMeta {
-  color: var(--text-muted);
-  line-height: var(--line-height-reading);
+.mdxContent :global(p) {
   max-width: 66ch;
 }
 
-@media (min-width: 680px) {
-  .iconGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+.mdxContent :global(ul),
+.mdxContent :global(ol) {
+  display: grid;
+  gap: var(--space-xs);
+}
 
-  .masonry {
-    column-count: 2;
-    column-gap: var(--space-2xl);
-  }
+.mdxContent :global(blockquote) {
+  margin: var(--space-0);
+  padding: var(--space-0);
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.mdxContent :global(blockquote footer) {
+  color: var(--text-muted);
+  font-size: var(--font-size-caption);
 }

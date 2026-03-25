@@ -4,132 +4,41 @@
   gap: var(--space-3xl);
 }
 
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
+.mdxRoot {
+  display: grid;
+  gap: var(--space-2xl);
 }
 
-.sectionTitle {
+.mdxRoot :global(h2),
+.mdxRoot :global(h3) {
   font-weight: var(--font-weight-medium);
 }
 
-.body {
+.mdxRoot :global(p) {
   color: var(--text-primary);
+  max-width: 66ch;
 }
 
-.quote {
+.mdxRoot :global(blockquote) {
   margin: var(--space-0);
   padding: var(--space-0);
   color: var(--text-primary);
+  display: grid;
+  gap: var(--space-md);
 }
 
-.quote footer {
-  margin-top: var(--space-md);
+.mdxRoot :global(blockquote footer) {
   color: var(--text-muted);
   font-size: var(--font-size-caption);
 }
 
-.cta {
-  display: inline-flex;
-  width: fit-content;
-  color: var(--text-primary);
-}
-
-.galleryGrid {
+.mdxRoot :global(ul),
+.mdxRoot :global(ol) {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-md);
+  gap: var(--space-xs);
 }
 
-.galleryCarousel {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(280px, 1fr);
-  gap: var(--space-md);
-  overflow-x: auto;
-  padding-bottom: var(--space-xs);
-}
-
-.metricsGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-md);
-}
-
-.metricCard {
-  border: 1px solid var(--surface-placeholder-work-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-}
-
-.metricValue {
-  margin: var(--space-0);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-medium);
-}
-
-.metricLabel {
-  margin: var(--space-xs) var(--space-0) var(--space-0);
-  color: var(--text-primary);
-}
-
-.metricNote {
-  margin: var(--space-xs) var(--space-0) var(--space-0);
-  color: var(--text-muted);
-  font-size: var(--font-size-caption);
-}
-
-.timelineList {
-  list-style: none;
-  margin: var(--space-0);
-  padding: var(--space-0);
-  display: grid;
-  gap: var(--space-lg);
-}
-
-.timelineItem {
-  border-left: 1px solid var(--surface-placeholder-work-border);
-  padding-left: var(--space-md);
+.mdxRoot :global(section) {
   display: grid;
   gap: var(--space-sm);
-}
-
-.timelineHeader {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-sm);
-}
-
-.timelineTitle {
-  margin: var(--space-0);
-  font-size: var(--font-size-body-lg);
-  font-weight: var(--font-weight-medium);
-}
-
-.timelinePeriod {
-  margin: var(--space-0);
-  color: var(--text-muted);
-  font-size: var(--font-size-caption);
-}
-
-.twoColumn {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-xl);
-}
-
-.columnStack {
-  display: grid;
-  gap: var(--space-lg);
-}
-
-@media (max-width: 900px) {
-  .galleryGrid,
-  .metricsGrid,
-  .twoColumn {
-    grid-template-columns: 1fr;
-  }
 }

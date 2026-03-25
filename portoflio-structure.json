@@ -1,5 +1,6 @@
 {
   "site": "portfolio",
+  "contentSource": "mdx",
   "pages": [
     {
       "page": "home",
@@ -8,7 +9,7 @@
       "sections": [
         {
           "name": "intro",
-          "components": ["designer-name", "role-text", "role-company-link"]
+          "components": ["designer-name", "role-text", "avatar"]
         },
         {
           "name": "meta-navigation",
@@ -20,7 +21,7 @@
         },
         {
           "name": "hover-preview",
-          "components": ["preview-pane", "preview-media-placeholder"]
+          "components": ["preview-pane", "preview-media"]
         }
       ]
     },
@@ -31,22 +32,11 @@
       "sections": [
         {
           "name": "page-header",
-          "components": ["work-title", "work-category"]
+          "components": ["work-title", "work-subtitle"]
         },
         {
-          "name": "work-meta",
-          "components": ["work-year", "work-subtitle"]
-        },
-        {
-          "name": "work-article",
-          "components": [
-            "hero-media",
-            "section-paragraph",
-            "section-list",
-            "section-media",
-            "section-quote",
-            "section-cta"
-          ]
+          "name": "work-mdx-content",
+          "components": ["markdown-blocks", "mdx-media", "mdx-cta"]
         }
       ]
     },
@@ -60,12 +50,8 @@
           "components": ["title"]
         },
         {
-          "name": "about-content",
-          "components": ["lead-paragraph", "lead-paragraph"]
-        },
-        {
-          "name": "about-cta",
-          "components": ["connect-link"]
+          "name": "about-mdx-content",
+          "components": ["markdown-blocks"]
         }
       ]
     },
@@ -79,38 +65,8 @@
           "components": ["title"]
         },
         {
-          "name": "contact-links",
-          "components": ["contact-link", "contact-link", "contact-link", "contact-link"]
-        }
-      ]
-    },
-    {
-      "page": "icon-design",
-      "path": "/icon-design",
-      "legacy": true,
-      "sections": [
-        {
-          "name": "page-header",
-          "components": ["title", "subtitle"]
-        },
-        {
-          "name": "icon-grid",
-          "components": ["icon-card", "icon-media", "icon-title"]
-        }
-      ]
-    },
-    {
-      "page": "explorations",
-      "path": "/explorations",
-      "legacy": true,
-      "sections": [
-        {
-          "name": "page-header",
-          "components": ["title", "subtitle"]
-        },
-        {
-          "name": "exploration-masonry",
-          "components": ["media-item"]
+          "name": "connect-mdx-content",
+          "components": ["markdown-blocks"]
         }
       ]
     }

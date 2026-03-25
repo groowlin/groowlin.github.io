@@ -10,6 +10,8 @@ interface WorkPageProps {
   params: Promise<{ slug: string }>;
 }
 
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   const slugs = await getWorkSlugs();
   return slugs.map((slug) => ({ slug }));
@@ -21,21 +23,20 @@ export async function generateMetadata({ params }: WorkPageProps): Promise<Metad
 
   if (!entry) {
     return {
-      title: "Work"
+      title: "Кейс"
     };
   }
-
-  const canonical = `/work/${entry.slug}`;
 
   return {
     title: entry.meta.title,
     description: entry.meta.description,
-    alternates: { canonical },
+    alternates: { canonical: entry.canonical },
     openGraph: {
       title: entry.meta.title,
       description: entry.meta.description,
       type: entry.meta.ogType ?? "article",
-      url: canonical
+      url: entry.canonical,
+      images: entry.meta.ogImage ? [entry.meta.ogImage] : undefined
     }
   };
 }
@@ -56,9 +57,7 @@ export default async function WorkPage({ params }: WorkPageProps) {
       showMetaNav={false}
     >
       <MotionPage className={styles.stack}>
-        <div>
-          <WorkArticle entry={entry} />
-        </div>
+        <WorkArticle content={entry.content} />
       </MotionPage>
     </SiteShell>
   );

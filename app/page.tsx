@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import { unstable_noStore as noStore } from "next/cache";
 import { HomeShowcase } from "@/components/home/HomeShowcase";
 import { SiteShell } from "@/components/shell/SiteShell";
-import { getHomeWorkEntries } from "@/lib/content/work.server";
 import { getSiteHeaderContent, getSiteMetadataSettingsContent } from "@/lib/content/site.server";
+import { getHomeWorkEntries } from "@/lib/content/work.server";
 
 export async function generateMetadata(): Promise<Metadata> {
-  noStore();
   const settings = await getSiteMetadataSettingsContent();
 
   return {
