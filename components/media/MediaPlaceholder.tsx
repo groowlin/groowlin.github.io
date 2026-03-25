@@ -136,7 +136,13 @@ export function MediaPlaceholderView({
   }
 
   const wrapperStyle: CSSProperties | undefined =
-    isWork && hasSource ? ({ ["--placeholder-bg" as string]: "transparent" } as CSSProperties) : undefined;
+    isWork && hasSource
+      ? ({
+          ["--placeholder-bg" as string]: "transparent",
+          ["--placeholder-border-width" as string]: "0px",
+          ["--placeholder-border-color" as string]: "transparent"
+        } as CSSProperties)
+      : undefined;
 
   return (
     <div className={styles.host}>

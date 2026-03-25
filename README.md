@@ -22,6 +22,12 @@ pnpm build
 - Cases: `content/work/*.mdx`
 - Media assets: `public/media/*`
 
+## Specs
+
+- Case MDX contract: `docs/specs/portfolio-case-json-structure.md`
+- Site/static pages contract: `docs/specs/site-and-pages-mdx-structure.md`
+- MDX blocks reference: `docs/specs/case-blocks-reference.md`
+
 ## GitHub Pages
 
 Deployment workflow: `.github/workflows/deploy-pages.yml`
