@@ -21,19 +21,17 @@ export default async function ConnectPage() {
   return (
     <SiteShell title={content.meta.title} showMetaNav={false}>
       <MotionPage className={styles.stack}>
-        <MotionItem>
-          <article className={styles.mdxContent}>{content.content}</article>
-        </MotionItem>
+        <article className={styles.mdxContent}>{content.content}</article>
         {contacts.length > 0 ? (
-          <MotionItem>
-            <section className={styles.list}>
-              {contacts.map((item) => (
-                <a key={`${item.label}-${item.href}`} href={item.href} className={styles.listLink}>
+          <section className={styles.list}>
+            {contacts.map((item) => (
+              <MotionItem key={`${item.label}-${item.href}`}>
+                <a href={item.href} className={styles.listLink}>
                   {item.label}
                 </a>
-              ))}
-            </section>
-          </MotionItem>
+              </MotionItem>
+            ))}
+          </section>
         ) : null}
       </MotionPage>
     </SiteShell>

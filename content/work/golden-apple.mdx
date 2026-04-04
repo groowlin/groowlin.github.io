@@ -17,7 +17,6 @@ ogType: "article"
 Для более подробной информации, [жду в лс](https://rodyukov.art/connect)
 
 “Золотое Яблоко” построило сильное конкурентное преимущество на офлайн-опыте: персональные консультации, атмосфера и чувство уверенности при выборе. В онлайне этот опыт теряется — пользователь остаётся один на один с каталогом и вынужден принимать решения 
-<Media kind="image" placeholderToken="demo-case-frame" src="/poor_guy.png" bleed="wide"/>
 без поддержки, что напрямую влияет на конверсию и возвращаемость. В этом кейсе я исследую, как перенести ощущение уверенного выбора из офлайна в цифровую среду с помощью AR и AI.
 
 <Media kind="image" src="/golden-apple-preview.png" caption="Превью"/>
@@ -35,7 +34,7 @@ ogType: "article"
 
 ## Блок в две колонки
 
-<div
+<MotionDiv
   style={{
     display: "grid",
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
@@ -43,19 +42,19 @@ ogType: "article"
     alignItems: "start"
   }}
 >
-  <section>
-    <h3>Проблема</h3>
-    <p>Текст правой колонкиkasjdhk asjgfkdjsaj gfjkadsgfd jaskgfkdjasg fkjadsgfkdsajg fkjdsag...</p>
+  <MotionSection>
+    <MotionH3>Проблема</MotionH3>
+    <MotionP>Текст правой колонкиkasjdhk asjgfkdjsaj gfjkadsgfd jaskgfkdjasg fkjadsgfkdsajg fkjdsag...</MotionP>
     <Media kind="image" placeholderToken="demo-case-frame" src="/poor_guy.png"/>
-  </section>
+  </MotionSection>
 
-  <section>
-    <h3>Решение</h3>
-    <p>Текст пра.</p>
+  <MotionSection>
+    <MotionH3>Решение</MotionH3>
+    <MotionP>Текст пра.</MotionP>
     <Media kind="image" placeholderToken="demo-case-frame" src="/poor_guy.png"/>
-  </section>
-</div>
+  </MotionSection>
+</MotionDiv>
+<Media kind="image" placeholderToken="demo-case-frame" src="/poor_guy.png" bleed="wide"/>
 
 ![[/golden-apple-preview.png]]![[/golden-apple-preview.png]]
-
 

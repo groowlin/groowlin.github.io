@@ -32,6 +32,12 @@
   gap: var(--layout-header-gap);
 }
 
+.headerStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-content-gap);
+}
+
 .title {
   font-weight: var(--font-weight-medium);
   font-size: var(--font-size-body);

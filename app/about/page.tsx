@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { MotionItem } from "@/components/motion/MotionItem";
 import { MotionPage } from "@/components/motion/MotionPage";
 import { SiteShell } from "@/components/shell/SiteShell";
 import { getStaticPageContent } from "@/lib/content/site.server";
@@ -21,9 +20,7 @@ export default async function AboutPage() {
   return (
     <SiteShell title={content.meta.title} showMetaNav={false}>
       <MotionPage className={styles.stack}>
-        <MotionItem>
-          <article className={styles.mdxContent}>{content.content}</article>
-        </MotionItem>
+        <article className={styles.mdxContent}>{content.content}</article>
       </MotionPage>
     </SiteShell>
   );

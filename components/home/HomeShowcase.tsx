@@ -313,7 +313,7 @@ export function HomeShowcase({ entries, header }: HomeShowcaseProps) {
           )}
         </AnimatePresence>
 
-        <div className={styles.list}>
+        <motion.div className={styles.list} variants={pageRevealVariants}>
           {entries.map((entry, index) => (
             <motion.span key={entry.href} variants={itemRevealVariants}>
               <Link
@@ -341,7 +341,7 @@ export function HomeShowcase({ entries, header }: HomeShowcaseProps) {
               </Link>
             </motion.span>
           ))}
-        </div>
+        </motion.div>
       </motion.div>
 
       {portalTarget &&
