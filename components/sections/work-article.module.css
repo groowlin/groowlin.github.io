@@ -16,7 +16,7 @@
 
 .mdxRoot :global(p) {
   color: var(--text-primary);
-  max-width: 66ch;
+  max-width: 100%;
 }
 
 .mdxRoot :global(blockquote) {

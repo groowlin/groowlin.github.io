@@ -63,7 +63,7 @@
 .assetLoading {
   filter: blur(18px);
   transform: scale(1.02);
-  opacity: 0.72;
+  opacity: 0;
   transition:
     filter 280ms ease,
     transform 280ms ease,

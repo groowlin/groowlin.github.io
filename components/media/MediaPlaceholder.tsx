@@ -167,7 +167,7 @@ export function MediaPlaceholderView({
               alt={media.caption ?? ""}
               loading="lazy"
               ref={(node) => {
-                if (node && node.complete && node.naturalWidth > 0) {
+                if (!isImageLoaded && node && node.complete && node.naturalWidth > 0) {
                   applyImageIntrinsicSize(node);
                 }
               }}

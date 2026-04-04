@@ -6,7 +6,7 @@
 
 .lead {
   color: var(--text-primary);
-  max-width: 66ch;
+  max-width: 100%;
 }
 
 .list {
@@ -31,7 +31,7 @@
 }
 
 .mdxContent :global(p) {
-  max-width: 66ch;
+  max-width: 100%;
 }
 
 .mdxContent :global(ul),
