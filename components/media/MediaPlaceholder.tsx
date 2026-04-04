@@ -50,13 +50,19 @@ export function MediaPlaceholderView({
   }
 
   const declaredRatio = parseAspectRatio(media.aspectRatio);
+  const shouldDeferRatioInWorkImage = isWork && media.kind !== "video" && !declaredRatio && !intrinsicRatio;
+  const shouldDeferRatioInHomeImage = isHomePreview && media.kind !== "video" && !intrinsicRatio;
   const rawRatio = intrinsicRatio ?? declaredRatio ?? (isHomePreview ? 2 : 1.6);
   const ratio = isHomePreview ? (hasSource ? toHomePreviewRatio(rawRatio) : 2) : rawRatio;
-  const aspectRatioValue = isHomePreview ? (ratio >= 1 ? "2 / 1" : "1 / 2") : media.aspectRatio ?? `${ratio}`;
+  const aspectRatioValue = shouldDeferRatioInWorkImage || shouldDeferRatioInHomeImage
+    ? undefined
+    : isHomePreview
+      ? ratio >= 1
+        ? "2 / 1"
+        : "1 / 2"
+      : media.aspectRatio ?? `${ratio}`;
 
-  const style = {
-    aspectRatio: aspectRatioValue
-  } satisfies CSSProperties;
+  const style = (aspectRatioValue ? { aspectRatio: aspectRatioValue } : {}) satisfies CSSProperties;
 
   let mediaStyle: CSSProperties =
     fit === "contain"
@@ -69,7 +75,15 @@ export function MediaPlaceholderView({
         }
       : style;
 
-  if (isHomePreview) {
+  if (isHomePreview && shouldDeferRatioInHomeImage) {
+    mediaStyle = {
+      ...mediaStyle,
+      width: "100%",
+      height: "100%",
+      maxWidth: "100%",
+      maxHeight: "100%"
+    };
+  } else if (isHomePreview) {
     mediaStyle =
       ratio >= 1
         ? {
@@ -142,7 +156,13 @@ export function MediaPlaceholderView({
             // We intentionally allow plain <img> to support arbitrary trusted URL schemes from JSON content.
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              className={[styles.asset, isImageLoaded ? styles.assetLoaded : styles.assetLoading].join(" ")}
+              className={[
+                styles.asset,
+                isWork && styles.workImageAsset,
+                isImageLoaded ? styles.assetLoaded : styles.assetLoading
+              ]
+                .filter(Boolean)
+                .join(" ")}
               src={media.src}
               alt={media.caption ?? ""}
               loading="lazy"

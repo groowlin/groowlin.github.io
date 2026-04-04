@@ -56,6 +56,10 @@
   display: block;
 }
 
+.workImageAsset {
+  height: auto;
+}
+
 .assetLoading {
   filter: blur(18px);
   transform: scale(1.02);
