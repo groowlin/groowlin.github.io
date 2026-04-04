@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
-import type { MediaKind } from "@/lib/content/types";
+import type { MediaBleed, MediaKind } from "@/lib/content/types";
 
 interface MediaProps {
   kind?: MediaKind;
@@ -8,6 +8,7 @@ interface MediaProps {
   aspectRatio?: string;
   caption?: string;
   placeholderToken?: string;
+  bleed?: MediaBleed;
 }
 
 interface CtaProps {
@@ -23,10 +24,11 @@ export function getMdxComponents(variant: "default" | "work" = "default") {
       src,
       aspectRatio,
       caption,
-      placeholderToken
+      placeholderToken,
+      bleed
     }: MediaProps) => (
       <MediaPlaceholderView
-        media={{ kind, src, aspectRatio, caption, placeholderToken }}
+        media={{ kind, src, aspectRatio, caption, placeholderToken, bleed }}
         variant={variant === "work" ? "work" : "default"}
       />
     ),

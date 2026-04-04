@@ -5,7 +5,6 @@ import "./globals.css";
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteMetadataSettingsContent();
   const siteUrl = settings.siteUrl.endsWith("/") ? settings.siteUrl : `${settings.siteUrl}/`;
-  const faviconUrl = settings.faviconUrl?.trim();
   const robots = settings.robotsIndexByDefault
     ? undefined
     : {
@@ -20,12 +19,6 @@ export async function generateMetadata(): Promise<Metadata> {
       template: settings.titleTemplate
     },
     description: settings.defaultDescription,
-    icons: faviconUrl
-      ? {
-          icon: faviconUrl,
-          shortcut: faviconUrl
-        }
-      : undefined,
     robots,
     openGraph: {
       title: settings.defaultTitle,

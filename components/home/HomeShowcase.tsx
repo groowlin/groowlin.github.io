@@ -347,7 +347,7 @@ export function HomeShowcase({ entries, header }: HomeShowcaseProps) {
       {portalTarget &&
         createPortal(
           <AnimatePresence>
-            {canHover && activeIndex !== null && previewMedia && previewLeft !== null && (
+            {canHover && activeIndex !== null && previewMedia?.src && previewLeft !== null && (
               <motion.aside
                 className={styles.previewPane}
                 style={{ left: `${previewLeft}px` }}

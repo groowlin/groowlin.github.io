@@ -11,10 +11,16 @@ Props:
 - `aspectRatio?: string`
 - `caption?: string`
 - `placeholderToken?: string`
+- `bleed?: "default" | "wide"` (default: `default`)
+
+Поведение `bleed`:
+- `default` — обычная ширина в рамках контейнера страницы.
+- `wide` — для кейс-страницы расширяет Media на `120px` влево и вправо.
+- На мобильных устройствах всегда применяется `default`, даже если задано `wide`.
 
 Пример:
 ```mdx
-<Media kind="image" aspectRatio="16 / 9" placeholderToken="hero" />
+<Media kind="image" aspectRatio="16 / 9" bleed="wide" />
 ```
 
 ### 2) `Cta`
