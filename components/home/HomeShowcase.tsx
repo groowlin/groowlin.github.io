@@ -17,6 +17,16 @@ interface Rect {
   height: number;
 }
 
+interface SectionEntry {
+  entry: HomeWorkEntry;
+  index: number;
+}
+
+interface HomeSection {
+  title: string;
+  items: SectionEntry[];
+}
+
 const PREVIEW_OFFSET_FALLBACK = 60;
 const ACTIVE_TEXT_SHIFT_SCALE = 0.18;
 const TEXT_ENTER_EASE_IN_MS = 170;
@@ -31,6 +41,16 @@ function getRootCssNumberVar(name: string, fallback: number) {
 function getSoftShift(value: number, power: number) {
   const normalized = Math.max(-1, Math.min(1, value));
   return Math.sign(normalized) * (1 - (1 - Math.abs(normalized)) ** (1 / Math.max(1, power)));
+}
+
+function buildHomeSections(entries: HomeWorkEntry[]): HomeSection[] {
+  const mapped = entries.map((entry, index) => ({ entry, index }));
+
+  return [
+    { title: "Портфолио", items: mapped.slice(0, 4) },
+    { title: "Globus", items: mapped.slice(4, 5) },
+    { title: "Работа в студии", items: mapped.slice(5) }
+  ];
 }
 
 interface HomeShowcaseProps {
@@ -69,6 +89,8 @@ export function HomeShowcase({ entries, topCard }: HomeShowcaseProps) {
   const listShiftXVar = useMotionTemplate`${shiftX}px`;
   const listShiftYVar = useMotionTemplate`${shiftY}px`;
   const highlightYVar = useMotionTemplate`${originY}%`;
+
+  const sections = useMemo(() => buildHomeSections(entries), [entries]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -234,107 +256,117 @@ export function HomeShowcase({ entries, topCard }: HomeShowcaseProps) {
 
   return (
     <motion.div className={styles.root} initial="initial" animate="visible" variants={pageRevealVariants}>
-      <motion.div className={styles.topCardWrap} variants={itemRevealVariants}>
-        <TopCard card={topCard} />
-      </motion.div>
-
-      <motion.div
-        className={styles.listWrap}
-        ref={listWrapRef}
-        onMouseMove={onMouseMove}
-        style={
-          {
-            ["--item-shift-x" as string]: listShiftXVar,
-            ["--item-shift-y" as string]: listShiftYVar,
-            ["--item-shift-scale" as string]: ACTIVE_TEXT_SHIFT_SCALE
-          } as unknown as CSSProperties
-        }
-        onMouseLeave={() => {
-          tiltXRaw.set(0);
-          tiltYRaw.set(0);
-          shiftXRaw.set(0);
-          shiftYRaw.set(0);
-          originXRaw.set(50);
-          originYRaw.set(50);
-          closeIndex();
-        }}
-        variants={itemRevealVariants}
-      >
-        <AnimatePresence>
-          {highlightRect && activeIndex !== null && (
-            <motion.div
-              className={styles.glass}
-              initial={{
-                opacity: 0,
-                // filter: "blur(10px)",
-                scale: 0.1,
-                top: highlightRect.top,
-                left: highlightRect.left,
-                width: highlightRect.width,
-                height: highlightRect.height
-              }}
-              animate={{
-                opacity: 1,
-                scale: 1,
-                top: highlightRect.top,
-                left: highlightRect.left,
-                width: highlightRect.width,
-                height: highlightRect.height
-              }}
-              exit={{ opacity: 0 }}
-              transition={{
-                top: { type: "spring", duration: 0.6, bounce: 0.15 },
-                left: { type: "spring", duration: 0.6, bounce: 0.15 },
-                width: { type: "spring", duration: 0.6, bounce: 0 },
-                height: { type: "spring", duration: 0.6, bounce: 0 },
-                opacity: { duration: 0.28 }
-              }}
-              style={{
-                transformOrigin: highlightTransformOrigin,
-                rotateX: tiltX,
-                rotateY: tiltY,
-                x: shiftX,
-                y: shiftY
-              }}
-            >
-              <span
-                className={styles.glassHighlight}
-                style={{ ["--lgy" as string]: highlightYVar } as unknown as CSSProperties}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <motion.div className={styles.list} variants={pageRevealVariants}>
-          {entries.map((entry, index) => (
-            <motion.span key={entry.href} variants={itemRevealVariants}>
-              <Link
-                href={entry.href}
-                ref={(node) => {
-                  itemRefs.current[index] = node;
-                }}
-                className={[
-                  styles.item,
-                  activeIndex === index ? styles.itemActive : "",
-                  enteringIndex === index ? styles.itemEntering : ""
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                onMouseEnter={() => openIndex(index)}
-                onFocus={() => openIndex(index)}
-                onBlur={closeIndex}
-              >
-                <span className={styles.itemContent}>
-                  <span className={styles.itemLabel}>{entry.label}</span>
-                  <span className={styles.itemMeta}>
-                    {entry.year} · {entry.category}
-                  </span>
-                </span>
-              </Link>
-            </motion.span>
-          ))}
+      <div className={styles.leftColumn}>
+        <motion.div className={styles.topCardWrap} variants={itemRevealVariants}>
+          <TopCard card={topCard} />
         </motion.div>
-      </motion.div>
+
+        <motion.div
+          className={styles.listWrap}
+          ref={listWrapRef}
+          onMouseMove={onMouseMove}
+          style={
+            {
+              ["--item-shift-x" as string]: listShiftXVar,
+              ["--item-shift-y" as string]: listShiftYVar,
+              ["--item-shift-scale" as string]: ACTIVE_TEXT_SHIFT_SCALE
+            } as unknown as CSSProperties
+          }
+          onMouseLeave={() => {
+            tiltXRaw.set(0);
+            tiltYRaw.set(0);
+            shiftXRaw.set(0);
+            shiftYRaw.set(0);
+            originXRaw.set(50);
+            originYRaw.set(50);
+            closeIndex();
+          }}
+          variants={itemRevealVariants}
+        >
+          <AnimatePresence>
+            {highlightRect && activeIndex !== null && (
+              <motion.div
+                className={styles.glass}
+                initial={{
+                  opacity: 0,
+                  scale: 0.1,
+                  top: highlightRect.top,
+                  left: highlightRect.left,
+                  width: highlightRect.width,
+                  height: highlightRect.height
+                }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  top: highlightRect.top,
+                  left: highlightRect.left,
+                  width: highlightRect.width,
+                  height: highlightRect.height
+                }}
+                exit={{ opacity: 0 }}
+                transition={{
+                  top: { type: "spring", duration: 0.6, bounce: 0.15 },
+                  left: { type: "spring", duration: 0.6, bounce: 0.15 },
+                  width: { type: "spring", duration: 0.6, bounce: 0 },
+                  height: { type: "spring", duration: 0.6, bounce: 0 },
+                  opacity: { duration: 0.28 }
+                }}
+                style={{
+                  transformOrigin: highlightTransformOrigin,
+                  rotateX: tiltX,
+                  rotateY: tiltY,
+                  x: shiftX,
+                  y: shiftY
+                }}
+              >
+                <span
+                  className={styles.glassHighlight}
+                  style={{ ["--lgy" as string]: highlightYVar } as unknown as CSSProperties}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <motion.div className={styles.list} variants={pageRevealVariants}>
+            {sections.map((section) => (
+              <section key={section.title} className={styles.section} aria-label={section.title}>
+                <h2 className={styles.sectionTitle}>{section.title}</h2>
+                <div className={styles.sectionList}>
+                  {section.items.map(({ entry, index }) => (
+                    <motion.span key={entry.href} variants={itemRevealVariants}>
+                      <Link
+                        href={entry.href}
+                        ref={(node) => {
+                          itemRefs.current[index] = node;
+                        }}
+                        className={[
+                          styles.item,
+                          activeIndex === index ? styles.itemActive : "",
+                          enteringIndex === index ? styles.itemEntering : ""
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        onMouseEnter={() => openIndex(index)}
+                        onFocus={() => openIndex(index)}
+                        onBlur={closeIndex}
+                      >
+                        <span className={styles.itemContent}>
+                          <span className={styles.itemLabel}>{entry.label}</span>
+                          <span className={styles.itemMeta}>
+                            <span>{entry.year}</span>
+                            <span className={styles.metaDot} />
+                            <span>{entry.category}</span>
+                          </span>
+                        </span>
+                      </Link>
+                    </motion.span>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </motion.div>
+        </motion.div>
+      </div>
 
       {portalTarget &&
         createPortal(

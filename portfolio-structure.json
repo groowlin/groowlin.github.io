@@ -12,8 +12,8 @@
           "components": ["top-card", "top-card-avatar", "top-card-title", "top-card-subtitle", "top-card-icons", "top-card-arrow"]
         },
         {
-          "name": "work-showcase-list",
-          "components": ["case-item", "case-item-label", "case-item-meta", "glass-highlight-layer"]
+          "name": "work-showcase-sections",
+          "components": ["section-title", "case-item", "case-item-label", "case-item-meta", "glass-highlight-layer"]
         },
         {
           "name": "hover-preview",

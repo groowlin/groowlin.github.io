@@ -12,6 +12,9 @@
 - Default vertical section gap: `--layout-content-gap = 2rem` (32px)
 - Home preview pane size: `--layout-preview-size = 484px`
 - Home preview offset from list: `--layout-preview-offset-x = 60px`
+- Home left column width: `--home-left-column-width = 360px`
+- Home layout paddings: `--home-layout-pad-left = 120px`, `--home-layout-pad-top = 120px`
+- Home section rhythm: between sections `60px`, section title to first case `40px`, case internal gap `--home-item-gap = 8px`
 - Breakpoints: 680px (masonry/icon grid), 768px (shell layout), 1180px (fixed preview pane)
 
 ## Typography Tokens
@@ -31,11 +34,14 @@
 - `--font-size-caption = 0.875rem` (14px)
 - `--font-size-overline = 0.75rem` (12px)
 - `--font-size-overline-xs = 0.6875rem` (11px)
+- `--home-font-size-md = 14px`
+- `--home-font-size-lg = 16px`
 
 ### Line-height and tracking
 - `--line-height-base = 1.5`
 - `--line-height-reading = 1.65`
 - `--line-height-caption = 1.25rem` (20px)
+- `--home-line-height-tight = 19px`
 - `--letter-spacing-overline = 0.04em`
 - `--letter-spacing-overline-tight = 0.03em`
 
@@ -63,11 +69,13 @@
 - `--color-gray-75 = #f7f7f8`
 - `--color-gray-50 = #f4f4f6`
 - `--color-gray-40 = #f4f4f5`
+- `--color-gray-35 = #f5f5f5`
 - `--color-gray-25 = #fafafa`
 
 ### Semantic color tokens
 - `--text-primary`, `--text-muted`, `--text-light`, `--text-marker`
 - `--line-muted`, `--line-hover`
+- `--home-line-default`
 - `--bg-page`
 - `--card-bg`, `--card-bg-hover`
 - `--surface-glass-border`, `--surface-glass-start`, `--surface-glass-end`
@@ -76,6 +84,7 @@
 - `--logo-gradient-start`, `--logo-gradient-end`
 - `--home-top-card-bg`
 - `--home-top-card-text-primary`
+- `--home-top-card-bg`, `--home-text-primary`, `--home-text-secondary`
 
 ### Alpha and shadow tokens
 - White overlays: `--white-92`, `--white-90`, `--white-85`, `--white-82`, `--white-75`, `--white-50`, `--white-42`, `--white-25`, `--white-20`, `--white-14`
@@ -106,6 +115,9 @@
 - `--radius-xl = 24px`
 - `--radius-2xl = 40px`
 - `--radius-avatar-home = 44px`
+- `--radius-home-preview = 20px`
+- `--radius-home-top-card = 40px`
+- `--radius-home-avatar = 44px`
 - `--radius-pill = 999px`
 
 ## Size Tokens
@@ -129,6 +141,27 @@
 
 ## Components
 
+### Home Top Card (`.topCard`)
+Structure:
+- avatar (`.avatar`)
+- profile text block (`.topName`, `.aboutLink`)
+- contact icons (`.contactLink`)
+- arrow trigger (`.topArrowLink`)
+
+Spacing:
+- card padding: `--home-top-card-padding` (20px)
+- internal gap: `--home-top-card-gap` (20px)
+- text micro gap: `--home-micro-gap` (4px)
+- contact gap: `--home-contact-gap` (8px)
+
+Shape:
+- card radius: `--home-top-card-radius` (40px)
+- avatar radius: `--home-avatar-radius` (44px)
+
+Rules:
+- top-card uses `--home-top-card-bg`
+- typography uses общий системный стек `--font-family-sans` и home font-size tokens
+
 ### Home Case Card (`.item`)
 Structure:
 - label (`.itemLabel`)
@@ -136,14 +169,15 @@ Structure:
 
 Spacing:
 - padding: `--space-sm` `--space-lg`
-- internal gap: `--space-2xs`
+- internal gap: `--home-item-gap` (8px)
+- meta inline gap: `--home-meta-gap` (6px)
 
 Shape:
 - radius: `--radius-lg`
 
 Rules:
 - label всегда сверху meta
-- underline для label использует `--card-bg`
+- underline для label использует `--home-line-default`
 - hover glass-слой использует `surface` и `shadow` токены
 
 ### Top Card (`.card`)
