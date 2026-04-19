@@ -11,21 +11,6 @@
   gap: var(--layout-content-gap);
 }
 
-.logoLink {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  text-decoration: none;
-}
-
-.logoMark {
-  width: var(--space-3xl);
-  height: var(--space-3xl);
-  border-radius: var(--radius-pill);
-  background: linear-gradient(135deg, var(--logo-gradient-start), var(--logo-gradient-end));
-  box-shadow: inset 0 0 0 1px var(--white-25);
-}
-
 .headerBlock {
   display: flex;
   flex-direction: column;
@@ -36,6 +21,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--layout-content-gap);
+}
+
+.topCard {
+  width: 100%;
+  max-width: var(--home-top-card-width);
 }
 
 .title {
@@ -53,16 +43,6 @@
 
 .subtitleStrong {
   color: var(--text-primary);
-}
-
-.metaNav {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: var(--space-lg);
-}
-
-.metaLink {
-  color: var(--text-light);
 }
 
 @media (min-width: 768px) {

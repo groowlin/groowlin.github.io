@@ -8,12 +8,8 @@
       "legacy": false,
       "sections": [
         {
-          "name": "intro",
-          "components": ["designer-name", "role-text", "avatar"]
-        },
-        {
-          "name": "meta-navigation",
-          "components": ["meta-link-about", "meta-link-connect"]
+          "name": "top-card-to-profile",
+          "components": ["top-card", "top-card-avatar", "top-card-title", "top-card-subtitle", "top-card-icons", "top-card-arrow"]
         },
         {
           "name": "work-showcase-list",
@@ -31,6 +27,10 @@
       "legacy": false,
       "sections": [
         {
+          "name": "top-card-to-home",
+          "components": ["top-card", "top-card-avatar", "top-card-title", "top-card-subtitle", "top-card-icons", "top-card-arrow"]
+        },
+        {
           "name": "page-header",
           "components": ["work-title", "work-subtitle"]
         },
@@ -46,26 +46,11 @@
       "legacy": false,
       "sections": [
         {
-          "name": "page-header",
-          "components": ["title"]
+          "name": "top-card-to-home",
+          "components": ["top-card", "top-card-avatar", "top-card-title", "top-card-subtitle", "top-card-icons", "top-card-arrow"]
         },
         {
-          "name": "about-mdx-content",
-          "components": ["markdown-blocks"]
-        }
-      ]
-    },
-    {
-      "page": "connect",
-      "path": "/connect",
-      "legacy": false,
-      "sections": [
-        {
-          "name": "page-header",
-          "components": ["title"]
-        },
-        {
-          "name": "connect-mdx-content",
+          "name": "profile-mdx-content",
           "components": ["markdown-blocks"]
         }
       ]

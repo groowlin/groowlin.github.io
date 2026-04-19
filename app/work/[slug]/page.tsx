@@ -54,7 +54,7 @@ export default async function WorkPage({ params }: WorkPageProps) {
       title={entry.summary.title}
       subtitle={`${entry.summary.year} · ${entry.summary.category}`}
       subtitleMuted={false}
-      showMetaNav={false}
+      topCardVariant="to-home"
     >
       <MotionPage className={styles.stack}>
         <WorkArticle content={entry.content} />

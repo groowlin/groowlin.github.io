@@ -2,13 +2,14 @@ export type {
   HomeFrontmatter,
   HomePreview,
   HomeWorkEntry,
-  NavEntry,
   PageMeta,
-  SiteHeaderContent,
   SiteMetadataSettings,
   StaticPageContent,
   StaticPageFrontmatter,
   StaticPageKey,
+  TopCardContent,
+  TopCardFrontmatter,
+  TopCardVariant,
   WorkCase,
   WorkFrontmatter
 } from "@/lib/content/types";

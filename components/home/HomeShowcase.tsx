@@ -6,7 +6,8 @@ import { AnimatePresence, motion, useMotionTemplate, useMotionValue, useSpring }
 import { createPortal } from "react-dom";
 import { itemRevealVariants, pageRevealVariants } from "@/components/motion/MotionPage";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
-import { type HomeWorkEntry, type SiteHeaderContent } from "@/lib/content/types";
+import { TopCard } from "@/components/navigation/TopCard";
+import { type HomeWorkEntry, type TopCardContent } from "@/lib/content/types";
 import styles from "@/components/home/home-showcase.module.css";
 
 interface Rect {
@@ -34,10 +35,10 @@ function getSoftShift(value: number, power: number) {
 
 interface HomeShowcaseProps {
   entries: HomeWorkEntry[];
-  header: SiteHeaderContent;
+  topCard: TopCardContent;
 }
 
-export function HomeShowcase({ entries, header }: HomeShowcaseProps) {
+export function HomeShowcase({ entries, topCard }: HomeShowcaseProps) {
   const [canHover, setCanHover] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [enteringIndex, setEnteringIndex] = useState<number | null>(null);
@@ -233,18 +234,9 @@ export function HomeShowcase({ entries, header }: HomeShowcaseProps) {
 
   return (
     <motion.div className={styles.root} initial="initial" animate="visible" variants={pageRevealVariants}>
-      <motion.div className={styles.intro} variants={itemRevealVariants}>
-        <h1 className={styles.name}>{header.identity.name}</h1>
-        <p className={styles.role}>{header.identity.role}</p>
+      <motion.div className={styles.topCardWrap} variants={itemRevealVariants}>
+        <TopCard card={topCard} />
       </motion.div>
-
-      <motion.nav className={styles.metaNav} variants={itemRevealVariants} aria-label="Meta navigation">
-        {header.metaNav.map((item) => (
-          <Link key={item.href} className={styles.metaLink} href={item.href}>
-            {item.label}
-          </Link>
-        ))}
-      </motion.nav>
 
       <motion.div
         className={styles.listWrap}

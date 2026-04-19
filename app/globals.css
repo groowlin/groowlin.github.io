@@ -7,8 +7,17 @@
     "Segoe UI Emoji",
     "Segoe UI Symbol",
     "Noto Color Emoji";
+  --font-family-home:
+    "SF UI Text",
+    "SF Pro Text",
+    "Helvetica Neue",
+    "Segoe UI",
+    Arial,
+    sans-serif;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  --font-weight-heavy: 800;
   --font-size-body: 1rem;
   --font-size-caption: 0.875rem;
   --font-size-overline: 0.75rem;
@@ -38,6 +47,8 @@
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-xl: 24px;
+  --radius-2xl: 40px;
+  --radius-avatar-home: 44px;
   --radius-pill: 999px;
   --layout-main-padding-y: 6rem;
   --layout-main-padding-x: 2rem;
@@ -98,6 +109,21 @@
   --surface-placeholder-work-bg: var(--color-gray-100);
   --logo-gradient-start: var(--color-gray-900);
   --logo-gradient-end: var(--color-gray-600);
+  --home-top-card-bg: #f5f5f5;
+  --home-top-card-radius: var(--radius-2xl);
+  --home-top-card-padding: 20px;
+  --home-top-card-width: 360px;
+  --home-top-card-content-gap: 20px;
+  --home-top-card-subtitle-gap: 6px;
+  --home-top-card-icon-gap: 8px;
+  --home-top-card-text-primary: var(--color-black);
+  --home-avatar-size: 64px;
+  --home-avatar-radius: var(--radius-avatar-home);
+  --home-name-size: 18px;
+  --home-subtitle-size: 16px;
+  --home-line-height-tight: 19px;
+  --home-icon-size: 16px;
+  --home-arrow-size: 24px;
 }
 
 * {

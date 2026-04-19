@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { HomeShowcase } from "@/components/home/HomeShowcase";
 import { SiteShell } from "@/components/shell/SiteShell";
-import { getSiteHeaderContent, getSiteMetadataSettingsContent } from "@/lib/content/site.server";
+import { getSiteMetadataSettingsContent, getTopCardContent } from "@/lib/content/site.server";
 import { getHomeWorkEntries } from "@/lib/content/work.server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,11 +27,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [entries, header] = await Promise.all([getHomeWorkEntries(), getSiteHeaderContent()]);
+  const [entries, topCard] = await Promise.all([getHomeWorkEntries(), getTopCardContent("to-profile")]);
 
   return (
-    <SiteShell showMetaNav={false}>
-      <HomeShowcase entries={entries} header={header} />
+    <SiteShell>
+      <HomeShowcase entries={entries} topCard={topCard} />
     </SiteShell>
   );
 }

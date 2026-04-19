@@ -6,33 +6,9 @@
   gap: var(--space-4xl);
 }
 
-.intro {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2xs);
-}
-
-.name {
-  display: inline;
-  font-weight: var(--font-weight-medium);
-}
-
-.role {
-  color: var(--text-primary);
-}
-
-.companyLink {
-  color: inherit;
-}
-
-.metaNav {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: var(--space-lg);
-}
-
-.metaLink {
-  color: var(--text-light);
+.topCardWrap {
+  width: 100%;
+  max-width: var(--home-top-card-width);
 }
 
 .listWrap {

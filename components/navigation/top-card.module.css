@@ -1,0 +1,107 @@
+.card {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: var(--home-top-card-width);
+  padding: var(--home-top-card-padding);
+  border-radius: var(--home-top-card-radius);
+  background: var(--home-top-card-bg);
+  color: var(--home-top-card-text-primary);
+  text-decoration: none;
+  transition:
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--home-top-card-content-gap);
+  padding-right: calc(var(--home-arrow-size) + var(--home-top-card-padding));
+}
+
+.photoWrap {
+  flex: 0 0 auto;
+  width: var(--home-avatar-size);
+  height: var(--home-avatar-size);
+  border-radius: var(--home-avatar-radius);
+  overflow: hidden;
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+
+.text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-2xs);
+}
+
+.title {
+  font-family: var(--font-family-home);
+  font-size: var(--home-name-size);
+  line-height: var(--home-line-height-tight);
+  font-weight: var(--font-weight-bold);
+  color: var(--home-top-card-text-primary);
+}
+
+.subtitleRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--home-top-card-subtitle-gap);
+  min-width: 0;
+}
+
+.subtitle {
+  font-family: var(--font-family-home);
+  font-size: var(--home-subtitle-size);
+  line-height: var(--home-line-height-tight);
+  font-weight: var(--font-weight-regular);
+  color: var(--home-top-card-text-primary);
+}
+
+.icons {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--home-top-card-icon-gap);
+}
+
+.icon {
+  width: var(--home-icon-size);
+  height: var(--home-icon-size);
+  display: block;
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  right: var(--home-top-card-padding);
+  width: var(--home-arrow-size);
+  height: var(--home-arrow-size);
+  transform: translateY(-50%);
+  color: var(--home-top-card-text-primary);
+}
+
+.arrow svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.card:hover {
+  box-shadow:
+    inset 0 0 0 1px var(--white-42),
+    0 6px 18px -10px var(--black-08);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
