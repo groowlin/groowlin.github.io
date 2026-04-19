@@ -6,21 +6,6 @@ export interface PageMeta {
   ogType?: "website" | "article";
 }
 
-export type NavSection = "work" | "meta" | "contact";
-
-export interface NavEntry {
-  label: string;
-  href: string;
-  section: NavSection;
-}
-
-export interface SiteIdentity {
-  name: string;
-  role: string;
-  logoAlt: string;
-  avatarUrl?: string;
-}
-
 export interface SiteMetadataSettings {
   siteUrl: string;
   siteName: string;
@@ -32,9 +17,26 @@ export interface SiteMetadataSettings {
   robotsIndexByDefault: boolean;
 }
 
-export interface SiteHeaderContent {
-  identity: SiteIdentity;
-  metaNav: NavEntry[];
+export type TopCardVariant = "to-profile" | "to-home" | "default";
+
+export interface TopCardFrontmatter {
+  photo: string;
+  title: string;
+  subtitle: string;
+  link: string;
+  icon1?: string;
+  icon2?: string;
+  icon3?: string;
+  icon4?: string;
+}
+
+export interface TopCardContent {
+  variant: TopCardVariant;
+  photo: string;
+  title: string;
+  subtitle: string;
+  link: string;
+  icons: string[];
 }
 
 export type MediaKind = "image" | "video" | "gif";
@@ -60,8 +62,7 @@ export interface HomePreview {
 
 export interface HomeWorkEntry {
   label: string;
-  year: string;
-  category: string;
+  subtitle: string;
   href: string;
   preview: HomePreview;
 }
@@ -70,8 +71,7 @@ export type WorkCaseStatus = "published" | "hidden";
 
 export interface WorkCaseSummary {
   title: string;
-  year: string;
-  category: string;
+  subtitle: string;
   preview: HomePreview;
 }
 
@@ -90,7 +90,7 @@ export interface WorkCase {
   content: React.ReactNode;
 }
 
-export type StaticPageKey = "about" | "connect";
+export type StaticPageKey = "about";
 
 export interface StaticPageContent {
   key: StaticPageKey;
@@ -102,8 +102,6 @@ export interface HomeFrontmatter {
   name: string;
   role: string;
   avatar?: string;
-  metaNav: Array<{ label: string; href: string }>;
-  contacts: Array<{ label: string; href: string }>;
   seo: SiteMetadataSettings;
 }
 
@@ -116,8 +114,7 @@ export interface StaticPageFrontmatter {
 export interface WorkFrontmatter {
   slug: string;
   title: string;
-  year: string;
-  category: string;
+  subtitle: string;
   status: WorkCaseStatus;
   preview: HomePreview;
   description: string;

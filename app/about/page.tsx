@@ -18,7 +18,7 @@ export default async function AboutPage() {
   const content = await getStaticPageContent("about");
 
   return (
-    <SiteShell title={content.meta.title} showMetaNav={false}>
+    <SiteShell title={content.meta.title} topCardVariant="to-home">
       <MotionPage className={styles.stack}>
         <article className={styles.mdxContent}>{content.content}</article>
       </MotionPage>

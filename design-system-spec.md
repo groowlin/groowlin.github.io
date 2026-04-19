@@ -21,6 +21,7 @@
 
 ### Font family
 - `--font-family-sans`: `ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
+- `--font-family-home`: `"SF UI Text", "SF Pro Text", "Helvetica Neue", "Segoe UI", Arial, sans-serif`
 
 ### Font weights
 - `--font-weight-regular = 400`
@@ -81,6 +82,8 @@
 - `--surface-placeholder-border`, `--surface-placeholder-bg`
 - `--surface-placeholder-work-border`, `--surface-placeholder-work-bg`
 - `--logo-gradient-start`, `--logo-gradient-end`
+- `--home-top-card-bg`
+- `--home-top-card-text-primary`
 - `--home-top-card-bg`, `--home-text-primary`, `--home-text-secondary`
 
 ### Alpha and shadow tokens
@@ -110,6 +113,8 @@
 - `--radius-md = 10px`
 - `--radius-lg = 16px`
 - `--radius-xl = 24px`
+- `--radius-2xl = 40px`
+- `--radius-avatar-home = 44px`
 - `--radius-home-preview = 20px`
 - `--radius-home-top-card = 40px`
 - `--radius-home-avatar = 44px`
@@ -118,6 +123,21 @@
 ## Size Tokens
 - `--size-dot-md = 0.45rem`
 - `--size-dot-sm = 0.4rem`
+- `--home-avatar-size = 64px`
+- `--home-icon-size = 16px`
+- `--home-arrow-size = 24px`
+
+## Home Top Card Tokens
+- `--home-top-card-width = 360px`
+- `--home-top-card-padding = 20px`
+- `--home-top-card-radius = 40px`
+- `--home-top-card-content-gap = 20px`
+- `--home-top-card-subtitle-gap = 6px`
+- `--home-top-card-icon-gap = 8px`
+- `--home-name-size = 18px`
+- `--home-subtitle-size = 16px`
+- `--home-line-height-tight = 19px`
+- `--home-avatar-radius = 44px`
 
 ## Components
 
@@ -159,6 +179,27 @@ Rules:
 - label всегда сверху meta
 - underline для label использует `--home-line-default`
 - hover glass-слой использует `surface` и `shadow` токены
+
+### Top Card (`.card`)
+Structure:
+- avatar (`.photo`)
+- text block (`.title`, `.subtitle`)
+- optional icon row (`.icons`)
+- navigation arrow (`.arrow`)
+
+Spacing:
+- card padding: `--home-top-card-padding`
+- avatar/text gap: `--home-top-card-content-gap`
+- subtitle/icons gap: `--home-top-card-subtitle-gap`
+- icon gap: `--home-top-card-icon-gap`
+
+Shape:
+- card radius: `--home-top-card-radius`
+- avatar radius: `--home-avatar-radius`
+
+Typography:
+- title: `--home-name-size / --home-line-height-tight / --font-weight-bold`
+- subtitle: `--home-subtitle-size / --home-line-height-tight / --font-weight-regular`
 
 ### Media Placeholder (`.wrapper`, `.mediaLabel`)
 Structure:

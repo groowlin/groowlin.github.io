@@ -7,6 +7,13 @@
     "Segoe UI Emoji",
     "Segoe UI Symbol",
     "Noto Color Emoji";
+  --font-family-home:
+    "SF UI Text",
+    "SF Pro Text",
+    "Helvetica Neue",
+    "Segoe UI",
+    Arial,
+    sans-serif;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-bold: 700;
@@ -40,9 +47,11 @@
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-xl: 24px;
-  --radius-home-preview: 20px;
+  --radius-2xl: 40px;
+  --radius-avatar-home: 44px;
+  --radius-home-preview: 22px;
   --radius-home-top-card: 40px;
-  --radius-home-avatar: 44px;
+  --radius-home-avatar: 50px;
   --radius-pill: 999px;
   --layout-main-padding-y: 6rem;
   --layout-main-padding-x: 2rem;
@@ -50,27 +59,33 @@
   --layout-header-gap: 0.25rem;
   --layout-preview-size: 484px;
   --layout-inner-min-width: 512px;
-  --layout-preview-offset-x: 60px;
-  --home-layout-pad-left: 120px;
-  --home-layout-pad-top: 120px;
-  --home-left-column-width: 360px;
-  --home-list-padding-block: 20px;
-  --home-list-padding-inline: 40px;
-  --home-section-gap: 40px;
-  --home-section-title-gap: 20px;
-  --home-heading-padding-bottom: 20px;
-  --home-item-gap: 8px;
-  --home-meta-gap: 6px;
-  --home-micro-gap: 4px;
-  --home-contact-gap: 8px;
+  --layout-preview-offset-x: 68px;
+  --home-layout-pad-left: 135px;
+  --home-layout-pad-top: 135px;
+  --home-left-column-width: 405px;
+  --home-list-padding-block: 22px;
+  --home-list-padding-inline: 45px;
+  --home-section-gap: 45px;
+  --home-section-title-gap: 22px;
+  --home-heading-padding-bottom: 22px;
+  --home-item-gap: 9px;
+  --home-meta-gap: 7px;
+  --home-micro-gap: 5px;
+  --home-contact-gap: 9px;
   --home-top-card-padding: 20px;
-  --home-top-card-gap: 20px;
-  --home-font-size-md: 14px;
-  --home-font-size-lg: 16px;
+  --home-top-card-gap: 22px;
+  --home-font-size-md: 16px;
+  --home-font-size-lg: 18px;
   --home-line-height-tight: 19px;
-  --home-icon-size: 16px;
-  --home-arrow-size: 24px;
+  --home-icon-size: 18px;
+  --home-arrow-size: 27px;
   --home-avatar-size: 64px;
+  --home-root-gap: 54px;
+  --home-list-group-gap: 68px;
+  --home-section-internal-gap: 45px;
+  --home-item-padding-y: 9px;
+  --home-item-padding-x: 18px;
+  --home-bubble-radius: 18px;
   --size-dot-md: 0.45rem;
   --size-dot-sm: 0.4rem;
   --color-black: #000000;
@@ -131,6 +146,14 @@
   --home-radius-preview-media: var(--radius-home-preview);
   --home-top-card-radius: var(--radius-home-top-card);
   --home-avatar-radius: var(--radius-home-avatar);
+  --home-top-card-width: 340px;
+  --home-top-card-content-gap: 12px;
+  --home-top-card-subtitle-gap: 7px;
+  --home-top-card-icon-gap: 9px;
+  --home-top-card-text-primary: var(--home-text-primary);
+  --home-rounding-compensation: var(--home-top-card-radius);
+  --home-name-size: 20px;
+  --home-subtitle-size: 18px;
 }
 
 * {

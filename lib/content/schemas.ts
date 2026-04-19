@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 export const mediaKindSchema = z.enum(["image", "video", "gif"]);
+const internalPathSchema = z
+  .string()
+  .min(1)
+  .refine((value) => value.startsWith("/") && !value.startsWith("//"), {
+    message: "Expected an internal path that starts with '/'"
+  });
 
 export const homePreviewSchema = z.object({
   kind: mediaKindSchema,
@@ -14,22 +20,6 @@ export const homeFrontmatterSchema = z.object({
   name: z.string().min(1),
   role: z.string().min(1),
   avatar: z.string().optional(),
-  metaNav: z
-    .array(
-      z.object({
-        label: z.string().min(1),
-        href: z.string().min(1)
-      })
-    )
-    .default([]),
-  contacts: z
-    .array(
-      z.object({
-        label: z.string().min(1),
-        href: z.string().min(1)
-      })
-    )
-    .default([]),
   seo: z.object({
     siteUrl: z.string().url(),
     siteName: z.string().min(1),
@@ -42,6 +32,17 @@ export const homeFrontmatterSchema = z.object({
   })
 });
 
+export const topCardFrontmatterSchema = z.object({
+  photo: z.string().min(1),
+  title: z.string().min(1),
+  subtitle: z.string().min(1),
+  link: internalPathSchema,
+  icon1: z.string().optional(),
+  icon2: z.string().optional(),
+  icon3: z.string().optional(),
+  icon4: z.string().optional()
+});
+
 export const staticPageFrontmatterSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
@@ -51,8 +52,7 @@ export const staticPageFrontmatterSchema = z.object({
 export const workFrontmatterSchema = z.object({
   slug: z.string().min(1),
   title: z.string().min(1),
-  year: z.string().min(1),
-  category: z.string().min(1),
+  subtitle: z.string().min(1),
   status: z.enum(["published", "hidden"]),
   preview: homePreviewSchema,
   description: z.string().min(1),

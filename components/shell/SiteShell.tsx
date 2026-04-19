@@ -1,7 +1,8 @@
-import Link from "next/link";
 import { MotionItem } from "@/components/motion/MotionItem";
 import { MotionPage } from "@/components/motion/MotionPage";
-import { getSiteHeaderContent } from "@/lib/content/site.server";
+import { TopCard } from "@/components/navigation/TopCard";
+import { getTopCardContent } from "@/lib/content/site.server";
+import type { TopCardVariant } from "@/lib/content/types";
 import styles from "@/components/shell/site-shell.module.css";
 
 interface SiteShellProps {
@@ -9,7 +10,8 @@ interface SiteShellProps {
   title?: string;
   subtitle?: string;
   subtitleMuted?: boolean;
-  showMetaNav?: boolean;
+  subtitleVariant?: "default" | "workMeta";
+  topCardVariant?: TopCardVariant;
 }
 
 export async function SiteShell({
@@ -17,64 +19,49 @@ export async function SiteShell({
   title,
   subtitle,
   subtitleMuted = true,
-  showMetaNav = true
+  subtitleVariant = "default",
+  topCardVariant
 }: SiteShellProps) {
-  const header = await getSiteHeaderContent();
-  const avatarUrl = header?.identity.avatarUrl?.trim() ?? "";
+  const topCard = topCardVariant ? await getTopCardContent(topCardVariant) : null;
+  const compensationClass = topCard ? styles.compensated : "";
   const hasHeaderBlock = Boolean(title || subtitle);
-  const hasAnimatedHeaderContent = hasHeaderBlock || showMetaNav;
+  const hasAnimatedHeaderContent = hasHeaderBlock || Boolean(topCard);
 
   return (
     <main className={styles.main}>
       <div className={styles.inner}>
-        <Link className={styles.logoLink} href="/" aria-label="Go to the homepage">
-          <span
-            className={styles.logoMark}
-            role={avatarUrl ? "img" : undefined}
-            aria-label={avatarUrl ? (header?.identity.logoAlt ?? "Site avatar") : undefined}
-            aria-hidden={avatarUrl ? undefined : true}
-            style={
-              avatarUrl
-                ? {
-                    backgroundImage: `url("${avatarUrl}")`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center"
-                  }
-                : undefined
-            }
-          />
-        </Link>
-
         {hasAnimatedHeaderContent && (
           <MotionPage className={styles.headerStack}>
+            {topCard && (
+              <MotionItem>
+                <TopCard card={topCard} className={styles.topCard} />
+              </MotionItem>
+            )}
+
             {hasHeaderBlock && (
               <MotionItem>
-                <header className={styles.headerBlock}>
+                <header className={[styles.headerBlock, compensationClass].filter(Boolean).join(" ")}>
                   {title && <h1 className={styles.title}>{title}</h1>}
                   {subtitle && (
-                    <p className={[styles.subtitle, subtitleMuted ? styles.subtitleMuted : styles.subtitleStrong].join(" ")}>
+                    <p
+                      className={[
+                        styles.subtitle,
+                        subtitleMuted ? styles.subtitleMuted : styles.subtitleStrong,
+                        subtitleVariant === "workMeta" ? styles.subtitleWorkMeta : ""
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    >
                       {subtitle}
                     </p>
                   )}
                 </header>
               </MotionItem>
             )}
-
-            {showMetaNav && (
-              <MotionItem>
-                <nav className={styles.metaNav} aria-label="Meta navigation">
-                  {header?.metaNav.map((item) => (
-                    <Link key={item.href} className={styles.metaLink} href={item.href}>
-                      {item.label}
-                    </Link>
-                  ))}
-                </nav>
-              </MotionItem>
-            )}
           </MotionPage>
         )}
 
-        {children}
+        {topCard ? <div className={styles.compensated}>{children}</div> : children}
       </div>
     </main>
   );

@@ -18,7 +18,8 @@ pnpm build
 ## Content locations
 
 - Home settings: `content/site/home.mdx`
-- Static pages: `content/pages/about.mdx`, `content/pages/connect.mdx`
+- Top-card settings: `content/site/top-card-*.mdx`
+- Static pages: `content/pages/about.mdx`
 - Cases: `content/work/*.mdx`
 - Media assets: `public/media/*`
 
