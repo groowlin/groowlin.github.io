@@ -10,6 +10,8 @@
 - Main side padding: `--layout-main-padding-x = 2rem` (32px)
 - Main vertical padding: `--layout-main-padding-y = 6rem` (96px)
 - Default vertical section gap: `--layout-content-gap = 2rem` (32px)
+- Global header rhythm: `--rhythm-title-block-top = 60px`, `--rhythm-title-block-bottom = 40px` для блока `title + subtitle` на всех страницах.
+- Global section-heading rhythm: `--rhythm-section-heading-top = 60px`, `--rhythm-section-heading-bottom = 40px` для заголовков секций кейсов.
 - Home preview pane size: `--layout-preview-size = 484px`
 - Home preview offset from list: `--layout-preview-offset-x = 60px`
 - Home left column width: `--home-left-column-width = 360px`

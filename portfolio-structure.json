@@ -3,7 +3,17 @@
   "contentSource": "mdx",
   "designSystem": {
     "fontFamily": "Inter",
-    "letterSpacing": "0.03em"
+    "letterSpacing": "0.03em",
+    "rhythm": {
+      "titleSubtitle": {
+        "top": 60,
+        "bottom": 40
+      },
+      "caseSectionHeadings": {
+        "top": 60,
+        "bottom": 40
+      }
+    }
   },
   "pages": [
     {
@@ -13,15 +23,38 @@
       "sections": [
         {
           "name": "top-card-to-profile",
-          "components": ["top-card", "top-card-avatar", "top-card-title", "top-card-subtitle", "top-card-icons", "top-card-arrow"]
+          "components": [
+            "top-card",
+            "top-card-avatar",
+            "top-card-title",
+            "top-card-subtitle",
+            "top-card-icons",
+            "top-card-arrow"
+          ]
         },
         {
-          "name": "work-showcase-sections",
-          "components": ["section-title", "case-item", "case-item-label", "case-item-meta", "glass-highlight-layer"]
+          "name": "home-header",
+          "components": [
+            "home-title",
+            "home-subtitle"
+          ]
+        },
+        {
+          "name": "work-showcase-sections-body-driven",
+          "components": [
+            "optional-section-title",
+            "case-item",
+            "case-item-label",
+            "case-item-meta",
+            "glass-highlight-layer"
+          ]
         },
         {
           "name": "hover-preview",
-          "components": ["preview-pane", "preview-media"]
+          "components": [
+            "preview-pane",
+            "preview-media"
+          ]
         }
       ]
     },
@@ -32,15 +65,29 @@
       "sections": [
         {
           "name": "top-card-to-home",
-          "components": ["top-card", "top-card-avatar", "top-card-title", "top-card-subtitle", "top-card-icons", "top-card-arrow"]
+          "components": [
+            "top-card",
+            "top-card-avatar",
+            "top-card-title",
+            "top-card-subtitle",
+            "top-card-icons",
+            "top-card-arrow"
+          ]
         },
         {
           "name": "page-header",
-          "components": ["work-title", "work-subtitle"]
+          "components": [
+            "work-title",
+            "work-subtitle"
+          ]
         },
         {
           "name": "work-mdx-content",
-          "components": ["markdown-blocks", "mdx-media", "mdx-cta"]
+          "components": [
+            "markdown-blocks",
+            "mdx-media",
+            "mdx-cta"
+          ]
         }
       ]
     },
@@ -51,11 +98,20 @@
       "sections": [
         {
           "name": "top-card-to-home",
-          "components": ["top-card", "top-card-avatar", "top-card-title", "top-card-subtitle", "top-card-icons", "top-card-arrow"]
+          "components": [
+            "top-card",
+            "top-card-avatar",
+            "top-card-title",
+            "top-card-subtitle",
+            "top-card-icons",
+            "top-card-arrow"
+          ]
         },
         {
           "name": "profile-mdx-content",
-          "components": ["markdown-blocks"]
+          "components": [
+            "markdown-blocks"
+          ]
         }
       ]
     }

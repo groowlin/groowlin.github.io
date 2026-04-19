@@ -5,7 +5,8 @@ import { cache } from "react";
 import { homeFrontmatterSchema, staticPageFrontmatterSchema, topCardFrontmatterSchema } from "@/lib/content/schemas";
 import { getContentDir, parseMdxFrontmatter, renderMdx } from "@/lib/content/mdx.server";
 import type {
-  HomeFrontmatter,
+  HomeSectionConfig,
+  HomeShowcaseConfig,
   SiteMetadataSettings,
   StaticPageContent,
   StaticPageKey,
@@ -20,15 +21,103 @@ const TOP_CARD_FILE_BY_VARIANT: Record<TopCardVariant, string> = {
   "to-home": "top-card-to-home.mdx",
   default: "top-card-default.mdx"
 };
+const HOME_SECTION_SPLIT_RE = /\n\s*---\s*\n/g;
+const HOME_SECTION_TITLE_RE = /^##\s+(.+)$/;
+const HOME_SECTION_ITEM_RE = /^-\s+(.+)$/;
+const HOME_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-const loadHomeFrontmatter = cache(async (): Promise<HomeFrontmatter> => {
-  const { frontmatter } = await parseMdxFrontmatter(SITE_HOME_FILE, homeFrontmatterSchema);
-  return frontmatter;
+const loadHomeSource = cache(async () => {
+  return parseMdxFrontmatter(SITE_HOME_FILE, homeFrontmatterSchema);
 });
 
 export async function getSiteMetadataSettingsContent(): Promise<SiteMetadataSettings> {
-  const home = await loadHomeFrontmatter();
+  const { frontmatter: home } = await loadHomeSource();
   return home.seo;
+}
+
+function normalizeHomeSlug(value: string): string | null {
+  let candidate = value.trim();
+
+  if (!candidate) {
+    return null;
+  }
+
+  const markdownLinkMatch = candidate.match(/^\[[^\]]+\]\(([^)]+)\)$/);
+  if (markdownLinkMatch?.[1]) {
+    candidate = markdownLinkMatch[1].trim();
+  }
+
+  if (candidate.startsWith("`") && candidate.endsWith("`") && candidate.length > 2) {
+    candidate = candidate.slice(1, -1).trim();
+  }
+
+  if (candidate.startsWith("/work/")) {
+    candidate = candidate.slice("/work/".length);
+  }
+
+  if (candidate.startsWith("/")) {
+    return null;
+  }
+
+  const normalized = candidate.split(/[?#]/, 1)[0]?.trim() ?? "";
+  return HOME_SLUG_RE.test(normalized) ? normalized : null;
+}
+
+function parseHomeBodySections(body: string): HomeSectionConfig[] {
+  const normalizedBody = body.replace(/\r\n/g, "\n").trim();
+
+  if (!normalizedBody) {
+    return [];
+  }
+
+  return normalizedBody
+    .split(HOME_SECTION_SPLIT_RE)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean)
+    .map((chunk): HomeSectionConfig | null => {
+      const lines = chunk
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      if (lines.length === 0) {
+        return null;
+      }
+
+      const maybeTitle = lines[0]?.match(HOME_SECTION_TITLE_RE);
+      const title = maybeTitle?.[1]?.trim() || undefined;
+      const firstItemIndex = maybeTitle ? 1 : 0;
+      const slugs = lines.slice(firstItemIndex).reduce<string[]>((accumulator, line) => {
+        const itemMatch = line.match(HOME_SECTION_ITEM_RE);
+        if (!itemMatch?.[1]) {
+          return accumulator;
+        }
+
+        const slug = normalizeHomeSlug(itemMatch[1]);
+        if (slug) {
+          accumulator.push(slug);
+        }
+
+        return accumulator;
+      }, []);
+
+      if (slugs.length === 0) {
+        return null;
+      }
+
+      return { title, slugs };
+    })
+    .filter((section): section is HomeSectionConfig => section !== null);
+}
+
+export async function getHomeShowcaseConfigContent(): Promise<HomeShowcaseConfig> {
+  const { frontmatter, body } = await loadHomeSource();
+
+  return {
+    title: frontmatter.title,
+    subtitle: frontmatter.subtitle,
+    sections: parseHomeBodySections(body)
+  };
 }
 
 const loadTopCardContent = cache(async (variant: TopCardVariant): Promise<TopCardContent> => {

@@ -1,6 +1,9 @@
 export type {
   HomeFrontmatter,
   HomePreview,
+  HomeSectionConfig,
+  HomeShowcaseConfig,
+  HomeShowcaseSection,
   HomeWorkEntry,
   PageMeta,
   SiteMetadataSettings,

@@ -57,6 +57,10 @@
   --layout-main-padding-x: 2rem;
   --layout-content-gap: 2rem;
   --layout-header-gap: 0.25rem;
+  --rhythm-title-block-top: 60px;
+  --rhythm-title-block-bottom: 40px;
+  --rhythm-section-heading-top: 60px;
+  --rhythm-section-heading-bottom: 40px;
   --layout-preview-size: 484px;
   --layout-inner-min-width: 512px;
   --layout-preview-offset-x: 68px;

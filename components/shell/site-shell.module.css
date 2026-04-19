@@ -20,8 +20,12 @@
 .headerStack {
   display: flex;
   flex-direction: column;
-  gap: 60px;
-  margin-bottom: 8px;
+  gap: var(--rhythm-title-block-top);
+  margin-bottom: calc(var(--rhythm-title-block-bottom) - var(--layout-content-gap));
+}
+
+.headerStackHome {
+  margin-bottom: var(--rhythm-title-block-bottom);
 }
 
 .topCard {

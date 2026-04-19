@@ -7,7 +7,8 @@ import { createPortal } from "react-dom";
 import { itemRevealVariants, pageRevealVariants } from "@/components/motion/MotionPage";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
 import { TopCard } from "@/components/navigation/TopCard";
-import { type HomeWorkEntry, type TopCardContent } from "@/lib/content/types";
+import { type HomeShowcaseSection, type HomeWorkEntry, type TopCardContent } from "@/lib/content/types";
+import shellStyles from "@/components/shell/site-shell.module.css";
 import styles from "@/components/home/home-showcase.module.css";
 
 interface Rect {
@@ -22,8 +23,8 @@ interface SectionEntry {
   index: number;
 }
 
-interface HomeSection {
-  title: string;
+interface IndexedHomeSection {
+  title?: string;
   items: SectionEntry[];
 }
 
@@ -43,22 +44,14 @@ function getSoftShift(value: number, power: number) {
   return Math.sign(normalized) * (1 - (1 - Math.abs(normalized)) ** (1 / Math.max(1, power)));
 }
 
-function buildHomeSections(entries: HomeWorkEntry[]): HomeSection[] {
-  const mapped = entries.map((entry, index) => ({ entry, index }));
-
-  return [
-    { title: "Портфолио", items: mapped.slice(0, 4) },
-    { title: "Globus", items: mapped.slice(4, 5) },
-    { title: "Работа в студии", items: mapped.slice(5) }
-  ];
-}
-
 interface HomeShowcaseProps {
-  entries: HomeWorkEntry[];
+  title: string;
+  subtitle?: string;
+  sections: HomeShowcaseSection[];
   topCard: TopCardContent;
 }
 
-export function HomeShowcase({ entries, topCard }: HomeShowcaseProps) {
+export function HomeShowcase({ title, subtitle, sections, topCard }: HomeShowcaseProps) {
   const [canHover, setCanHover] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [enteringIndex, setEnteringIndex] = useState<number | null>(null);
@@ -90,7 +83,24 @@ export function HomeShowcase({ entries, topCard }: HomeShowcaseProps) {
   const listShiftYVar = useMotionTemplate`${shiftY}px`;
   const highlightYVar = useMotionTemplate`${originY}%`;
 
-  const sections = useMemo(() => buildHomeSections(entries), [entries]);
+  const indexedSections = useMemo<IndexedHomeSection[]>(() => {
+    let currentIndex = 0;
+
+    return sections
+      .map((section) => ({
+        title: section.title,
+        items: section.items.map((entry) => ({
+          entry,
+          index: currentIndex++
+        }))
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [sections]);
+
+  const displayEntries = useMemo(
+    () => indexedSections.flatMap((section) => section.items.map((item) => item.entry)),
+    [indexedSections]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -174,7 +184,11 @@ export function HomeShowcase({ entries, topCard }: HomeShowcaseProps) {
 
   const previewMedia = useMemo(() => {
     if (previewIndex === null) return null;
-    const entry = entries[previewIndex];
+    const entry = displayEntries[previewIndex];
+
+    if (!entry) {
+      return null;
+    }
 
     return {
       kind: entry.preview.kind,
@@ -182,7 +196,7 @@ export function HomeShowcase({ entries, topCard }: HomeShowcaseProps) {
       aspectRatio: entry.preview.src ? entry.preview.aspectRatio : "2 / 1",
       placeholderToken: entry.preview.placeholderToken
     } as const;
-  }, [previewIndex, entries]);
+  }, [previewIndex, displayEntries]);
 
   const portalTarget = typeof document === "undefined" ? null : document.body;
 
@@ -257,9 +271,20 @@ export function HomeShowcase({ entries, topCard }: HomeShowcaseProps) {
   return (
     <motion.div className={styles.root} initial="initial" animate="visible" variants={pageRevealVariants}>
       <div className={styles.leftColumn}>
-        <motion.div className={styles.topCardWrap} variants={itemRevealVariants}>
-          <TopCard card={topCard} />
-        </motion.div>
+        <div className={[shellStyles.headerStack, shellStyles.headerStackHome].join(" ")}>
+          <motion.div className={styles.topCardWrap} variants={itemRevealVariants}>
+            <TopCard card={topCard} />
+          </motion.div>
+
+          <motion.header className={[shellStyles.headerBlock, shellStyles.compensated].join(" ")} variants={itemRevealVariants}>
+            <h1 className={shellStyles.title}>{title}</h1>
+            {subtitle ? (
+              <p className={[shellStyles.subtitle, shellStyles.subtitleStrong, shellStyles.subtitleWorkMeta].join(" ")}>
+                {subtitle}
+              </p>
+            ) : null}
+          </motion.header>
+        </div>
 
         <motion.div
           className={styles.listWrap}
@@ -328,9 +353,13 @@ export function HomeShowcase({ entries, topCard }: HomeShowcaseProps) {
           </AnimatePresence>
 
           <motion.div className={styles.list} variants={pageRevealVariants}>
-            {sections.map((section) => (
-              <section key={section.title} className={styles.section} aria-label={section.title}>
-                <h2 className={styles.sectionTitle}>{section.title}</h2>
+            {indexedSections.map((section, sectionIndex) => (
+              <section
+                key={`${section.title ?? "untitled"}-${sectionIndex}`}
+                className={styles.section}
+                aria-label={section.title}
+              >
+                {section.title ? <h2 className={styles.sectionTitle}>{section.title}</h2> : null}
                 <div className={styles.sectionList}>
                   {section.items.map(({ entry, index }) => (
                     <motion.span key={entry.href} variants={itemRevealVariants}>

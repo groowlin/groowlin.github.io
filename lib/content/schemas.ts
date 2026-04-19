@@ -17,9 +17,8 @@ export const homePreviewSchema = z.object({
 });
 
 export const homeFrontmatterSchema = z.object({
-  name: z.string().min(1),
-  role: z.string().min(1),
-  avatar: z.string().optional(),
+  title: z.string().min(1),
+  subtitle: z.string().min(1).optional(),
   seo: z.object({
     siteUrl: z.string().url(),
     siteName: z.string().min(1),

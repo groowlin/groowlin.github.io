@@ -9,7 +9,7 @@
 .leftColumn {
   display: flex;
   flex-direction: column;
-  gap: var(--home-section-gap);
+  gap: var(--space-0);
   width: fit-content;
 }
 
@@ -20,13 +20,13 @@
 .listWrap {
   position: relative;
   width: fit-content;
-  padding: var(--home-list-padding-block) 0 0 var(--home-rounding-compensation);
+  padding: var(--space-0) 0 0 var(--home-rounding-compensation);
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: var(--home-list-group-gap);
+  gap: var(--rhythm-section-heading-top);
   width: fit-content;
   position: relative;
   z-index: 2;
@@ -35,7 +35,7 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: var(--home-section-internal-gap);
+  gap: var(--rhythm-section-heading-bottom);
 }
 
 .sectionTitle {

@@ -15,8 +15,8 @@
 .mdxRoot :global(h4),
 .mdxRoot :global(h5),
 .mdxRoot :global(h6) {
-  margin-top: 60px;
-  margin-bottom: 40px;
+  margin-top: var(--rhythm-section-heading-top);
+  margin-bottom: var(--rhythm-section-heading-bottom);
   color: var(--home-text-primary);
   font-size: var(--home-font-size-lg);
   line-height: var(--home-line-height-tight);

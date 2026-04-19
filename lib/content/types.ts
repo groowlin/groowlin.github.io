@@ -67,6 +67,22 @@ export interface HomeWorkEntry {
   preview: HomePreview;
 }
 
+export interface HomeSectionConfig {
+  title?: string;
+  slugs: string[];
+}
+
+export interface HomeShowcaseConfig {
+  title: string;
+  subtitle?: string;
+  sections: HomeSectionConfig[];
+}
+
+export interface HomeShowcaseSection {
+  title?: string;
+  items: HomeWorkEntry[];
+}
+
 export type WorkCaseStatus = "published" | "hidden";
 
 export interface WorkCaseSummary {
@@ -99,9 +115,8 @@ export interface StaticPageContent {
 }
 
 export interface HomeFrontmatter {
-  name: string;
-  role: string;
-  avatar?: string;
+  title: string;
+  subtitle?: string;
   seo: SiteMetadataSettings;
 }
 

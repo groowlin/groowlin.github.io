@@ -9,8 +9,7 @@
 ## 2. Home Settings (`content/site/home.mdx`)
 
 ### Frontmatter (required)
-- `name: string`
-- `role: string`
+- `title: string`
 - `seo.siteUrl: string (url)`
 - `seo.siteName: string`
 - `seo.defaultTitle: string`
@@ -19,12 +18,18 @@
 - `seo.robotsIndexByDefault: boolean`
 
 ### Frontmatter (optional)
-- `avatar: string`
+- `subtitle: string`
 - `seo.defaultOgImage: string`
 - `seo.faviconUrl: string`
 
 ### Body
-- Может содержать markdown/MDX заметки, но в текущем UI не отображается как отдельный блок.
+- Управляет секциями списка кейсов на главной.
+- Формат:
+  - секции разделяются строкой `---`,
+  - в секции опциональна первая строка `## Заголовок`,
+  - далее список slug: `- my-case-slug`.
+- Секция без заголовка поддерживается (начинается сразу со списка slug).
+- Источник превью и карточек кейсов остается `content/work/*.mdx` (published only).
 
 ## 3. Top-Card Settings (`content/site/top-card-*.mdx`)
 
