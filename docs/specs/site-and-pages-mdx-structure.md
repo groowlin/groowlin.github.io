@@ -63,6 +63,7 @@
 ### Body
 - Основной контент страницы в markdown/MDX.
 - Поддерживаются встроенные MDX-компоненты из `lib/content/mdx-components.tsx`.
+- Для media-контента доступны `<Media />` и `<Gallery> ... </Gallery>` (внутри `Gallery` используются `<Media />`).
 
 ## 5. Validation and Loading
 - Frontmatter валидируется через Zod в `lib/content/schemas.ts`.

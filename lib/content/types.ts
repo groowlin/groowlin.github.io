@@ -41,15 +41,12 @@ export interface TopCardContent {
 
 export type MediaKind = "image" | "video" | "gif";
 
-export type MediaBleed = "default" | "wide";
-
 export interface MediaPlaceholder {
   kind: MediaKind;
   aspectRatio?: string;
   caption?: string;
   src?: string;
   placeholderToken?: string;
-  bleed?: MediaBleed;
 }
 
 export interface HomePreview {

@@ -33,7 +33,7 @@ export function MediaPlaceholderView({
   const hasSource = Boolean(media.src);
   const isWork = variant === "work";
   const isHomePreview = variant === "homePreview";
-  const isWideBleed = isWork && media.bleed === "wide";
+  const isContentMedia = !isHomePreview;
   const [intrinsicRatio, setIntrinsicRatio] = useState<number | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
 
@@ -120,11 +120,12 @@ export function MediaPlaceholderView({
       : undefined;
 
   return (
-    <div className={[styles.host, isWideBleed && styles.wideBleed].filter(Boolean).join(" ")}>
+    <div className={[styles.host, isContentMedia && styles.contentBleed].filter(Boolean).join(" ")}>
       <div
         className={[
           styles.wrapper,
           isWork && styles.workWrapper,
+          isContentMedia && styles.contentMediaWrapper,
           frame === "square" && styles.squareFrame,
           className
         ]

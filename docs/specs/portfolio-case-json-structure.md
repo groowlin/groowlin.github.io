@@ -25,7 +25,7 @@
 ## 4. Body Contract
 - MDX body — это основной контент кейса.
 - Разрешены стандартные markdown-блоки и встраиваемые MDX-компоненты из `lib/content/mdx-components.tsx`.
-- Для `<Media />` доступен проп `bleed?: "default" | "wide"` (на mobile всегда `default`).
+- Поддерживается `<Media />` и MDX-компонент `<Gallery> ... </Gallery>` с вложенными `<Media />`.
 
 ## 5. Publication Rules
 - `published`:
@@ -59,5 +59,8 @@ canonical: "/work/demo-case"
 
 Текст кейса.
 
-<Media kind="image" aspectRatio="16 / 9" bleed="wide" />
+<Gallery>
+  <Media kind="image" aspectRatio="16 / 9" src="/media/shot-1.png" />
+  <Media kind="image" aspectRatio="16 / 9" src="/media/shot-2.png" />
+</Gallery>
 ```

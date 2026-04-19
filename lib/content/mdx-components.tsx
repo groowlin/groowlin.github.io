@@ -1,5 +1,7 @@
+import { Children, isValidElement, type CSSProperties, type HTMLAttributes, type ReactNode } from "react";
 import Link from "next/link";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
+import galleryStyles from "@/components/media/mdx-gallery.module.css";
 import {
   MdxBlockquote,
   MdxDiv,
@@ -12,7 +14,7 @@ import {
   MdxSection,
   MdxUl
 } from "@/components/motion/MdxMotionComponents";
-import type { MediaBleed, MediaKind } from "@/lib/content/types";
+import type { MediaKind } from "@/lib/content/types";
 
 interface MediaProps {
   kind?: MediaKind;
@@ -20,13 +22,82 @@ interface MediaProps {
   aspectRatio?: string;
   caption?: string;
   placeholderToken?: string;
-  bleed?: MediaBleed;
 }
 
 interface CtaProps {
   href: string;
   label: string;
   body?: string;
+}
+
+interface GalleryProps extends HTMLAttributes<HTMLElement> {
+  children?: ReactNode;
+}
+
+function getGalleryRowSizes(itemCount: number) {
+  if (itemCount <= 0) {
+    return [];
+  }
+
+  if (itemCount <= 3) {
+    return [itemCount];
+  }
+
+  const rows = Math.ceil(itemCount / 3);
+  const sizes = Array.from({ length: rows }, () => 2);
+  let remaining = itemCount - rows * 2;
+
+  for (let index = sizes.length - 1; index >= 0 && remaining > 0; index -= 1) {
+    sizes[index] += 1;
+    remaining -= 1;
+  }
+
+  return sizes;
+}
+
+function Gallery({ children, className, style, ...props }: GalleryProps) {
+  const items = Children.toArray(children).filter((child) => isValidElement(child));
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  const rowSizes = getGalleryRowSizes(items.length);
+  const rows = rowSizes.reduce<{ offset: number; rows: ReactNode[][] }>(
+    (accumulator, size) => {
+      const nextOffset = accumulator.offset + size;
+      return {
+        offset: nextOffset,
+        rows: [...accumulator.rows, items.slice(accumulator.offset, nextOffset)]
+      };
+    },
+    { offset: 0, rows: [] }
+  ).rows;
+
+  return (
+    <MdxMediaBlock>
+      <div
+        {...props}
+        className={[galleryStyles.gallery, className].filter(Boolean).join(" ")}
+        style={
+          {
+            ...style,
+            ["--media-bleed-offset" as string]: "0px"
+          } satisfies CSSProperties
+        }
+      >
+        {rows.map((rowItems, rowIndex) => (
+          <div key={`gallery-row-${rowIndex}`} className={galleryStyles.row} data-columns={rowItems.length}>
+            {rowItems.map((item, itemIndex) => (
+              <div key={`gallery-item-${rowIndex}-${itemIndex}`} className={galleryStyles.item}>
+                {item}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </MdxMediaBlock>
+  );
 }
 
 export function getMdxComponents(variant: "default" | "work" = "default") {
@@ -50,17 +121,18 @@ export function getMdxComponents(variant: "default" | "work" = "default") {
     li: MdxLi,
     blockquote: MdxBlockquote,
     section: MdxSection,
+    Gallery,
+    gallery: Gallery,
     Media: ({
       kind = "image",
       src,
       aspectRatio,
       caption,
-      placeholderToken,
-      bleed
+      placeholderToken
     }: MediaProps) => (
       <MdxMediaBlock>
         <MediaPlaceholderView
-          media={{ kind, src, aspectRatio, caption, placeholderToken, bleed }}
+          media={{ kind, src, aspectRatio, caption, placeholderToken }}
           variant={variant === "work" ? "work" : "default"}
         />
       </MdxMediaBlock>
