@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import { getSiteMetadataSettingsContent } from "@/lib/content/site.server";
 import "./globals.css";
+
+const inter = localFont({
+  src: [
+    {
+      path: "./fonts/inter/Inter-Variable.ttf",
+      weight: "100 900",
+      style: "normal"
+    }
+  ],
+  display: "swap",
+  variable: "--font-inter"
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteMetadataSettingsContent();
@@ -37,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
+    <html lang="ru" className={inter.variable}>
       <body>{children}</body>
     </html>
   );

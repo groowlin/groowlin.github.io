@@ -1,5 +1,6 @@
 :root {
   --font-family-sans:
+    var(--font-inter),
     ui-sans-serif,
     system-ui,
     sans-serif,
@@ -8,11 +9,9 @@
     "Segoe UI Symbol",
     "Noto Color Emoji";
   --font-family-home:
-    "SF UI Text",
-    "SF Pro Text",
-    "Helvetica Neue",
-    "Segoe UI",
-    Arial,
+    var(--font-inter),
+    ui-sans-serif,
+    system-ui,
     sans-serif;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
@@ -25,6 +24,7 @@
   --line-height-base: 1.5;
   --line-height-reading: 1.65;
   --line-height-caption: 1.25rem;
+  --letter-spacing-base: 0.03em;
   --letter-spacing-overline: 0.04em;
   --letter-spacing-overline-tight: 0.03em;
   --space-0: 0;
@@ -172,6 +172,7 @@ body {
   background: var(--bg-page);
   color: var(--text-primary);
   font-family: var(--font-family-sans);
+  letter-spacing: var(--letter-spacing-base);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-regular);
   line-height: inherit;

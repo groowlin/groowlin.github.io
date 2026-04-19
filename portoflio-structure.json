@@ -1,6 +1,10 @@
 {
   "site": "portfolio",
   "contentSource": "mdx",
+  "designSystem": {
+    "fontFamily": "Inter",
+    "letterSpacing": "0.03em"
+  },
   "pages": [
     {
       "page": "home",

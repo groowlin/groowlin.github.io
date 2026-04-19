@@ -20,8 +20,9 @@
 ## Typography Tokens
 
 ### Font family
-- `--font-family-sans`: `ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
-- `--font-family-home`: `"SF UI Text", "SF Pro Text", "Helvetica Neue", "Segoe UI", Arial, sans-serif`
+- `--font-family-sans`: `var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`
+- `--font-family-home`: `var(--font-inter), ui-sans-serif, system-ui, sans-serif`
+- `--font-inter`: CSS variable from `next/font/local` in `app/layout.tsx`, source file `app/fonts/inter/Inter-Variable.ttf`
 
 ### Font weights
 - `--font-weight-regular = 400`
@@ -42,6 +43,7 @@
 - `--line-height-reading = 1.65`
 - `--line-height-caption = 1.25rem` (20px)
 - `--home-line-height-tight = 19px`
+- `--letter-spacing-base = 0.03em` (3%)
 - `--letter-spacing-overline = 0.04em`
 - `--letter-spacing-overline-tight = 0.03em`
 
