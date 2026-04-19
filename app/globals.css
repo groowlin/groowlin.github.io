@@ -9,6 +9,8 @@
     "Noto Color Emoji";
   --font-weight-regular: 400;
   --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  --font-weight-heavy: 800;
   --font-size-body: 1rem;
   --font-size-caption: 0.875rem;
   --font-size-overline: 0.75rem;
@@ -38,6 +40,9 @@
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-xl: 24px;
+  --radius-home-preview: 20px;
+  --radius-home-top-card: 40px;
+  --radius-home-avatar: 44px;
   --radius-pill: 999px;
   --layout-main-padding-y: 6rem;
   --layout-main-padding-x: 2rem;
@@ -46,6 +51,26 @@
   --layout-preview-size: 484px;
   --layout-inner-min-width: 512px;
   --layout-preview-offset-x: 60px;
+  --home-layout-pad-left: 120px;
+  --home-layout-pad-top: 120px;
+  --home-left-column-width: 360px;
+  --home-list-padding-block: 20px;
+  --home-list-padding-inline: 40px;
+  --home-section-gap: 40px;
+  --home-section-title-gap: 20px;
+  --home-heading-padding-bottom: 20px;
+  --home-item-gap: 8px;
+  --home-meta-gap: 6px;
+  --home-micro-gap: 4px;
+  --home-contact-gap: 8px;
+  --home-top-card-padding: 20px;
+  --home-top-card-gap: 20px;
+  --home-font-size-md: 14px;
+  --home-font-size-lg: 16px;
+  --home-line-height-tight: 19px;
+  --home-icon-size: 16px;
+  --home-arrow-size: 24px;
+  --home-avatar-size: 64px;
   --size-dot-md: 0.45rem;
   --size-dot-sm: 0.4rem;
   --color-black: #000000;
@@ -63,6 +88,7 @@
   --color-gray-75: #f7f7f8;
   --color-gray-50: #f4f4f6;
   --color-gray-40: #f4f4f5;
+  --color-gray-35: #f5f5f5;
   --color-gray-25: #fafafa;
   --white-92: rgba(255, 255, 255, 0.92);
   --white-90: rgba(255, 255, 255, 0.9);
@@ -86,6 +112,7 @@
   --text-marker: var(--color-gray-300);
   --line-muted: var(--color-gray-250);
   --line-hover: var(--color-gray-400);
+  --home-line-default: var(--color-gray-250);
   --bg-page: var(--color-white);
   --card-bg: var(--color-gray-40);
   --card-bg-hover: var(--color-gray-150);
@@ -98,6 +125,12 @@
   --surface-placeholder-work-bg: var(--color-gray-100);
   --logo-gradient-start: var(--color-gray-900);
   --logo-gradient-end: var(--color-gray-600);
+  --home-top-card-bg: var(--color-gray-35);
+  --home-text-primary: var(--color-black);
+  --home-text-secondary: var(--color-gray-500);
+  --home-radius-preview-media: var(--radius-home-preview);
+  --home-top-card-radius: var(--radius-home-top-card);
+  --home-avatar-radius: var(--radius-home-avatar);
 }
 
 * {

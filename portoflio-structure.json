@@ -8,16 +8,12 @@
       "legacy": false,
       "sections": [
         {
-          "name": "intro",
-          "components": ["designer-name", "role-text", "avatar"]
+          "name": "profile-navigation-card",
+          "components": ["avatar", "profile-name", "about-link", "contact-icons", "profile-arrow"]
         },
         {
-          "name": "meta-navigation",
-          "components": ["meta-link-about", "meta-link-connect"]
-        },
-        {
-          "name": "work-showcase-list",
-          "components": ["case-item", "case-item-label", "case-item-meta", "glass-highlight-layer"]
+          "name": "work-showcase-sections",
+          "components": ["section-title", "case-item", "case-item-label", "case-item-meta", "glass-highlight-layer"]
         },
         {
           "name": "hover-preview",
