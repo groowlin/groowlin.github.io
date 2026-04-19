@@ -6,12 +6,21 @@
 
 .mdxRoot {
   display: grid;
-  gap: var(--space-2xl);
+  gap: 0;
 }
 
+.mdxRoot :global(h1),
 .mdxRoot :global(h2),
-.mdxRoot :global(h3) {
-  font-weight: var(--font-weight-medium);
+.mdxRoot :global(h3),
+.mdxRoot :global(h4),
+.mdxRoot :global(h5),
+.mdxRoot :global(h6) {
+  margin-top: 60px;
+  margin-bottom: 40px;
+  color: var(--home-text-primary);
+  font-size: var(--home-font-size-lg);
+  line-height: var(--home-line-height-tight);
+  font-weight: var(--font-weight-heavy);
 }
 
 .mdxRoot :global(p) {

@@ -22,12 +22,21 @@
 
 .mdxContent {
   display: grid;
-  gap: var(--space-2xl);
+  gap: 0;
 }
 
+.mdxContent :global(h1),
 .mdxContent :global(h2),
-.mdxContent :global(h3) {
-  font-weight: var(--font-weight-medium);
+.mdxContent :global(h3),
+.mdxContent :global(h4),
+.mdxContent :global(h5),
+.mdxContent :global(h6) {
+  margin-top: 60px;
+  margin-bottom: 40px;
+  color: var(--home-text-primary);
+  font-size: var(--home-font-size-lg);
+  line-height: var(--home-line-height-tight);
+  font-weight: var(--font-weight-heavy);
 }
 
 .mdxContent :global(p) {

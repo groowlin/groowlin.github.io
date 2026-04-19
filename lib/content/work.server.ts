@@ -47,8 +47,7 @@ export async function getHomeWorkEntries(): Promise<HomeWorkEntry[]> {
 
   return published.map((item) => ({
     label: item.title,
-    year: item.year,
-    category: item.category,
+    subtitle: item.subtitle,
     href: `/work/${item.slug}`,
     preview: item.preview
   }));
@@ -75,8 +74,7 @@ export async function getWorkCase(slug: string): Promise<WorkCase | null> {
     canonical: current.canonical,
     summary: {
       title: current.title,
-      year: current.year,
-      category: current.category,
+      subtitle: current.subtitle,
       preview: current.preview
     },
     meta: {

@@ -12,8 +12,7 @@
 Обязательные поля:
 - `slug: string`
 - `title: string`
-- `year: string`
-- `category: string`
+- `subtitle: string`
 - `status: "published" | "hidden"`
 - `preview: { kind, aspectRatio, src?, placeholderToken?, centered? }`
 - `description: string`
@@ -46,8 +45,7 @@
 ---
 slug: "demo-case"
 title: "Демо-кейс"
-year: "2026"
-category: "Product Design"
+subtitle: "2026 · Product Design"
 status: "published"
 preview:
   kind: "image"

@@ -353,9 +353,7 @@ export function HomeShowcase({ entries, topCard }: HomeShowcaseProps) {
                         <span className={styles.itemContent}>
                           <span className={styles.itemLabel}>{entry.label}</span>
                           <span className={styles.itemMeta}>
-                            <span>{entry.year}</span>
-                            <span className={styles.metaDot} />
-                            <span>{entry.category}</span>
+                            <span>{entry.subtitle}</span>
                           </span>
                         </span>
                       </Link>

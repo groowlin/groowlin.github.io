@@ -62,8 +62,7 @@ export interface HomePreview {
 
 export interface HomeWorkEntry {
   label: string;
-  year: string;
-  category: string;
+  subtitle: string;
   href: string;
   preview: HomePreview;
 }
@@ -72,8 +71,7 @@ export type WorkCaseStatus = "published" | "hidden";
 
 export interface WorkCaseSummary {
   title: string;
-  year: string;
-  category: string;
+  subtitle: string;
   preview: HomePreview;
 }
 
@@ -116,8 +114,7 @@ export interface StaticPageFrontmatter {
 export interface WorkFrontmatter {
   slug: string;
   title: string;
-  year: string;
-  category: string;
+  subtitle: string;
   status: WorkCaseStatus;
   preview: HomePreview;
   description: string;

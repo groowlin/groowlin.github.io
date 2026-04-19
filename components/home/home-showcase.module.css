@@ -3,7 +3,7 @@
   width: fit-content;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4xl);
+  gap: var(--home-root-gap);
 }
 
 .leftColumn {
@@ -14,20 +14,19 @@
 }
 
 .topCardWrap {
-  width: 100%;
-  max-width: var(--home-top-card-width);
+  width: var(--home-top-card-width);
 }
 
 .listWrap {
   position: relative;
   width: fit-content;
-  padding: var(--home-list-padding-block) 0;
+  padding: var(--home-list-padding-block) 0 0 var(--home-rounding-compensation);
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 60px;
+  gap: var(--home-list-group-gap);
   width: fit-content;
   position: relative;
   z-index: 2;
@@ -36,7 +35,7 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: var(--home-section-internal-gap);
 }
 
 .sectionTitle {
@@ -59,9 +58,9 @@
   position: relative;
   display: inline-flex;
   width: fit-content;
-  padding: var(--space-sm) var(--space-lg);
-  margin-left: calc(var(--space-lg) * -1);
-  border-radius: var(--radius-lg);
+  padding: var(--home-item-padding-y) var(--home-item-padding-x);
+  margin-left: calc(var(--home-item-padding-x) * -1);
+  border-radius: var(--home-bubble-radius);
   text-decoration: none;
   color: var(--home-text-primary);
 }
@@ -123,7 +122,7 @@
 .glass {
   position: absolute;
   inset: auto;
-  border-radius: var(--radius-lg);
+  border-radius: var(--home-bubble-radius);
   border: 1px solid var(--surface-glass-border);
   background: linear-gradient(180deg, var(--surface-glass-start), var(--surface-glass-end));
   box-shadow:

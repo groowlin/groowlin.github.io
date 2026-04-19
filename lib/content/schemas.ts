@@ -52,8 +52,7 @@ export const staticPageFrontmatterSchema = z.object({
 export const workFrontmatterSchema = z.object({
   slug: z.string().min(1),
   title: z.string().min(1),
-  year: z.string().min(1),
-  category: z.string().min(1),
+  subtitle: z.string().min(1),
   status: z.enum(["published", "hidden"]),
   preview: homePreviewSchema,
   description: z.string().min(1),

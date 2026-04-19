@@ -10,6 +10,7 @@ interface SiteShellProps {
   title?: string;
   subtitle?: string;
   subtitleMuted?: boolean;
+  subtitleVariant?: "default" | "workMeta";
   topCardVariant?: TopCardVariant;
 }
 
@@ -18,9 +19,11 @@ export async function SiteShell({
   title,
   subtitle,
   subtitleMuted = true,
+  subtitleVariant = "default",
   topCardVariant
 }: SiteShellProps) {
   const topCard = topCardVariant ? await getTopCardContent(topCardVariant) : null;
+  const compensationClass = topCard ? styles.compensated : "";
   const hasHeaderBlock = Boolean(title || subtitle);
   const hasAnimatedHeaderContent = hasHeaderBlock || Boolean(topCard);
 
@@ -37,10 +40,18 @@ export async function SiteShell({
 
             {hasHeaderBlock && (
               <MotionItem>
-                <header className={styles.headerBlock}>
+                <header className={[styles.headerBlock, compensationClass].filter(Boolean).join(" ")}>
                   {title && <h1 className={styles.title}>{title}</h1>}
                   {subtitle && (
-                    <p className={[styles.subtitle, subtitleMuted ? styles.subtitleMuted : styles.subtitleStrong].join(" ")}>
+                    <p
+                      className={[
+                        styles.subtitle,
+                        subtitleMuted ? styles.subtitleMuted : styles.subtitleStrong,
+                        subtitleVariant === "workMeta" ? styles.subtitleWorkMeta : ""
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    >
                       {subtitle}
                     </p>
                   )}
@@ -50,7 +61,7 @@ export async function SiteShell({
           </MotionPage>
         )}
 
-        {children}
+        {topCard ? <div className={styles.compensated}>{children}</div> : children}
       </div>
     </main>
   );

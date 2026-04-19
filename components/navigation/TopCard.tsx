@@ -25,7 +25,7 @@ export function TopCard({ card, className }: TopCardProps) {
             {card.icons.length > 0 ? (
               <span className={styles.icons} aria-hidden="true">
                 {card.icons.map((iconPath, index) => (
-                  <Image key={`${iconPath}-${index}`} className={styles.icon} src={iconPath} alt="" width={16} height={16} />
+                  <Image key={`${iconPath}-${index}`} className={styles.icon} src={iconPath} alt="" width={18} height={18} />
                 ))}
               </span>
             ) : null}

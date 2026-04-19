@@ -52,8 +52,9 @@ export default async function WorkPage({ params }: WorkPageProps) {
   return (
     <SiteShell
       title={entry.summary.title}
-      subtitle={`${entry.summary.year} · ${entry.summary.category}`}
+      subtitle={entry.summary.subtitle}
       subtitleMuted={false}
+      subtitleVariant="workMeta"
       topCardVariant="to-home"
     >
       <MotionPage className={styles.stack}>

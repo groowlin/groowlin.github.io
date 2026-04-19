@@ -20,17 +20,23 @@
 .headerStack {
   display: flex;
   flex-direction: column;
-  gap: var(--layout-content-gap);
+  gap: 60px;
+  margin-bottom: 8px;
 }
 
 .topCard {
-  width: 100%;
-  max-width: var(--home-top-card-width);
+  width: var(--home-top-card-width);
+}
+
+.compensated {
+  padding-left: var(--home-rounding-compensation);
 }
 
 .title {
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-body);
+  color: var(--home-text-primary);
+  font-size: var(--home-font-size-lg);
+  line-height: var(--home-line-height-tight);
+  font-weight: var(--font-weight-heavy);
 }
 
 .subtitle {
@@ -43,6 +49,13 @@
 
 .subtitleStrong {
   color: var(--text-primary);
+}
+
+.subtitleWorkMeta {
+  color: var(--text-light);
+  font-size: 14px;
+  line-height: 16px;
+  font-weight: var(--font-weight-medium);
 }
 
 @media (min-width: 768px) {
