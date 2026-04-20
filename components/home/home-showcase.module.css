@@ -72,6 +72,7 @@
   width: fit-content;
   transform: translate3d(0, 0, 0);
   will-change: transform;
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .itemActive .itemContent {
@@ -80,10 +81,6 @@
     calc(var(--item-shift-y, 0px) * var(--item-shift-scale, 0.18)),
     0
   );
-}
-
-.itemEntering .itemContent {
-  transition: transform 600ms cubic-bezier(0.74, 0.05, 0.64, 0.89);
 }
 
 .itemLabel {

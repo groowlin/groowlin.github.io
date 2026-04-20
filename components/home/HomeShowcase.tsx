@@ -30,7 +30,8 @@ interface IndexedHomeSection {
 
 const PREVIEW_OFFSET_FALLBACK = 60;
 const ACTIVE_TEXT_SHIFT_SCALE = 0.18;
-const TEXT_ENTER_EASE_IN_MS = 170;
+const ITEM_HOVER_ZONE_PAD_X = 18;
+const ITEM_HOVER_ZONE_PAD_Y = 13.5;
 
 function getRootCssNumberVar(name: string, fallback: number) {
   if (typeof window === "undefined") return fallback;
@@ -54,7 +55,6 @@ interface HomeShowcaseProps {
 export function HomeShowcase({ title, subtitle, sections, topCard }: HomeShowcaseProps) {
   const [canHover, setCanHover] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [enteringIndex, setEnteringIndex] = useState<number | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [previewLeft, setPreviewLeft] = useState<number | null>(null);
   const [highlightRect, setHighlightRect] = useState<Rect | null>(null);
@@ -62,7 +62,6 @@ export function HomeShowcase({ title, subtitle, sections, topCard }: HomeShowcas
   const listWrapRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const enterTextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const shiftXRaw = useMotionValue(0);
   const shiftYRaw = useMotionValue(0);
@@ -175,9 +174,6 @@ export function HomeShowcase({ title, subtitle, sections, topCard }: HomeShowcas
       if (closeTimerRef.current) {
         clearTimeout(closeTimerRef.current);
       }
-      if (enterTextTimerRef.current) {
-        clearTimeout(enterTextTimerRef.current);
-      }
     },
     []
   );
@@ -200,21 +196,42 @@ export function HomeShowcase({ title, subtitle, sections, topCard }: HomeShowcas
 
   const portalTarget = typeof document === "undefined" ? null : document.body;
 
-  function openIndex(index: number) {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
+  const cancelCloseIndex = useCallback(() => {
+    if (!closeTimerRef.current) return;
+    clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
+  }, []);
 
-    if (activeIndex !== index) {
-      setEnteringIndex(index);
-      if (enterTextTimerRef.current) {
-        clearTimeout(enterTextTimerRef.current);
+  const isCursorInsideItemHoverZone = useCallback(
+    (index: number, clientX: number, clientY: number) => {
+      const item = itemRefs.current[index];
+      if (!item) return false;
+
+      const rect = item.getBoundingClientRect();
+      return (
+        clientX >= rect.left - ITEM_HOVER_ZONE_PAD_X &&
+        clientX <= rect.right + ITEM_HOVER_ZONE_PAD_X &&
+        clientY >= rect.top - ITEM_HOVER_ZONE_PAD_Y &&
+        clientY <= rect.bottom + ITEM_HOVER_ZONE_PAD_Y
+      );
+    },
+    []
+  );
+
+  const findHoveredItemIndex = useCallback(
+    (clientX: number, clientY: number) => {
+      for (let index = 0; index < itemRefs.current.length; index += 1) {
+        if (isCursorInsideItemHoverZone(index, clientX, clientY)) {
+          return index;
+        }
       }
-      enterTextTimerRef.current = setTimeout(() => {
-        setEnteringIndex((current) => (current === index ? null : current));
-      }, TEXT_ENTER_EASE_IN_MS);
-    }
+      return null;
+    },
+    [isCursorInsideItemHoverZone]
+  );
+
+  function openIndex(index: number) {
+    cancelCloseIndex();
 
     setActiveIndex(index);
     setPreviewIndex(index);
@@ -223,10 +240,12 @@ export function HomeShowcase({ title, subtitle, sections, topCard }: HomeShowcas
   }
 
   function closeIndex() {
+    if (activeIndex === null && previewIndex === null) return;
+    if (closeTimerRef.current) return;
     closeTimerRef.current = setTimeout(() => {
       setActiveIndex(null);
-      setEnteringIndex(null);
       setPreviewIndex(null);
+      closeTimerRef.current = null;
     }, 380);
   }
 
@@ -235,6 +254,17 @@ export function HomeShowcase({ title, subtitle, sections, topCard }: HomeShowcas
 
     const wrap = listWrapRef.current;
     if (!wrap) return;
+
+    const hoveredIndex = findHoveredItemIndex(event.clientX, event.clientY);
+    if (hoveredIndex === null) {
+      closeIndex();
+      return;
+    }
+
+    cancelCloseIndex();
+    if (hoveredIndex !== activeIndex) {
+      openIndex(hoveredIndex);
+    }
 
     const bounds = wrap.getBoundingClientRect();
 
@@ -298,12 +328,6 @@ export function HomeShowcase({ title, subtitle, sections, topCard }: HomeShowcas
             } as unknown as CSSProperties
           }
           onMouseLeave={() => {
-            tiltXRaw.set(0);
-            tiltYRaw.set(0);
-            shiftXRaw.set(0);
-            shiftYRaw.set(0);
-            originXRaw.set(50);
-            originYRaw.set(50);
             closeIndex();
           }}
           variants={itemRevealVariants}
@@ -370,8 +394,7 @@ export function HomeShowcase({ title, subtitle, sections, topCard }: HomeShowcas
                         }}
                         className={[
                           styles.item,
-                          activeIndex === index ? styles.itemActive : "",
-                          enteringIndex === index ? styles.itemEntering : ""
+                          activeIndex === index ? styles.itemActive : ""
                         ]
                           .filter(Boolean)
                           .join(" ")}
