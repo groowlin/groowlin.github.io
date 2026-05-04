@@ -11,15 +11,27 @@
 }
 
 .wrapper {
+  --shape-radius: var(--placeholder-radius, var(--radius-md));
+  --shape-mask: var(--placeholder-shape-mask, var(--shape-surface-default-mask));
   width: 100%;
-  border-radius: var(--placeholder-radius, var(--radius-md));
+  border-radius: var(--shape-radius);
   overflow: hidden;
   border: var(--placeholder-border-width, 0px) solid var(--placeholder-border-color, transparent);
   background: var(--placeholder-bg, transparent);
+  -webkit-mask-image: var(--shape-mask);
+  mask-image: var(--shape-mask);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
 }
 
 .workWrapper {
-  border-radius: var(--placeholder-radius, var(--radius-xs));
+  --shape-radius: var(--placeholder-radius, var(--radius-xs));
+  --shape-mask: var(--placeholder-shape-mask, var(--shape-surface-work-mask));
+  border-radius: var(--shape-radius);
   --placeholder-border-color: transparent;
   --placeholder-bg: transparent;
   display: grid;
@@ -27,7 +39,8 @@
 }
 
 .contentMediaWrapper {
-  border-radius: var(--home-top-card-padding);
+  --shape-radius: var(--home-top-card-padding);
+  border-radius: var(--shape-radius);
 }
 
 .squareFrame {
@@ -44,6 +57,14 @@
   overflow: hidden;
   display: grid;
   place-items: center;
+  -webkit-mask-image: var(--shape-mask, none);
+  mask-image: var(--shape-mask, none);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
 }
 
 .asset {

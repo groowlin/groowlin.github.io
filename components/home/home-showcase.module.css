@@ -55,12 +55,14 @@
 }
 
 .item {
+  --shape-radius: var(--home-bubble-radius);
+  --shape-mask: var(--shape-surface-bubble-mask);
   position: relative;
   display: inline-flex;
   width: fit-content;
   padding: var(--home-item-padding-y) var(--home-item-padding-x);
   margin-left: calc(var(--home-item-padding-x) * -1);
-  border-radius: var(--home-bubble-radius);
+  border-radius: var(--shape-radius);
   text-decoration: none;
   color: var(--home-text-primary);
 }
@@ -117,9 +119,11 @@
 }
 
 .glass {
+  --shape-radius: var(--home-bubble-radius);
+  --shape-mask: var(--shape-surface-bubble-mask);
   position: absolute;
   inset: auto;
-  border-radius: var(--home-bubble-radius);
+  border-radius: var(--shape-radius);
   border: 1px solid var(--surface-glass-border);
   background: linear-gradient(180deg, var(--surface-glass-start), var(--surface-glass-end));
   box-shadow:
@@ -133,6 +137,14 @@
   transform-style: preserve-3d;
   z-index: 1;
   overflow: hidden;
+  -webkit-mask-image: var(--shape-mask);
+  mask-image: var(--shape-mask);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
 }
 
 .glassHighlight {
@@ -172,7 +184,10 @@
 }
 
 .previewCard {
+  --shape-radius: var(--home-radius-preview-media);
+  --shape-mask: var(--shape-surface-preview-mask);
   --placeholder-radius: var(--home-radius-preview-media);
+  --placeholder-shape-mask: var(--shape-surface-preview-mask);
   --placeholder-border-width: 0px;
   --placeholder-border-color: transparent;
   --placeholder-bg: transparent;
@@ -180,7 +195,16 @@
   --home-preview-max-block: var(--layout-preview-size);
   width: 100%;
   height: 100%;
-  border-radius: var(--home-radius-preview-media);
+  border-radius: var(--shape-radius);
+  overflow: hidden;
+  -webkit-mask-image: var(--shape-mask);
+  mask-image: var(--shape-mask);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
 }
 
 @media (min-width: 1180px) {

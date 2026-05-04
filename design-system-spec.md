@@ -124,6 +124,24 @@
 - `--radius-home-avatar = 44px`
 - `--radius-pill = 999px`
 
+## Shape Tokens
+- `--shape-mask-subtle = /media/ui/shape-squircle-subtle.svg`
+- `--shape-mask-regular = /media/ui/shape-squircle-regular.svg`
+- `--shape-mask-strong = /media/ui/shape-squircle-strong.svg`
+- `--shape-surface-default-mask = --shape-mask-regular`
+- `--shape-surface-work-mask = --shape-mask-subtle`
+- `--shape-surface-preview-mask = --shape-mask-strong`
+- `--shape-surface-top-card-mask = --shape-mask-strong`
+- `--shape-surface-avatar-mask = --shape-mask-strong`
+- `--shape-surface-bubble-mask = --shape-mask-strong`
+
+## Corner Shape Rules
+- `radius` token controls scale and proportion of the corner.
+- `shape` token controls the iOS-like smoothing profile.
+- All non-pill rounded surfaces must use both a radius token and a semantic shape mask.
+- Pill/capsule elements stay on `--radius-pill` or similar capsule geometry and do not use the smoothing masks.
+- `border-radius` remains the fallback and sizing primitive; the visible corner character comes from the shape mask layer.
+
 ## Size Tokens
 - `--size-dot-md = 0.45rem`
 - `--size-dot-sm = 0.4rem`
@@ -161,6 +179,8 @@ Spacing:
 Shape:
 - card radius: `--home-top-card-radius` (40px)
 - avatar radius: `--home-avatar-radius` (44px)
+- card shape mask: `--shape-surface-top-card-mask`
+- avatar shape mask: `--shape-surface-avatar-mask`
 
 Rules:
 - top-card uses `--home-top-card-bg`
@@ -178,6 +198,7 @@ Spacing:
 
 Shape:
 - radius: `--radius-lg`
+- shape mask: `--shape-surface-bubble-mask` for active bubble surfaces
 
 Rules:
 - label всегда сверху meta
@@ -200,6 +221,8 @@ Spacing:
 Shape:
 - card radius: `--home-top-card-radius`
 - avatar radius: `--home-avatar-radius`
+- card shape mask: `--shape-surface-top-card-mask`
+- avatar shape mask: `--shape-surface-avatar-mask`
 
 Typography:
 - title: `--home-name-size / --home-line-height-tight / --font-weight-bold`
@@ -221,6 +244,9 @@ Shape:
 - default radius: `--radius-md`
 - work radius fallback: `--radius-xs`
 - pill radius: `--radius-pill`
+- default media shape mask: `--shape-surface-default-mask`
+- work media shape mask: `--shape-surface-work-mask`
+- preview media shape mask: `--shape-surface-preview-mask`
 
 Rules:
 - вся палитра placeholder и наложений берётся из color/alpha токенов

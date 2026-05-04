@@ -4,6 +4,20 @@
   "designSystem": {
     "fontFamily": "Inter",
     "letterSpacing": "0.03em",
+    "shapeSystem": {
+      "style": "ios-like corner smoothing",
+      "appliesTo": "all non-pill rounded surfaces",
+      "preserveRadiusTokens": true,
+      "pillSurfacesUseSmoothing": false,
+      "presets": {
+        "default": "regular",
+        "work": "subtle",
+        "preview": "strong",
+        "topCard": "strong",
+        "avatar": "strong",
+        "activeBubble": "strong"
+      }
+    },
     "rhythm": {
       "titleSubtitle": {
         "top": 60,
