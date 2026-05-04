@@ -49,25 +49,10 @@
   --radius-xl: 24px;
   --radius-2xl: 40px;
   --radius-avatar-home: 44px;
-  --radius-home-preview: 20px;
+  --radius-home-preview: 22px;
   --radius-home-top-card: 40px;
-  --radius-home-avatar: 44px;
+  --radius-home-avatar: 50px;
   --radius-pill: 999px;
-  --shape-mask-subtle: url("/media/ui/shape-squircle-subtle.svg");
-  --shape-mask-regular: url("/media/ui/shape-squircle-regular.svg");
-  --shape-mask-strong: url("/media/ui/shape-squircle-strong.svg");
-  --shape-surface-default-mask: var(--shape-mask-regular);
-  --shape-surface-work-mask: var(--shape-mask-subtle);
-  --shape-surface-preview-mask: var(--shape-mask-strong);
-  --shape-surface-top-card-mask: var(--shape-mask-strong);
-  --shape-surface-avatar-mask: var(--shape-mask-strong);
-  --shape-surface-bubble-mask: var(--shape-mask-strong);
-  --shape-surface-default-smoothing: 0.7;
-  --shape-surface-work-smoothing: 0.55;
-  --shape-surface-preview-smoothing: 0.9;
-  --shape-surface-top-card-smoothing: 0.9;
-  --shape-surface-avatar-smoothing: 0.95;
-  --shape-surface-bubble-smoothing: 0.88;
   --layout-main-padding-y: 6rem;
   --layout-main-padding-x: 2rem;
   --layout-content-gap: 2rem;
@@ -260,17 +245,4 @@ li {
 
 li::marker {
   color: var(--text-marker);
-}
-
-.shapeSurface {
-  border-radius: var(--shape-radius, 0px);
-  overflow: hidden;
-  -webkit-mask-image: var(--shape-mask, none);
-  mask-image: var(--shape-mask, none);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
 }

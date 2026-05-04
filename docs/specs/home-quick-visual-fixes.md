@@ -138,13 +138,3 @@
 2. Не менять логику переключения preview-контента.
 3. Не выносить правый блок из текущей архитектуры `fixed/portal`.
 4. Не упрощать и не убирать motion/tilt.
-## iOS-like corner smoothing rules
-
-1. Для всех non-pill поверхностей home использовать shape layer поверх текущих radius-токенов.
-2. `radius` сохраняет текущую пропорцию элемента, `shape mask` задаёт iOS-like характер угла.
-3. Preview media использует `--radius-home-preview` + `--shape-surface-preview-mask`.
-4. Top card использует `--radius-home-top-card` + `--shape-surface-top-card-mask`.
-5. Avatar mask использует `--radius-home-avatar` + `--shape-surface-avatar-mask`.
-6. Active case bubble использует `--home-bubble-radius` + `--shape-surface-bubble-mask`.
-7. Pill/capsule элементы (`--radius-pill`, точки-разделители, pill-like дорожки) не переводятся в smoothing system.
-8. Все визуальные слои одной поверхности должны использовать одну и ту же shape-геометрию: container, media clipping, glass/highlight overlays.

@@ -1,20 +1,10 @@
 .card {
-  --shape-radius: var(--home-top-card-radius);
-  --shape-mask: var(--shape-surface-top-card-mask);
   position: relative;
   display: block;
   width: var(--home-top-card-width);
   padding: var(--home-top-card-padding);
-  border-radius: var(--shape-radius);
+  border-radius: var(--home-top-card-radius);
   overflow: hidden;
-  -webkit-mask-image: var(--shape-mask);
-  mask-image: var(--shape-mask);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
   isolation: isolate;
   background-color: var(--home-top-card-bg);
   color: var(--home-top-card-text-primary);
@@ -44,21 +34,11 @@
 }
 
 .photoWrap {
-  --shape-radius: var(--home-avatar-radius);
-  --shape-mask: var(--shape-surface-avatar-mask);
   flex: 0 0 auto;
   width: var(--home-avatar-size);
   height: var(--home-avatar-size);
-  border-radius: var(--shape-radius);
+  border-radius: var(--home-avatar-radius);
   overflow: hidden;
-  -webkit-mask-image: var(--shape-mask);
-  mask-image: var(--shape-mask);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
 }
 
 .photo {
