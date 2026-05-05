@@ -1,0 +1,145 @@
+.button {
+  position: fixed;
+  right: var(--space-3xl);
+  bottom: var(--space-3xl);
+  width: calc(36px + var(--space-3xl));
+  height: calc(36px + var(--space-3xl));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(0, 12px, 0);
+  transition:
+    opacity 0.2s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 80;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.button[data-visible="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0);
+}
+
+.button:focus-visible {
+  outline: 0;
+}
+
+.visual {
+  position: absolute;
+  right: var(--space-sm);
+  bottom: var(--space-sm);
+  display: block;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  transform-origin: bottom center;
+  transition:
+    height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.button:hover .visual,
+.button:focus-visible .visual {
+  height: 68px;
+  transform: scale(1.06);
+}
+
+.button:focus-visible .visual {
+  outline: 2px solid var(--color-black);
+  outline-offset: 4px;
+}
+
+.iconFrame {
+  display: block;
+  width: 36px;
+  height: 68px;
+}
+
+.icon {
+  display: block;
+  width: 36px;
+  height: 68px;
+  color: var(--color-white);
+  filter: drop-shadow(0 16px 40px var(--black-08));
+}
+
+.background {
+  fill: var(--color-black);
+  transition: height 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  height: 36px;
+}
+
+.head {
+  fill: currentColor;
+}
+
+.shaft {
+  fill: currentColor;
+  opacity: 0;
+  transform: translateY(-14px) scaleY(0.3);
+  transform-box: fill-box;
+  transform-origin: top center;
+  transition:
+    opacity 0.18s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.button:hover .background,
+.button:focus-visible .background {
+  height: 68px;
+}
+
+.button:hover .shaft,
+.button:focus-visible .shaft {
+  opacity: 1;
+  transform: translateY(0) scaleY(1);
+}
+
+@media (max-width: 1180px) {
+  .button {
+    right: var(--space-3xl);
+    bottom: var(--space-3xl);
+    width: calc(36px + var(--space-3xl));
+    height: calc(36px + var(--space-3xl));
+  }
+
+  .visual {
+    right: var(--space-sm);
+    bottom: var(--space-sm);
+  }
+}
+
+@media (max-width: 768px) {
+  .button {
+    right: var(--space-2xl);
+    bottom: var(--space-2xl);
+    width: calc(36px + var(--space-2xl));
+    height: calc(36px + var(--space-2xl));
+  }
+
+  .visual {
+    right: var(--space-sm);
+    bottom: var(--space-sm);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .button {
+    width: calc(36px + var(--space-2xl));
+    height: calc(36px + var(--space-2xl));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .visual,
+  .background,
+  .shaft {
+    transition: none;
+  }
+}
