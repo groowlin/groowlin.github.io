@@ -8,9 +8,13 @@ interface TopCardProps {
   className?: string;
 }
 
+function getExternalLinkProps(href: string) {
+  return /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(href) ? { target: "_blank", rel: "noopener noreferrer" } : {};
+}
+
 export function TopCard({ card, className }: TopCardProps) {
   return (
-    <Link href={card.link} className={[styles.card, className].filter(Boolean).join(" ")}>
+    <Link href={card.link} className={[styles.card, className].filter(Boolean).join(" ")} {...getExternalLinkProps(card.link)}>
       <span className={styles.row}>
         <span className={styles.photoWrap}>
           <Image className={styles.photo} src={card.photo} alt={card.title} width={64} height={64} />

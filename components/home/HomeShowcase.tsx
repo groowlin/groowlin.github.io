@@ -33,6 +33,10 @@ const ACTIVE_TEXT_SHIFT_SCALE = 0.18;
 const ITEM_HOVER_ZONE_PAD_X = 18;
 const ITEM_HOVER_ZONE_PAD_Y = 13.5;
 
+function getExternalLinkProps(href: string) {
+  return /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(href) ? { target: "_blank", rel: "noopener noreferrer" } : {};
+}
+
 function getRootCssNumberVar(name: string, fallback: number) {
   if (typeof window === "undefined") return fallback;
   const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -389,6 +393,7 @@ export function HomeShowcase({ title, subtitle, sections, topCard }: HomeShowcas
                     <motion.span key={entry.href} variants={itemRevealVariants}>
                       <Link
                         href={entry.href}
+                        {...getExternalLinkProps(entry.href)}
                         ref={(node) => {
                           itemRefs.current[index] = node;
                         }}

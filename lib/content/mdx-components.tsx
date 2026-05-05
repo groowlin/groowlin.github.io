@@ -1,4 +1,4 @@
-import { Children, isValidElement, type CSSProperties, type HTMLAttributes, type ReactNode } from "react";
+import { Children, isValidElement, type AnchorHTMLAttributes, type CSSProperties, type HTMLAttributes, type ReactNode } from "react";
 import Link from "next/link";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
 import galleryStyles from "@/components/media/mdx-gallery.module.css";
@@ -32,6 +32,14 @@ interface CtaProps {
 
 interface GalleryProps extends HTMLAttributes<HTMLElement> {
   children?: ReactNode;
+}
+
+function isExternalHref(href: string) {
+  return /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(href);
+}
+
+function getExternalLinkProps(href: string) {
+  return isExternalHref(href) ? { target: "_blank", rel: "noopener noreferrer" } : {};
 }
 
 function getGalleryRowSizes(itemCount: number) {
@@ -100,6 +108,12 @@ function Gallery({ children, className, style, ...props }: GalleryProps) {
   );
 }
 
+function MdxLink({ href = "", rel, target, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) {
+  const externalLinkProps = getExternalLinkProps(href);
+
+  return <a href={href} rel={rel ?? externalLinkProps.rel} target={target ?? externalLinkProps.target} {...props} />;
+}
+
 export function getMdxComponents(variant: "default" | "work" = "default") {
   return {
     MotionDiv: MdxDiv,
@@ -121,6 +135,7 @@ export function getMdxComponents(variant: "default" | "work" = "default") {
     li: MdxLi,
     blockquote: MdxBlockquote,
     section: MdxSection,
+    a: MdxLink,
     Gallery,
     gallery: Gallery,
     Media: ({
@@ -140,7 +155,9 @@ export function getMdxComponents(variant: "default" | "work" = "default") {
     Cta: ({ href, label, body }: CtaProps) => (
       <MdxSection>
         {body ? <MdxP>{body}</MdxP> : null}
-        <Link href={href}>{label}</Link>
+        <Link href={href} {...getExternalLinkProps(href)}>
+          {label}
+        </Link>
       </MdxSection>
     )
   };
