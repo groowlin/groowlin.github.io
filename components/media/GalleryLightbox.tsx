@@ -101,7 +101,13 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
 
     restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
+    const root = document.documentElement;
+    const previousRootOverflow = root.style.overflow;
+    const previousRootScrollbarGutter = root.style.scrollbarGutter;
     const previousOverflow = document.body.style.overflow;
+
+    root.style.overflow = "hidden";
+    root.style.scrollbarGutter = "auto";
     document.body.style.overflow = "hidden";
 
     const frame = window.requestAnimationFrame(() => {
@@ -132,6 +138,8 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
 
     return () => {
       window.cancelAnimationFrame(frame);
+      root.style.overflow = previousRootOverflow;
+      root.style.scrollbarGutter = previousRootScrollbarGutter;
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
       restoreFocusRef.current?.focus();
