@@ -1,7 +1,7 @@
-import { Children, isValidElement, type AnchorHTMLAttributes, type CSSProperties, type HTMLAttributes, type ReactNode } from "react";
+import { Children, isValidElement, type AnchorHTMLAttributes, type HTMLAttributes, type ReactNode } from "react";
 import Link from "next/link";
+import { GalleryLightbox } from "@/components/media/GalleryLightbox";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
-import galleryStyles from "@/components/media/mdx-gallery.module.css";
 import {
   MdxBlockquote,
   MdxDiv,
@@ -22,6 +22,7 @@ interface MediaProps {
   aspectRatio?: string;
   caption?: string;
   placeholderToken?: string;
+  openable?: boolean;
 }
 
 interface CtaProps {
@@ -32,6 +33,7 @@ interface CtaProps {
 
 interface GalleryProps extends HTMLAttributes<HTMLElement> {
   children?: ReactNode;
+  variant?: "default" | "work";
 }
 
 function isExternalHref(href: string) {
@@ -42,68 +44,37 @@ function getExternalLinkProps(href: string) {
   return isExternalHref(href) ? { target: "_blank", rel: "noopener noreferrer" } : {};
 }
 
-function getGalleryRowSizes(itemCount: number) {
-  if (itemCount <= 0) {
-    return [];
-  }
+function Gallery({ children, className, style, variant = "default", ...props }: GalleryProps) {
+  const items = Children.toArray(children).flatMap((child) => {
+    if (!isValidElement<MediaProps>(child)) {
+      return [];
+    }
 
-  if (itemCount <= 3) {
-    return [itemCount];
-  }
-
-  const rows = Math.ceil(itemCount / 3);
-  const sizes = Array.from({ length: rows }, () => 2);
-  let remaining = itemCount - rows * 2;
-
-  for (let index = sizes.length - 1; index >= 0 && remaining > 0; index -= 1) {
-    sizes[index] += 1;
-    remaining -= 1;
-  }
-
-  return sizes;
-}
-
-function Gallery({ children, className, style, ...props }: GalleryProps) {
-  const items = Children.toArray(children).filter((child) => isValidElement(child));
+    return [
+      {
+        kind: child.props.kind ?? "image",
+        src: child.props.src,
+        aspectRatio: child.props.aspectRatio,
+        caption: child.props.caption,
+        placeholderToken: child.props.placeholderToken,
+        openable: child.props.openable ?? true
+      }
+    ];
+  });
 
   if (items.length === 0) {
     return null;
   }
 
-  const rowSizes = getGalleryRowSizes(items.length);
-  const rows = rowSizes.reduce<{ offset: number; rows: ReactNode[][] }>(
-    (accumulator, size) => {
-      const nextOffset = accumulator.offset + size;
-      return {
-        offset: nextOffset,
-        rows: [...accumulator.rows, items.slice(accumulator.offset, nextOffset)]
-      };
-    },
-    { offset: 0, rows: [] }
-  ).rows;
-
   return (
     <MdxMediaBlock>
-      <div
+      <GalleryLightbox
         {...props}
-        className={[galleryStyles.gallery, className].filter(Boolean).join(" ")}
-        style={
-          {
-            ...style,
-            ["--media-bleed-offset" as string]: "0px"
-          } satisfies CSSProperties
-        }
-      >
-        {rows.map((rowItems, rowIndex) => (
-          <div key={`gallery-row-${rowIndex}`} className={galleryStyles.row} data-columns={rowItems.length}>
-            {rowItems.map((item, itemIndex) => (
-              <div key={`gallery-item-${rowIndex}-${itemIndex}`} className={galleryStyles.item}>
-                {item}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
+        items={items}
+        variant={variant}
+        className={className}
+        style={style}
+      />
     </MdxMediaBlock>
   );
 }
@@ -136,8 +107,8 @@ export function getMdxComponents(variant: "default" | "work" = "default") {
     blockquote: MdxBlockquote,
     section: MdxSection,
     a: MdxLink,
-    Gallery,
-    gallery: Gallery,
+    Gallery: (props: GalleryProps) => <Gallery {...props} variant={variant} />,
+    gallery: (props: GalleryProps) => <Gallery {...props} variant={variant} />,
     Media: ({
       kind = "image",
       src,

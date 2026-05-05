@@ -11,6 +11,7 @@ Props:
 - `aspectRatio?: string`
 - `caption?: string`
 - `placeholderToken?: string`
+- `openable?: boolean` (default: `true`, используется только для media внутри `Gallery`)
 
 Пример:
 ```mdx
@@ -28,6 +29,9 @@ Props:
 - Используется как MDX-компонент: `<Gallery> ... </Gallery>`.
 - Внутри `Gallery` поддерживаются только `<Media />`.
 - Количество media не ограничено.
+- Media внутри `Gallery` открывается во fullscreen-overlay по клику или тапу.
+- У конкретного `<Media />` внутри `Gallery` fullscreen можно отключить через `openable={false}`.
+- Это поведение относится только к media внутри `Gallery` и не применяется к preview, avatar, SVG-иконкам и другим изображениям вне `Gallery`.
 
 Правила раскладки:
 - Desktop/tablet: максимум `3` media в строке.
@@ -40,6 +44,12 @@ Props:
 Отступы/форма:
 - Gap между media и между строками — `20px`.
 - Весь блок `Gallery` выходит за границы текстового контейнера на `20px` с обеих сторон.
+- Fullscreen-overlay закрывается по `Escape`.
+- На устройствах с fine pointer fullscreen-overlay закрывается кликом в любой точке overlay; системный курсор остается обычным, а отдельный close-индикатор следует за курсором, в том числе над media.
+- На touch/coarse pointer используется обычная fixed close-button в правом верхнем углу.
+- Fullscreen media сохраняет свой тип (`image`/`video`) и вписывается в viewport с `contain`.
+- Горизонтальный размер fullscreen media ограничен правилом `min(viewport, page container + 640px)`.
+- Backdrop fullscreen-overlay использует `var(--white-20)` и `blur(20px)`.
 
 Пример:
 ```mdx

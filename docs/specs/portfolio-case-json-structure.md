@@ -26,6 +26,8 @@
 - MDX body — это основной контент кейса.
 - Разрешены стандартные markdown-блоки и встраиваемые MDX-компоненты из `lib/content/mdx-components.tsx`.
 - Поддерживается `<Media />` и MDX-компонент `<Gallery> ... </Gallery>` с вложенными `<Media />`.
+- Для `<Gallery />` встроено fullscreen-открытие media по клику или тапу только внутри самого gallery-блока.
+- Для отдельного media внутри `<Gallery />` fullscreen можно отключить через `openable={false}`.
 
 ## 5. Publication Rules
 - `published`:

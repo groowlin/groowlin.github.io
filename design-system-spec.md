@@ -227,6 +227,34 @@ Rules:
 - вся палитра placeholder и наложений берётся из color/alpha токенов
 - video dot size переключается через `--size-dot-md`/`--size-dot-sm`
 
+### Gallery Fullscreen Overlay (`GalleryLightbox`)
+Structure:
+- backdrop
+- dialog container
+- media frame
+- fixed close button
+- optional caption
+
+Spacing:
+- desktop backdrop padding: `--space-3xl` (32px)
+- mobile backdrop padding: `--space-lg` (16px)
+- dialog and panel gap: `--space-lg`
+- close button offset: `--space-3xl` on desktop, `--space-lg` on mobile
+
+Shape:
+- fullscreen media radius: `--radius-2xl` (40px)
+- close button radius: `--radius-pill`
+
+Rules:
+- fullscreen overlay applies only to media inside `Gallery`
+- fullscreen media horizontal max size: `min(viewport, --page-max-width + 640px)`
+- fullscreen media fits viewport with `contain`
+- backdrop uses `var(--white-20)` and `blur(20px)`
+- close button uses `--black-85` surface with white text and `--white-75` border
+- on fine pointer devices the system cursor stays visible, while a separate close indicator follows the cursor and the whole overlay becomes click-to-close, including over media
+- on touch/coarse pointer devices the fallback is a fixed close button in the top-right corner
+- a specific media item inside `Gallery` can disable fullscreen via `openable={false}`
+
 ### Work Article Section (`.article`, `.section`)
 Structure:
 - section title

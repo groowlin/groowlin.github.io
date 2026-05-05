@@ -7,9 +7,11 @@ import styles from "@/components/media/media-placeholder.module.css";
 interface MediaPlaceholderProps {
   media: MediaPlaceholder;
   variant?: "default" | "work" | "homePreview";
+  presentation?: "inline" | "modal";
   fit?: "fill" | "contain";
   frame?: "intrinsic" | "square";
   className?: string;
+  showCaption?: boolean;
 }
 
 function parseAspectRatio(input?: string) {
@@ -26,14 +28,17 @@ function toHomePreviewRatio(value: number) {
 export function MediaPlaceholderView({
   media,
   variant = "default",
+  presentation = "inline",
   fit = "fill",
   frame = "intrinsic",
-  className
+  className,
+  showCaption = true
 }: MediaPlaceholderProps) {
   const hasSource = Boolean(media.src);
   const isWork = variant === "work";
   const isHomePreview = variant === "homePreview";
-  const isContentMedia = !isHomePreview;
+  const isModal = presentation === "modal";
+  const isContentMedia = !isHomePreview && !isModal;
   const [intrinsicRatio, setIntrinsicRatio] = useState<number | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
 
@@ -52,9 +57,10 @@ export function MediaPlaceholderView({
   const declaredRatio = parseAspectRatio(media.aspectRatio);
   const shouldDeferRatioInWorkImage = isWork && media.kind !== "video" && !declaredRatio && !intrinsicRatio;
   const shouldDeferRatioInHomeImage = isHomePreview && media.kind !== "video" && !intrinsicRatio;
+  const shouldDeferRatioInModalImage = isModal && media.kind !== "video" && !declaredRatio && !intrinsicRatio;
   const rawRatio = intrinsicRatio ?? declaredRatio ?? (isHomePreview ? 2 : 1.6);
   const ratio = isHomePreview ? (hasSource ? toHomePreviewRatio(rawRatio) : 2) : rawRatio;
-  const aspectRatioValue = shouldDeferRatioInWorkImage || shouldDeferRatioInHomeImage
+  const aspectRatioValue = shouldDeferRatioInWorkImage || shouldDeferRatioInHomeImage || shouldDeferRatioInModalImage
     ? undefined
     : isHomePreview
       ? ratio >= 1
@@ -99,6 +105,23 @@ export function MediaPlaceholderView({
             height: "min(100%, var(--home-preview-max-block, 100%))",
             maxWidth: "100%",
             maxHeight: "100%"
+          };
+  } else if (isModal) {
+    mediaStyle =
+      ratio >= 1
+        ? {
+            ...mediaStyle,
+            width: "min(100%, var(--lightbox-media-max-inline, 100%))",
+            height: "auto",
+            maxWidth: "100%",
+            maxHeight: "var(--lightbox-media-max-block, 100%)"
+          }
+        : {
+            ...mediaStyle,
+            width: "auto",
+            height: "min(100%, var(--lightbox-media-max-block, 100%))",
+            maxWidth: "var(--lightbox-media-max-inline, 100%)",
+            maxHeight: "var(--lightbox-media-max-block, 100%)"
           };
   } else if (isWork) {
     mediaStyle = {
@@ -146,6 +169,7 @@ export function MediaPlaceholderView({
               muted
               loop
               playsInline
+              preload={isModal ? "metadata" : "auto"}
               onLoadedMetadata={(event) => {
                 const { videoWidth: nextWidth, videoHeight: nextHeight } = event.currentTarget;
                 if (nextHeight > 0) {
@@ -166,7 +190,7 @@ export function MediaPlaceholderView({
                 .join(" ")}
               src={media.src}
               alt={media.caption ?? ""}
-              loading="lazy"
+              loading={isModal ? "eager" : "lazy"}
               ref={(node) => {
                 if (!isImageLoaded && node && node.complete && node.naturalWidth > 0) {
                   applyImageIntrinsicSize(node);
@@ -179,7 +203,7 @@ export function MediaPlaceholderView({
           )}
         </div>
       </div>
-      {media.caption && (
+      {showCaption && media.caption && (
         <p className={[styles.caption, isWork && styles.workCaption].filter(Boolean).join(" ")}>{media.caption}</p>
       )}
     </div>
