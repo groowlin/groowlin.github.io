@@ -1,6 +1,9 @@
 .main {
   min-height: 100vh;
-  padding: var(--layout-main-padding-y) var(--layout-main-padding-x);
+  padding:
+    var(--layout-main-padding-top)
+    var(--layout-main-padding-x)
+    var(--layout-main-padding-bottom);
 }
 
 .inner {

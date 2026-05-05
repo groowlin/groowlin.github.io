@@ -8,7 +8,8 @@
 - Base grid: 4px (основной ритм 8px, с поддержкой micro-step для плотных элементов)
 - Content max-width: `--page-max-width = 42rem` (672px)
 - Main side padding: `--layout-main-padding-x = 2rem` (32px)
-- Main vertical padding: `--layout-main-padding-y = 6rem` (96px)
+- Main top padding: `--layout-main-padding-top = 6rem` (96px)
+- Main bottom padding: `--layout-main-padding-bottom = clamp(280px, 42vh, 360px)`
 - Default vertical section gap: `--layout-content-gap = 2rem` (32px)
 - Global header rhythm: `--rhythm-title-block-top = 60px`, `--rhythm-title-block-bottom = 40px` для блока `title + subtitle` на всех страницах.
 - Global section-heading rhythm: `--rhythm-section-heading-top = 60px`, `--rhythm-section-heading-bottom = 40px` для заголовков секций кейсов.

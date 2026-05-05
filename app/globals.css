@@ -53,7 +53,8 @@
   --radius-home-top-card: 40px;
   --radius-home-avatar: 50px;
   --radius-pill: 999px;
-  --layout-main-padding-y: 6rem;
+  --layout-main-padding-top: 6rem;
+  --layout-main-padding-bottom: clamp(280px, 42vh, 360px);
   --layout-main-padding-x: 2rem;
   --layout-content-gap: 2rem;
   --layout-header-gap: 0.25rem;
