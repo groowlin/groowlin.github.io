@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { MotionPage } from "@/components/motion/MotionPage";
 import { WorkArticle } from "@/components/sections/WorkArticle";
 import { SiteShell } from "@/components/shell/SiteShell";
 import { getWorkCase, getWorkSlugs } from "@/lib/content/work.server";
@@ -57,9 +56,9 @@ export default async function WorkPage({ params }: WorkPageProps) {
       subtitleVariant="workMeta"
       topCardVariant="to-home"
     >
-      <MotionPage className={styles.stack}>
+      <div className={styles.stack}>
         <WorkArticle content={entry.content} />
-      </MotionPage>
+      </div>
     </SiteShell>
   );
 }

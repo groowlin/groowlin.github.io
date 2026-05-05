@@ -20,6 +20,20 @@ export const pageRevealVariants: Variants = {
   }
 };
 
+export const contentRevealVariants: Variants = {
+  initial: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
+};
+
+export const passthroughRevealVariants: Variants = {
+  initial: {},
+  visible: {}
+};
+
 export const itemRevealVariants: Variants = {
   initial: { opacity: 0, y: 12 },
   visible: { opacity: 1, y: 0, transition: { y: springSoft } }

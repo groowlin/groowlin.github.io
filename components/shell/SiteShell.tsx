@@ -1,5 +1,4 @@
-import { MotionItem } from "@/components/motion/MotionItem";
-import { MotionPage } from "@/components/motion/MotionPage";
+import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
 import { TopCard } from "@/components/navigation/TopCard";
 import { getTopCardContent } from "@/lib/content/site.server";
 import type { TopCardVariant } from "@/lib/content/types";
@@ -25,43 +24,44 @@ export async function SiteShell({
   const topCard = topCardVariant ? await getTopCardContent(topCardVariant) : null;
   const compensationClass = topCard ? styles.compensated : "";
   const hasHeaderBlock = Boolean(title || subtitle);
-  const hasAnimatedHeaderContent = hasHeaderBlock || Boolean(topCard);
+  const bodyClassName = topCard ? styles.compensated : undefined;
 
   return (
     <main className={styles.main}>
       <div className={styles.inner}>
-        {hasAnimatedHeaderContent && (
-          <MotionPage className={styles.headerStack}>
-            {topCard && (
-              <MotionItem>
-                <TopCard card={topCard} className={styles.topCard} />
-              </MotionItem>
-            )}
+        <div className={styles.pageStack}>
+          {topCard && <TopCard card={topCard} className={styles.topCard} />}
 
+          <PageRevealSequence className={styles.revealStack}>
             {hasHeaderBlock && (
-              <MotionItem>
-                <header className={[styles.headerBlock, compensationClass].filter(Boolean).join(" ")}>
-                  {title && <h1 className={styles.title}>{title}</h1>}
-                  {subtitle && (
-                    <p
-                      className={[
-                        styles.subtitle,
-                        subtitleMuted ? styles.subtitleMuted : styles.subtitleStrong,
-                        subtitleVariant === "workMeta" ? styles.subtitleWorkMeta : ""
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                    >
-                      {subtitle}
-                    </p>
-                  )}
-                </header>
-              </MotionItem>
+              <header className={[styles.headerBlock, compensationClass].filter(Boolean).join(" ")}>
+                {title && (
+                  <h1 className={styles.title} data-page-reveal="">
+                    {title}
+                  </h1>
+                )}
+                {subtitle && (
+                  <p
+                    className={[
+                      styles.subtitle,
+                      subtitleMuted ? styles.subtitleMuted : styles.subtitleStrong,
+                      subtitleVariant === "workMeta" ? styles.subtitleWorkMeta : ""
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    data-page-reveal=""
+                  >
+                    {subtitle}
+                  </p>
+                )}
+              </header>
             )}
-          </MotionPage>
-        )}
 
-        {topCard ? <div className={styles.compensated}>{children}</div> : children}
+            <div className={bodyClassName}>
+              {children}
+            </div>
+          </PageRevealSequence>
+        </div>
       </div>
     </main>
   );

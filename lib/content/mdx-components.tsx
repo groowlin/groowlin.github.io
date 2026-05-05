@@ -5,8 +5,12 @@ import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
 import {
   MdxBlockquote,
   MdxDiv,
+  MdxH1,
   MdxH2,
   MdxH3,
+  MdxH4,
+  MdxH5,
+  MdxH6,
   MdxLi,
   MdxMediaBlock,
   MdxOl,
@@ -82,15 +86,26 @@ function Gallery({ children, className, style, variant = "default", ...props }: 
 function MdxLink({ href = "", rel, target, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) {
   const externalLinkProps = getExternalLinkProps(href);
 
-  return <a href={href} rel={rel ?? externalLinkProps.rel} target={target ?? externalLinkProps.target} {...props} />;
+  return (
+    <a
+      href={href}
+      rel={rel ?? externalLinkProps.rel}
+      target={target ?? externalLinkProps.target}
+      {...props}
+    />
+  );
 }
 
 export function getMdxComponents(variant: "default" | "work" = "default") {
   return {
     MotionDiv: MdxDiv,
     MotionSection: MdxSection,
+    MotionH1: MdxH1,
     MotionH2: MdxH2,
     MotionH3: MdxH3,
+    MotionH4: MdxH4,
+    MotionH5: MdxH5,
+    MotionH6: MdxH6,
     MotionP: MdxP,
     MotionUl: MdxUl,
     MotionOl: MdxOl,
@@ -98,8 +113,12 @@ export function getMdxComponents(variant: "default" | "work" = "default") {
     MotionBlockquote: MdxBlockquote,
     MotionMediaBlock: MdxMediaBlock,
     div: MdxDiv,
+    h1: MdxH1,
     h2: MdxH2,
     h3: MdxH3,
+    h4: MdxH4,
+    h5: MdxH5,
+    h6: MdxH6,
     p: MdxP,
     ul: MdxUl,
     ol: MdxOl,
@@ -126,9 +145,11 @@ export function getMdxComponents(variant: "default" | "work" = "default") {
     Cta: ({ href, label, body }: CtaProps) => (
       <MdxSection>
         {body ? <MdxP>{body}</MdxP> : null}
-        <Link href={href} {...getExternalLinkProps(href)}>
-          {label}
-        </Link>
+        <span data-page-reveal="">
+          <Link href={href} {...getExternalLinkProps(href)}>
+            {label}
+          </Link>
+        </span>
       </MdxSection>
     )
   };

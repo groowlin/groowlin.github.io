@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { MotionPage } from "@/components/motion/MotionPage";
 import { SiteShell } from "@/components/shell/SiteShell";
 import { getStaticPageContent } from "@/lib/content/site.server";
 import styles from "@/app/page-content.module.css";
@@ -19,9 +18,9 @@ export default async function AboutPage() {
 
   return (
     <SiteShell title={content.meta.title} topCardVariant="to-home">
-      <MotionPage className={styles.stack}>
+      <div className={styles.stack}>
         <article className={styles.mdxContent}>{content.content}</article>
-      </MotionPage>
+      </div>
     </SiteShell>
   );
 }

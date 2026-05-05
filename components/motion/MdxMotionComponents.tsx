@@ -1,55 +1,57 @@
-"use client";
+import type { ComponentPropsWithoutRef } from "react";
 
-import { motion } from "framer-motion";
-import type { HTMLMotionProps } from "framer-motion";
-import type { Variants } from "framer-motion";
-import { itemRevealVariants } from "@/components/motion/MotionPage";
-
-const mdxGroupVariants: Variants = {
-  initial: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.08
-    }
-  }
-};
-
-export function MdxDiv(props: HTMLMotionProps<"div">) {
-  return <motion.div variants={mdxGroupVariants} {...props} />;
+export function MdxDiv(props: ComponentPropsWithoutRef<"div">) {
+  return <div data-page-reveal="" {...props} />;
 }
 
-export function MdxH2(props: HTMLMotionProps<"h2">) {
-  return <motion.h2 variants={itemRevealVariants} {...props} />;
+export function MdxH1(props: ComponentPropsWithoutRef<"h1">) {
+  return <h1 data-page-reveal="" {...props} />;
 }
 
-export function MdxH3(props: HTMLMotionProps<"h3">) {
-  return <motion.h3 variants={itemRevealVariants} {...props} />;
+export function MdxH2(props: ComponentPropsWithoutRef<"h2">) {
+  return <h2 data-page-reveal="" {...props} />;
 }
 
-export function MdxP(props: HTMLMotionProps<"p">) {
-  return <motion.p variants={itemRevealVariants} {...props} />;
+export function MdxH3(props: ComponentPropsWithoutRef<"h3">) {
+  return <h3 data-page-reveal="" {...props} />;
 }
 
-export function MdxUl(props: HTMLMotionProps<"ul">) {
-  return <motion.ul variants={mdxGroupVariants} {...props} />;
+export function MdxH4(props: ComponentPropsWithoutRef<"h4">) {
+  return <h4 data-page-reveal="" {...props} />;
 }
 
-export function MdxOl(props: HTMLMotionProps<"ol">) {
-  return <motion.ol variants={mdxGroupVariants} {...props} />;
+export function MdxH5(props: ComponentPropsWithoutRef<"h5">) {
+  return <h5 data-page-reveal="" {...props} />;
 }
 
-export function MdxLi(props: HTMLMotionProps<"li">) {
-  return <motion.li variants={itemRevealVariants} {...props} />;
+export function MdxH6(props: ComponentPropsWithoutRef<"h6">) {
+  return <h6 data-page-reveal="" {...props} />;
 }
 
-export function MdxBlockquote(props: HTMLMotionProps<"blockquote">) {
-  return <motion.blockquote variants={mdxGroupVariants} {...props} />;
+export function MdxP(props: ComponentPropsWithoutRef<"p">) {
+  return <p data-page-reveal="" {...props} />;
 }
 
-export function MdxSection(props: HTMLMotionProps<"section">) {
-  return <motion.section variants={mdxGroupVariants} {...props} />;
+export function MdxUl(props: ComponentPropsWithoutRef<"ul">) {
+  return <ul {...props} />;
 }
 
-export function MdxMediaBlock(props: HTMLMotionProps<"div">) {
-  return <motion.div variants={itemRevealVariants} {...props} />;
+export function MdxOl(props: ComponentPropsWithoutRef<"ol">) {
+  return <ol {...props} />;
+}
+
+export function MdxLi(props: ComponentPropsWithoutRef<"li">) {
+  return <li data-page-reveal="" {...props} />;
+}
+
+export function MdxBlockquote(props: ComponentPropsWithoutRef<"blockquote">) {
+  return <blockquote data-page-reveal="" {...props} />;
+}
+
+export function MdxSection(props: ComponentPropsWithoutRef<"section">) {
+  return <section data-page-reveal="" {...props} />;
+}
+
+export function MdxMediaBlock(props: ComponentPropsWithoutRef<"div">) {
+  return <div data-page-reveal="" {...props} />;
 }
