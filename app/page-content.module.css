@@ -43,6 +43,14 @@
   max-width: 100%;
 }
 
+.mdxContent :global(p img),
+.mdxContent :global(li img),
+.mdxContent :global(blockquote img) {
+  display: inline-block;
+  vertical-align: middle;
+  transform: translateY(-0.05em);
+}
+
 .mdxContent :global(ul),
 .mdxContent :global(ol) {
   display: grid;

@@ -28,6 +28,14 @@
   max-width: 100%;
 }
 
+.mdxRoot :global(p img),
+.mdxRoot :global(li img),
+.mdxRoot :global(blockquote img) {
+  display: inline-block;
+  vertical-align: middle;
+  transform: translateY(-0.05em);
+}
+
 .mdxRoot :global(blockquote) {
   margin: var(--space-0);
   padding: var(--space-0);
