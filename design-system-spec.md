@@ -9,7 +9,7 @@
 - Content max-width: `--page-max-width = 42rem` (672px)
 - Main side padding: `--layout-main-padding-x = 2rem` (32px)
 - Main top padding: `--layout-main-padding-top = 6rem` (96px)
-- Main bottom padding: `--layout-main-padding-bottom = 320px`
+- Main bottom padding: `--layout-main-padding-bottom = 200px`
 - Default vertical section gap: `--layout-content-gap = 2rem` (32px)
 - Global header rhythm: `--rhythm-title-block-top = 60px`, `--rhythm-title-block-bottom = 40px` для блока `title + subtitle` на всех страницах.
 - Global section-heading rhythm: `--rhythm-section-heading-top = 60px`, `--rhythm-section-heading-bottom = 40px` для заголовков секций кейсов.
