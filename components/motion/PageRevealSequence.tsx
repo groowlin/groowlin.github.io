@@ -26,21 +26,55 @@ export function PageRevealSequence({ children, className }: PageRevealSequencePr
     const allTargets = Array.from(root.querySelectorAll("[data-page-reveal]")) as HTMLElement[];
     const targets = allTargets.filter((target) => !target.querySelector("[data-page-reveal]"));
 
-    targets.forEach((target, index) => {
-      target.style.setProperty("--page-reveal-index", String(index));
-    });
-
     let frameId = 0;
+    let timeoutId = 0;
 
-    frameId = window.requestAnimationFrame(() => {
+    const prepareTargets = () => {
+      let revealIndex = 0;
+
+      targets.forEach((target) => {
+        const rect = target.getBoundingClientRect();
+        const isAboveViewport = rect.bottom <= 0;
+
+        if (isAboveViewport) {
+          target.dataset.pageRevealState = "instant";
+          target.style.removeProperty("--page-reveal-index");
+          return;
+        }
+
+        target.dataset.pageRevealState = "animate";
+        target.style.setProperty("--page-reveal-index", String(revealIndex));
+        revealIndex += 1;
+      });
+
       root.dataset.state = "ready";
-    });
+    };
+
+    const queuePrepareTargets = () => {
+      frameId = window.requestAnimationFrame(() => {
+        frameId = window.requestAnimationFrame(() => {
+          prepareTargets();
+        });
+      });
+    };
+
+    const onScrollRestored = () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener("app:scroll-restored", onScrollRestored);
+      queuePrepareTargets();
+    };
+
+    window.addEventListener("app:scroll-restored", onScrollRestored, { once: true });
+    timeoutId = window.setTimeout(onScrollRestored, 250);
 
     return () => {
       window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+      window.removeEventListener("app:scroll-restored", onScrollRestored);
       delete root.dataset.state;
       targets.forEach((target) => {
         target.style.removeProperty("--page-reveal-index");
+        delete target.dataset.pageRevealState;
       });
     };
   }, []);

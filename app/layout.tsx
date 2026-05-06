@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { getSiteMetadataSettingsContent } from "@/lib/content/site.server";
+import { scrollRestorationScript } from "@/app/scroll-restoration-script";
 import "./globals.css";
 
 const inter = localFont({
@@ -50,8 +51,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={inter.variable}>
-      <body>{children}</body>
+    <html lang="ru" className={inter.variable} suppressHydrationWarning>
+      <body>
+        <script dangerouslySetInnerHTML={{ __html: scrollRestorationScript }} />
+        {children}
+      </body>
     </html>
   );
 }

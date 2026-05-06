@@ -9,12 +9,25 @@
   filter: blur(8px);
 }
 
+.root[data-state="pending"] :global([data-page-reveal][data-page-reveal-state="instant"]) {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
 .root[data-state="ready"] :global([data-page-reveal]) {
   animation-name: pageRevealIn;
   animation-duration: 0.7s;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   animation-delay: calc(var(--page-reveal-index, 0) * 80ms);
   animation-fill-mode: both;
+}
+
+.root[data-state="ready"] :global([data-page-reveal][data-page-reveal-state="instant"]) {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  animation: none;
 }
 
 @keyframes pageRevealIn {

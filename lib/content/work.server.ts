@@ -2,6 +2,7 @@ import "server-only";
 
 import path from "node:path";
 import { cache } from "react";
+import { hydrateHomePreview } from "@/lib/content/media-metadata.server";
 import { parseMdxFrontmatter, listMdxFilenames, renderMdx, getContentDir } from "@/lib/content/mdx.server";
 import { workFrontmatterSchema } from "@/lib/content/schemas";
 import type { HomeWorkEntry, WorkCase, WorkFrontmatter } from "@/lib/content/types";
@@ -49,7 +50,7 @@ export async function getHomeWorkEntries(): Promise<HomeWorkEntry[]> {
     label: item.title,
     subtitle: item.subtitle,
     href: `/work/${item.slug}`,
-    preview: item.preview
+    preview: hydrateHomePreview(item.preview)
   }));
 }
 
@@ -75,7 +76,7 @@ export async function getWorkCase(slug: string): Promise<WorkCase | null> {
     summary: {
       title: current.title,
       subtitle: current.subtitle,
-      preview: current.preview
+      preview: hydrateHomePreview(current.preview)
     },
     meta: {
       title: current.title,

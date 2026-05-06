@@ -47,6 +47,8 @@ export interface MediaPlaceholder {
   caption?: string;
   src?: string;
   placeholderToken?: string;
+  intrinsicWidth?: number;
+  intrinsicHeight?: number;
 }
 
 export interface HomePreview {
@@ -55,6 +57,8 @@ export interface HomePreview {
   placeholderToken?: string;
   aspectRatio: string;
   centered?: boolean;
+  intrinsicWidth?: number;
+  intrinsicHeight?: number;
 }
 
 export interface HomeWorkEntry {

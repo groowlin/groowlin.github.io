@@ -55,18 +55,13 @@ export function MediaPlaceholderView({
   }
 
   const declaredRatio = parseAspectRatio(media.aspectRatio);
-  const shouldDeferRatioInWorkImage = isWork && media.kind !== "video" && !declaredRatio && !intrinsicRatio;
-  const shouldDeferRatioInHomeImage = isHomePreview && media.kind !== "video" && !intrinsicRatio;
-  const shouldDeferRatioInModalImage = isModal && media.kind !== "video" && !declaredRatio && !intrinsicRatio;
   const rawRatio = intrinsicRatio ?? declaredRatio ?? (isHomePreview ? 2 : 1.6);
   const ratio = isHomePreview ? (hasSource ? toHomePreviewRatio(rawRatio) : 2) : rawRatio;
-  const aspectRatioValue = shouldDeferRatioInWorkImage || shouldDeferRatioInHomeImage || shouldDeferRatioInModalImage
-    ? undefined
-    : isHomePreview
-      ? ratio >= 1
-        ? "2 / 1"
-        : "1 / 2"
-      : media.aspectRatio ?? `${ratio}`;
+  const aspectRatioValue = isHomePreview
+    ? ratio >= 1
+      ? "2 / 1"
+      : "1 / 2"
+    : media.aspectRatio ?? `${ratio}`;
 
   const style = (aspectRatioValue ? { aspectRatio: aspectRatioValue } : {}) satisfies CSSProperties;
 
@@ -81,15 +76,7 @@ export function MediaPlaceholderView({
         }
       : style;
 
-  if (isHomePreview && shouldDeferRatioInHomeImage) {
-    mediaStyle = {
-      ...mediaStyle,
-      width: "100%",
-      height: "100%",
-      maxWidth: "100%",
-      maxHeight: "100%"
-    };
-  } else if (isHomePreview) {
+  if (isHomePreview) {
     mediaStyle =
       ratio >= 1
         ? {
@@ -165,6 +152,8 @@ export function MediaPlaceholderView({
             <video
               className={styles.asset}
               src={media.src}
+              width={media.intrinsicWidth}
+              height={media.intrinsicHeight}
               autoPlay
               muted
               loop
@@ -190,6 +179,8 @@ export function MediaPlaceholderView({
                 .join(" ")}
               src={media.src}
               alt={media.caption ?? ""}
+              width={media.intrinsicWidth}
+              height={media.intrinsicHeight}
               loading={isModal ? "eager" : "lazy"}
               ref={(node) => {
                 if (!isImageLoaded && node && node.complete && node.naturalWidth > 0) {

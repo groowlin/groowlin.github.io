@@ -183,6 +183,10 @@ body {
   line-height: inherit;
 }
 
+html[data-scroll-restoration="pending"] main {
+  visibility: hidden;
+}
+
 main {
   min-height: 100vh;
 }

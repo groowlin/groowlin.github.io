@@ -2,6 +2,7 @@ import { Children, isValidElement, type AnchorHTMLAttributes, type HTMLAttribute
 import Link from "next/link";
 import { GalleryLightbox } from "@/components/media/GalleryLightbox";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
+import { hydrateMediaPlaceholder } from "@/lib/content/media-metadata.server";
 import {
   MdxBlockquote,
   MdxDiv,
@@ -55,14 +56,14 @@ function Gallery({ children, className, style, variant = "default", ...props }: 
     }
 
     return [
-      {
+      hydrateMediaPlaceholder({
         kind: child.props.kind ?? "image",
         src: child.props.src,
         aspectRatio: child.props.aspectRatio,
         caption: child.props.caption,
         placeholderToken: child.props.placeholderToken,
         openable: child.props.openable ?? true
-      }
+      })
     ];
   });
 
@@ -137,7 +138,7 @@ export function getMdxComponents(variant: "default" | "work" = "default") {
     }: MediaProps) => (
       <MdxMediaBlock>
         <MediaPlaceholderView
-          media={{ kind, src, aspectRatio, caption, placeholderToken }}
+          media={hydrateMediaPlaceholder({ kind, src, aspectRatio, caption, placeholderToken })}
           variant={variant === "work" ? "work" : "default"}
         />
       </MdxMediaBlock>
