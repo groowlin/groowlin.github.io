@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { HomeShowcase } from "@/components/home/HomeShowcase";
 import { SiteShell } from "@/components/shell/SiteShell";
-import { getHomeShowcaseConfigContent, getSiteMetadataSettingsContent, getTopCardContent } from "@/lib/content/site.server";
+import { getHomeShowcaseConfigContent, getSiteMetadataSettingsContent } from "@/lib/content/site.server";
 import type { HomeSectionConfig, HomeShowcaseSection, HomeWorkEntry } from "@/lib/content/types";
 import { getHomeWorkEntries } from "@/lib/content/work.server";
 
@@ -75,16 +75,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [homeConfig, entries, topCard] = await Promise.all([
-    getHomeShowcaseConfigContent(),
-    getHomeWorkEntries(),
-    getTopCardContent("to-profile")
-  ]);
+  const [homeConfig, entries] = await Promise.all([getHomeShowcaseConfigContent(), getHomeWorkEntries()]);
   const sections = buildHomeShowcaseSections(homeConfig.sections, entries);
 
   return (
-    <SiteShell>
-      <HomeShowcase title={homeConfig.title} subtitle={homeConfig.subtitle} sections={sections} topCard={topCard} />
+    <SiteShell topCardVariant="to-profile">
+      <HomeShowcase title={homeConfig.title} subtitle={homeConfig.subtitle} sections={sections} />
     </SiteShell>
   );
 }

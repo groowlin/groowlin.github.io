@@ -47,6 +47,21 @@
   width: var(--home-top-card-width);
 }
 
+.topCardStage {
+  position: relative;
+  width: var(--home-top-card-width);
+  min-height: calc(var(--home-avatar-size) + (var(--home-top-card-padding) * 2));
+}
+
+.topCardLayer {
+  width: 100%;
+}
+
+.topCardLayerExit {
+  position: absolute;
+  inset: 0;
+}
+
 .compensated {
   padding-left: var(--home-rounding-compensation);
 }

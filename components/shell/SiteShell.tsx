@@ -1,5 +1,5 @@
 import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
-import { TopCard } from "@/components/navigation/TopCard";
+import { AnimatedTopCard } from "@/components/navigation/AnimatedTopCard";
 import { getTopCardContent } from "@/lib/content/site.server";
 import type { TopCardVariant } from "@/lib/content/types";
 import styles from "@/components/shell/site-shell.module.css";
@@ -24,13 +24,13 @@ export async function SiteShell({
   const topCard = topCardVariant ? await getTopCardContent(topCardVariant) : null;
   const compensationClass = topCard ? styles.compensated : "";
   const hasHeaderBlock = Boolean(title || subtitle);
-  const bodyClassName = topCard ? styles.compensated : undefined;
+  const bodyClassName = topCard && hasHeaderBlock ? styles.compensated : undefined;
 
   return (
     <main className={styles.main}>
       <div className={styles.inner}>
         <div className={styles.pageStack}>
-          {topCard && <TopCard card={topCard} className={styles.topCard} />}
+          {topCard && <AnimatedTopCard card={topCard} className={styles.topCard} />}
 
           <PageRevealSequence className={styles.revealStack}>
             {hasHeaderBlock && (

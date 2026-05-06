@@ -6,8 +6,7 @@ import { AnimatePresence, motion, useMotionTemplate, useMotionValue, useSpring }
 import { createPortal } from "react-dom";
 import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
-import { TopCard } from "@/components/navigation/TopCard";
-import { type HomeShowcaseSection, type HomeWorkEntry, type TopCardContent } from "@/lib/content/types";
+import { type HomeShowcaseSection, type HomeWorkEntry } from "@/lib/content/types";
 import shellStyles from "@/components/shell/site-shell.module.css";
 import styles from "@/components/home/home-showcase.module.css";
 
@@ -53,10 +52,9 @@ interface HomeShowcaseProps {
   title: string;
   subtitle?: string;
   sections: HomeShowcaseSection[];
-  topCard: TopCardContent;
 }
 
-export function HomeShowcase({ title, subtitle, sections, topCard }: HomeShowcaseProps) {
+export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   const [canHover, setCanHover] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
@@ -306,10 +304,6 @@ export function HomeShowcase({ title, subtitle, sections, topCard }: HomeShowcas
     <div className={styles.root}>
       <div className={styles.leftColumn}>
         <div className={styles.heroStack}>
-          <div className={styles.topCardWrap}>
-            <TopCard card={topCard} />
-          </div>
-
           <PageRevealSequence className={styles.revealStack}>
             <header className={[shellStyles.headerBlock, shellStyles.compensated].join(" ")}>
               <h1 className={shellStyles.title} data-page-reveal="">
