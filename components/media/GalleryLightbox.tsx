@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, type HTMLAttributes, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, useReducedMotion, useSpring } from "framer-motion";
+import { motion, useReducedMotion, useSpring, type MotionStyle } from "framer-motion";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import { MdxMediaBlock } from "@/components/motion/MdxMotionComponents";
@@ -152,6 +152,8 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   const prefersReducedMotion = useReducedMotion();
   const pointerX = useSpring(0, { stiffness: 260, damping: 19, mass: 1.35 });
   const pointerY = useSpring(0, { stiffness: 260, damping: 19, mass: 1.35 });
+  const mediaTiltX = useSpring(0, { stiffness: 220, damping: 24, mass: 0.8 });
+  const mediaTiltY = useSpring(0, { stiffness: 220, damping: 24, mass: 0.8 });
 
   const rows = useMemo(() => {
     const rowSizes = getGalleryRowSizes(items.length);
@@ -298,6 +300,17 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   }, [activeIndex, canTrackPointer, close, pointerX, pointerY]);
 
   useEffect(() => {
+    if (activeIndex !== null) {
+      return undefined;
+    }
+
+    mediaTiltX.jump(0);
+    mediaTiltY.jump(0);
+
+    return undefined;
+  }, [activeIndex, mediaTiltX, mediaTiltY]);
+
+  useEffect(() => {
     if (closingSourceIndex === null) {
       return undefined;
     }
@@ -413,7 +426,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       className={[styles.trigger, isActiveTrigger && styles.triggerHidden].filter(Boolean).join(" ")}
                       onClick={(event) => {
                         const nextPointerPosition = { x: event.clientX, y: event.clientY };
-                        const sourceRect = toRect(event.currentTarget.getBoundingClientRect());
+                        const sourceRect = getCurrentSourceRect(absoluteIndex) ?? toRect(event.currentTarget.getBoundingClientRect());
 
                         lastPointerPositionRef.current = nextPointerPosition;
                         setClosingVisual(null);
@@ -565,7 +578,14 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                             mass: 1.08
                           }
                     }
-                    style={{ ["--lightbox-animated-radius" as string]: `${animatedRadius}px` } satisfies CSSProperties}
+                    style={
+                      {
+                        ["--lightbox-animated-radius" as string]: `${animatedRadius}px`,
+                        rotateX: canTrackPointer && phase === "open" ? mediaTiltX : 0,
+                        rotateY: canTrackPointer && phase === "open" ? mediaTiltY : 0,
+                        transformPerspective: 1600
+                      } satisfies MotionStyle
+                    }
                     onUpdate={(latest) => {
                       if (!geometry) {
                         return;
@@ -603,6 +623,33 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       if (phase === "opening") {
                         setPhase("open");
                       }
+                    }}
+                    onPointerMove={(event) => {
+                      if (!canTrackPointer || phase !== "open") {
+                        mediaTiltX.set(0);
+                        mediaTiltY.set(0);
+                        return;
+                      }
+
+                      const currentRect = activeVisualRectRef.current ?? geometry.targetRect;
+                      if (!currentRect.width || !currentRect.height) {
+                        mediaTiltX.set(0);
+                        mediaTiltY.set(0);
+                        return;
+                      }
+
+                      const relativeX = (event.clientX - currentRect.x) / currentRect.width;
+                      const relativeY = (event.clientY - currentRect.y) / currentRect.height;
+                      const clampedX = Math.max(0, Math.min(1, relativeX));
+                      const clampedY = Math.max(0, Math.min(1, relativeY));
+                      const maxTilt = 2.8;
+
+                      mediaTiltY.set((clampedX - 0.5) * maxTilt * 2);
+                      mediaTiltX.set((0.5 - clampedY) * maxTilt * 2);
+                    }}
+                    onPointerLeave={() => {
+                      mediaTiltX.set(0);
+                      mediaTiltY.set(0);
                     }}
                   >
                     <MediaPlaceholderView
