@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionTemplate, useMotionValue, useSpring } from "framer-motion";
 import { createPortal } from "react-dom";
+import { itemRevealVariants, pageRevealVariants } from "@/components/motion/MotionPage";
 import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
 import { type HomeShowcaseSection, type HomeWorkEntry } from "@/lib/content/types";
@@ -301,7 +302,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   }
 
   return (
-    <div className={styles.root}>
+    <motion.div className={styles.root} initial="initial" animate="visible" variants={pageRevealVariants}>
       <div className={styles.leftColumn}>
         <div className={styles.heroStack}>
           <PageRevealSequence className={styles.revealStack}>
@@ -318,8 +319,9 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                 </p>
               ) : null}
             </header>
+          </PageRevealSequence>
 
-            <div
+          <motion.div
               className={styles.listWrap}
               ref={listWrapRef}
               onMouseMove={onMouseMove}
@@ -331,8 +333,15 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                 } as unknown as CSSProperties
               }
               onMouseLeave={() => {
+                tiltXRaw.set(0);
+                tiltYRaw.set(0);
+                shiftXRaw.set(0);
+                shiftYRaw.set(0);
+                originXRaw.set(50);
+                originYRaw.set(50);
                 closeIndex();
               }}
+              variants={itemRevealVariants}
             >
               <AnimatePresence>
                 {highlightRect && activeIndex !== null && (
@@ -378,21 +387,22 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                 )}
               </AnimatePresence>
 
-              <div className={styles.list}>
+              <motion.div className={styles.list} variants={pageRevealVariants}>
                 {indexedSections.map((section, sectionIndex) => (
-                  <section
+                  <motion.section
                     key={`${section.title ?? "untitled"}-${sectionIndex}`}
                     className={styles.section}
                     aria-label={section.title}
+                    variants={itemRevealVariants}
                   >
                     {section.title ? (
-                      <h2 className={styles.sectionTitle} data-page-reveal="">
+                      <h2 className={styles.sectionTitle}>
                         {section.title}
                       </h2>
                     ) : null}
                     <div className={styles.sectionList}>
                       {section.items.map(({ entry, index }) => (
-                        <span key={entry.href} data-page-reveal="">
+                        <motion.span key={entry.href} variants={itemRevealVariants}>
                           <Link
                             href={entry.href}
                             {...getExternalLinkProps(entry.href)}
@@ -416,14 +426,13 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                               </span>
                             </span>
                           </Link>
-                        </span>
+                        </motion.span>
                       ))}
                     </div>
-                  </section>
+                  </motion.section>
                 ))}
-              </div>
-            </div>
-          </PageRevealSequence>
+              </motion.div>
+            </motion.div>
         </div>
       </div>
 
@@ -467,6 +476,6 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
           </AnimatePresence>,
           portalTarget
         )}
-    </div>
+    </motion.div>
   );
 }
