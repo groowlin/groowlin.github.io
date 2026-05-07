@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, type HTMLAttributes, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, useReducedMotion, useSpring, type MotionStyle } from "framer-motion";
+import { motion, useReducedMotion, useSpring } from "framer-motion";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import { MdxMediaBlock } from "@/components/motion/MdxMotionComponents";
@@ -152,8 +152,9 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   const prefersReducedMotion = useReducedMotion();
   const pointerX = useSpring(0, { stiffness: 260, damping: 19, mass: 1.35 });
   const pointerY = useSpring(0, { stiffness: 260, damping: 19, mass: 1.35 });
-  const mediaTiltX = useSpring(0, { stiffness: 220, damping: 24, mass: 0.8 });
-  const mediaTiltY = useSpring(0, { stiffness: 220, damping: 24, mass: 0.8 });
+  // Disabled for now: subtle tilt on open media. Kept commented because we may return to it.
+  // const mediaTiltX = useSpring(0, { stiffness: 220, damping: 24, mass: 0.8 });
+  // const mediaTiltY = useSpring(0, { stiffness: 220, damping: 24, mass: 0.8 });
 
   const rows = useMemo(() => {
     const rowSizes = getGalleryRowSizes(items.length);
@@ -299,16 +300,17 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     };
   }, [activeIndex, canTrackPointer, close, pointerX, pointerY]);
 
-  useEffect(() => {
-    if (activeIndex !== null) {
-      return undefined;
-    }
-
-    mediaTiltX.jump(0);
-    mediaTiltY.jump(0);
-
-    return undefined;
-  }, [activeIndex, mediaTiltX, mediaTiltY]);
+  // Disabled for now: reset hook for open-media tilt springs.
+  // useEffect(() => {
+  //   if (activeIndex !== null) {
+  //     return undefined;
+  //   }
+  //
+  //   mediaTiltX.jump(0);
+  //   mediaTiltY.jump(0);
+  //
+  //   return undefined;
+  // }, [activeIndex, mediaTiltX, mediaTiltY]);
 
   useEffect(() => {
     if (closingSourceIndex === null) {
@@ -572,20 +574,16 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       prefersReducedMotion
                         ? { duration: 0 }
                         : {
-                            type: "spring",
-                            stiffness: 238,
-                            damping: 20,
-                            mass: 1.08
+                            // Previous version:
+                            // type: "spring",
+                            // stiffness: 238,
+                            // damping: 20,
+                            // mass: 1.08
+                            duration: 0.28,
+                            ease: [0.22, 1, 0.36, 1]
                           }
                     }
-                    style={
-                      {
-                        ["--lightbox-animated-radius" as string]: `${animatedRadius}px`,
-                        rotateX: canTrackPointer && phase === "open" ? mediaTiltX : 0,
-                        rotateY: canTrackPointer && phase === "open" ? mediaTiltY : 0,
-                        transformPerspective: 1600
-                      } satisfies MotionStyle
-                    }
+                    style={{ ["--lightbox-animated-radius" as string]: `${animatedRadius}px` } satisfies CSSProperties}
                     onUpdate={(latest) => {
                       if (!geometry) {
                         return;
@@ -624,33 +622,34 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                         setPhase("open");
                       }
                     }}
-                    onPointerMove={(event) => {
-                      if (!canTrackPointer || phase !== "open") {
-                        mediaTiltX.set(0);
-                        mediaTiltY.set(0);
-                        return;
-                      }
-
-                      const currentRect = activeVisualRectRef.current ?? geometry.targetRect;
-                      if (!currentRect.width || !currentRect.height) {
-                        mediaTiltX.set(0);
-                        mediaTiltY.set(0);
-                        return;
-                      }
-
-                      const relativeX = (event.clientX - currentRect.x) / currentRect.width;
-                      const relativeY = (event.clientY - currentRect.y) / currentRect.height;
-                      const clampedX = Math.max(0, Math.min(1, relativeX));
-                      const clampedY = Math.max(0, Math.min(1, relativeY));
-                      const maxTilt = 2.8;
-
-                      mediaTiltY.set((clampedX - 0.5) * maxTilt * 2);
-                      mediaTiltX.set((0.5 - clampedY) * maxTilt * 2);
-                    }}
-                    onPointerLeave={() => {
-                      mediaTiltX.set(0);
-                      mediaTiltY.set(0);
-                    }}
+                    // Disabled for now: pointer tilt on open media.
+                    // onPointerMove={(event) => {
+                    //   if (!canTrackPointer || phase !== "open") {
+                    //     mediaTiltX.set(0);
+                    //     mediaTiltY.set(0);
+                    //     return;
+                    //   }
+                    //
+                    //   const currentRect = activeVisualRectRef.current ?? geometry.targetRect;
+                    //   if (!currentRect.width || !currentRect.height) {
+                    //     mediaTiltX.set(0);
+                    //     mediaTiltY.set(0);
+                    //     return;
+                    //   }
+                    //
+                    //   const relativeX = (event.clientX - currentRect.x) / currentRect.width;
+                    //   const relativeY = (event.clientY - currentRect.y) / currentRect.height;
+                    //   const clampedX = Math.max(0, Math.min(1, relativeX));
+                    //   const clampedY = Math.max(0, Math.min(1, relativeY));
+                    //   const maxTilt = 2.8;
+                    //
+                    //   mediaTiltY.set((clampedX - 0.5) * maxTilt * 2);
+                    //   mediaTiltX.set((0.5 - clampedY) * maxTilt * 2);
+                    // }}
+                    // onPointerLeave={() => {
+                    //   mediaTiltX.set(0);
+                    //   mediaTiltY.set(0);
+                    // }}
                   >
                     <MediaPlaceholderView
                       media={activeItem}
@@ -748,10 +747,13 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                             ease: [0.22, 1, 0.36, 1] as const
                           }
                         : {
-                            type: "spring" as const,
-                            stiffness: 238,
-                            damping: 22,
-                            mass: 1.08
+                            // Previous version:
+                            // type: "spring" as const,
+                            // stiffness: 238,
+                            // damping: 22,
+                            // mass: 1.08
+                            duration: 0.24,
+                            ease: [0.22, 1, 0.36, 1] as const
                           })
                     }}
                     style={{ ["--lightbox-animated-radius" as string]: `${closingAnimatedRadius}px` } satisfies CSSProperties}
