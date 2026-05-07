@@ -12,6 +12,7 @@ interface MediaPlaceholderProps {
   frame?: "intrinsic" | "square";
   appearance?: "default" | "skeleton" | "handoff";
   mediaRef?: Ref<HTMLDivElement>;
+  assetClassName?: string;
   className?: string;
   showCaption?: boolean;
 }
@@ -35,6 +36,7 @@ export function MediaPlaceholderView({
   frame = "intrinsic",
   appearance = "default",
   mediaRef,
+  assetClassName,
   className,
   showCaption = true
 }: MediaPlaceholderProps) {
@@ -164,7 +166,7 @@ export function MediaPlaceholderView({
         >
           {media.kind === "video" ? (
             <video
-              className={[styles.asset, isSkeleton && styles.assetSkeleton, isHandoff && styles.assetHandoff].filter(Boolean).join(" ")}
+              className={[styles.asset, assetClassName, isSkeleton && styles.assetSkeleton, isHandoff && styles.assetHandoff].filter(Boolean).join(" ")}
               src={media.src}
               width={media.intrinsicWidth}
               height={media.intrinsicHeight}
@@ -186,6 +188,7 @@ export function MediaPlaceholderView({
             <img
               className={[
                 styles.asset,
+                assetClassName,
                 isSkeleton && styles.assetSkeleton,
                 isHandoff && styles.assetHandoff,
                 isWork && styles.workImageAsset,

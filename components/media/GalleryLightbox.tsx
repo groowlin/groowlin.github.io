@@ -450,6 +450,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                         mediaRef={(node) => {
                           triggerMediaRefs.current.set(absoluteIndex, node);
                         }}
+                        assetClassName={styles.triggerAsset}
                         appearance={isClosingSourceTrigger ? (isClosingHandoffTrigger ? "handoff" : "skeleton") : "default"}
                       />
                     </button>
