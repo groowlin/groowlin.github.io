@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, type Ref, useState } from "react";
 import { type MediaPlaceholder } from "@/lib/content/types";
 import styles from "@/components/media/media-placeholder.module.css";
 
@@ -11,6 +11,7 @@ interface MediaPlaceholderProps {
   fit?: "fill" | "contain";
   frame?: "intrinsic" | "square";
   appearance?: "default" | "skeleton" | "handoff";
+  mediaRef?: Ref<HTMLDivElement>;
   className?: string;
   showCaption?: boolean;
 }
@@ -33,6 +34,7 @@ export function MediaPlaceholderView({
   fit = "fill",
   frame = "intrinsic",
   appearance = "default",
+  mediaRef,
   className,
   showCaption = true
 }: MediaPlaceholderProps) {
@@ -155,6 +157,7 @@ export function MediaPlaceholderView({
         style={wrapperStyle}
       >
         <div
+          ref={mediaRef}
           className={[styles.media, isWork && styles.workMedia].filter(Boolean).join(" ")}
           style={mediaStyle}
           aria-label={`${media.kind} media`}

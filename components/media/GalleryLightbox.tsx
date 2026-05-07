@@ -41,6 +41,8 @@ interface ClosingVisualState {
   lastScrollX: number;
   lastScrollY: number;
   startedAt: number;
+  closeButtonFloating: boolean;
+  closeButtonPosition: { x: number; y: number } | null;
 }
 
 type LightboxPhase = "opening" | "open";
@@ -141,6 +143,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const triggerRefs = useRef(new Map<number, HTMLButtonElement | null>());
+  const triggerMediaRefs = useRef(new Map<number, HTMLDivElement | null>());
   const activeVisualRectRef = useRef<Rect | null>(null);
   const closingVisualRectRef = useRef<Rect | null>(null);
   const lastPointerPositionRef = useRef<{ x: number; y: number } | null>(null);
@@ -177,6 +180,11 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   }, []);
 
   const getCurrentSourceRect = useCallback((index: number) => {
+    const triggerMedia = triggerMediaRefs.current.get(index);
+    if (triggerMedia) {
+      return toRect(triggerMedia.getBoundingClientRect());
+    }
+
     const trigger = triggerRefs.current.get(index);
     if (!trigger) {
       return null;
@@ -202,14 +210,16 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
         forceDissolve: false,
         lastScrollX: window.scrollX,
         lastScrollY: window.scrollY,
-        startedAt: performance.now()
+        startedAt: performance.now(),
+        closeButtonFloating: canTrackPointer,
+        closeButtonPosition: lastPointerPositionRef.current
       });
       setClosingAnimatedRadius(animatedRadius);
       closingVisualRectRef.current = activeVisualRectRef.current ?? geometry.targetRect;
     }
 
     completeClose();
-  }, [activeIndex, activeItem, animatedRadius, completeClose, geometry, getCurrentSourceRect, prefersReducedMotion]);
+  }, [activeIndex, activeItem, animatedRadius, canTrackPointer, completeClose, geometry, getCurrentSourceRect, prefersReducedMotion]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -422,6 +432,9 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       <MediaPlaceholderView
                         media={item}
                         variant={variant}
+                        mediaRef={(node) => {
+                          triggerMediaRefs.current.set(absoluteIndex, node);
+                        }}
                         appearance={isClosingSourceTrigger ? (isClosingHandoffTrigger ? "handoff" : "skeleton") : "default"}
                       />
                     </button>
@@ -476,6 +489,13 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                     }}
                     aria-label="Close fullscreen media"
                     style={{ x: pointerX, y: pointerY }}
+                    initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.76 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={
+                      prefersReducedMotion
+                        ? { duration: 0 }
+                        : { duration: 0.22, delay: 0.08, ease: [0.22, 1, 0.36, 1] }
+                    }
                   >
                     <Image
                       src="/media/system/cursor_close.svg"
@@ -487,7 +507,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                     />
                   </motion.button>
                 ) : (
-                  <button
+                  <motion.button
                     ref={closeButtonRef}
                     type="button"
                     className={styles.closeButton}
@@ -495,6 +515,13 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       close();
                     }}
                     aria-label="Close fullscreen media"
+                    initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.76 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={
+                      prefersReducedMotion
+                        ? { duration: 0 }
+                        : { duration: 0.22, delay: 0.08, ease: [0.22, 1, 0.36, 1] }
+                    }
                   >
                     <Image
                       src="/media/system/cursor_close.svg"
@@ -504,7 +531,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       height={36}
                       className={styles.closeIcon}
                     />
-                  </button>
+                  </motion.button>
                 )}
 
                 <div className={styles.panel}>
@@ -587,8 +614,6 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       showCaption={false}
                     />
                   </motion.div>
-
-                  {activeItem.caption ? <p className={styles.caption}>{activeItem.caption}</p> : null}
                 </div>
               </div>
             </div>,
@@ -608,6 +633,41 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
               />
 
               <div className={styles.dialog} aria-hidden="true">
+                {closingVisual.closeButtonFloating ? (
+                  <motion.div
+                    className={[styles.closeButton, styles.closeButtonFloating].join(" ")}
+                    style={closingVisual.closeButtonPosition ? closingVisual.closeButtonPosition : undefined}
+                    initial={{ opacity: 1, scale: 1 }}
+                    animate={{ opacity: 0, scale: 0.88 }}
+                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <Image
+                      src="/media/system/cursor_close.svg"
+                      alt=""
+                      aria-hidden="true"
+                      width={36}
+                      height={36}
+                      className={styles.closeIcon}
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    className={styles.closeButton}
+                    initial={{ opacity: 1, scale: 1 }}
+                    animate={{ opacity: 0, scale: 0.88 }}
+                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <Image
+                      src="/media/system/cursor_close.svg"
+                      alt=""
+                      aria-hidden="true"
+                      width={36}
+                      height={36}
+                      className={styles.closeIcon}
+                    />
+                  </motion.div>
+                )}
+
                 <div className={styles.panel}>
                   <motion.div
                     className={styles.animatedMediaShell}
@@ -643,7 +703,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                         : {
                             type: "spring" as const,
                             stiffness: 238,
-                            damping: 20,
+                            damping: 22,
                             mass: 1.08
                           })
                     }}
