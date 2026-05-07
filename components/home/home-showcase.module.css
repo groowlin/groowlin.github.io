@@ -62,7 +62,7 @@
 .sectionList {
   display: flex;
   flex-direction: column;
-  gap: var(--home-item-gap);
+  gap: var(--space-0);
   width: fit-content;
 }
 
@@ -70,7 +70,9 @@
   position: relative;
   display: inline-flex;
   width: fit-content;
-  padding: var(--home-item-padding-y) var(--home-item-padding-x);
+  padding:
+    calc(var(--home-item-padding-y) + (var(--home-item-gap) / 2))
+    var(--home-item-padding-x);
   margin-left: calc(var(--home-item-padding-x) * -1);
   border-radius: var(--home-bubble-radius);
   text-decoration: none;

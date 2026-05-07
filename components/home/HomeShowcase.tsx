@@ -31,7 +31,6 @@ interface IndexedHomeSection {
 const PREVIEW_OFFSET_FALLBACK = 60;
 const ACTIVE_TEXT_SHIFT_SCALE = 0.18;
 const ITEM_HOVER_ZONE_PAD_X = 18;
-const ITEM_HOVER_ZONE_PAD_Y = 13.5;
 
 function getExternalLinkProps(href: string) {
   return /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(href) ? { target: "_blank", rel: "noopener noreferrer" } : {};
@@ -214,8 +213,8 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
       return (
         clientX >= rect.left - ITEM_HOVER_ZONE_PAD_X &&
         clientX <= rect.right + ITEM_HOVER_ZONE_PAD_X &&
-        clientY >= rect.top - ITEM_HOVER_ZONE_PAD_Y &&
-        clientY <= rect.bottom + ITEM_HOVER_ZONE_PAD_Y
+        clientY >= rect.top &&
+        clientY <= rect.bottom
       );
     },
     []
