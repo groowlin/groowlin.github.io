@@ -57,6 +57,14 @@
   height: auto;
 }
 
+.assetSkeleton {
+  visibility: hidden !important;
+  opacity: 1 !important;
+  filter: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
 .assetLoading {
   filter: blur(18px);
   transform: scale(1.02);

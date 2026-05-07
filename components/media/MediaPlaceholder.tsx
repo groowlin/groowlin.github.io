@@ -10,6 +10,7 @@ interface MediaPlaceholderProps {
   presentation?: "inline" | "modal";
   fit?: "fill" | "contain";
   frame?: "intrinsic" | "square";
+  appearance?: "default" | "skeleton";
   className?: string;
   showCaption?: boolean;
 }
@@ -31,6 +32,7 @@ export function MediaPlaceholderView({
   presentation = "inline",
   fit = "fill",
   frame = "intrinsic",
+  appearance = "default",
   className,
   showCaption = true
 }: MediaPlaceholderProps) {
@@ -39,6 +41,7 @@ export function MediaPlaceholderView({
   const isHomePreview = variant === "homePreview";
   const isModal = presentation === "modal";
   const isContentMedia = !isHomePreview && !isModal;
+  const isSkeleton = appearance === "skeleton";
   const [intrinsicRatio, setIntrinsicRatio] = useState<number | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const imageStateClass = isModal ? null : isImageLoaded ? styles.assetLoaded : styles.assetLoading;
@@ -122,13 +125,19 @@ export function MediaPlaceholderView({
   }
 
   const wrapperStyle: CSSProperties | undefined =
-    isWork
+    isSkeleton
       ? ({
           ["--placeholder-bg" as string]: "transparent",
           ["--placeholder-border-width" as string]: "0px",
           ["--placeholder-border-color" as string]: "transparent"
         } as CSSProperties)
-      : undefined;
+      : isWork
+        ? ({
+          ["--placeholder-bg" as string]: "transparent",
+          ["--placeholder-border-width" as string]: "0px",
+          ["--placeholder-border-color" as string]: "transparent"
+        } as CSSProperties)
+        : undefined;
 
   return (
     <div className={[styles.host, isContentMedia && styles.contentBleed].filter(Boolean).join(" ")}>
@@ -151,7 +160,7 @@ export function MediaPlaceholderView({
         >
           {media.kind === "video" ? (
             <video
-              className={styles.asset}
+              className={[styles.asset, isSkeleton && styles.assetSkeleton].filter(Boolean).join(" ")}
               src={media.src}
               width={media.intrinsicWidth}
               height={media.intrinsicHeight}
@@ -173,6 +182,7 @@ export function MediaPlaceholderView({
             <img
               className={[
                 styles.asset,
+                isSkeleton && styles.assetSkeleton,
                 isWork && styles.workImageAsset,
                 imageStateClass
               ]

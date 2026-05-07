@@ -30,7 +30,14 @@ interface LightboxGeometry {
   targetRect: Rect;
 }
 
-type LightboxPhase = "opening" | "open" | "closing";
+interface ClosingVisualState {
+  item: GalleryMediaItem;
+  sourceIndex: number;
+  targetRect: Rect;
+  visualRect: Rect;
+}
+
+type LightboxPhase = "opening" | "open";
 
 function getGalleryRowSizes(itemCount: number) {
   if (itemCount <= 0) {
@@ -121,10 +128,14 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [canTrackPointer, setCanTrackPointer] = useState(false);
   const [geometry, setGeometry] = useState<LightboxGeometry | null>(null);
+  const [closingVisual, setClosingVisual] = useState<ClosingVisualState | null>(null);
   const [phase, setPhase] = useState<LightboxPhase>("opening");
   const [animatedRadius, setAnimatedRadius] = useState(20);
+  const [closingAnimatedRadius, setClosingAnimatedRadius] = useState(20);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const triggerRefs = useRef(new Map<number, HTMLButtonElement | null>());
+  const activeVisualRectRef = useRef<Rect | null>(null);
   const lastPointerPositionRef = useRef<{ x: number; y: number } | null>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const scrollPositionRef = useRef<{ x: number; y: number } | null>(null);
@@ -149,7 +160,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
 
   const activeItem = activeIndex === null ? null : items[activeIndex] ?? null;
   const portalTarget = typeof document === "undefined" ? null : document.body;
-  const isClosing = phase === "closing";
+  const closingSourceIndex = closingVisual?.sourceIndex ?? null;
 
   const completeClose = useCallback(() => {
     setGeometry(null);
@@ -158,20 +169,33 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     setAnimatedRadius(20);
   }, []);
 
+  const getCurrentSourceRect = useCallback((index: number) => {
+    const trigger = triggerRefs.current.get(index);
+    if (!trigger) {
+      return null;
+    }
+
+    return toRect(trigger.getBoundingClientRect());
+  }, []);
+
   const close = useCallback(() => {
     if (prefersReducedMotion) {
       completeClose();
       return;
     }
 
-    setPhase((currentPhase) => {
-      if (currentPhase === "closing") {
-        return currentPhase;
-      }
+    if (activeIndex !== null && activeItem && geometry) {
+      setClosingVisual({
+        item: activeItem,
+        sourceIndex: activeIndex,
+        targetRect: getCurrentSourceRect(activeIndex) ?? geometry.sourceRect,
+        visualRect: activeVisualRectRef.current ?? geometry.targetRect
+      });
+      setClosingAnimatedRadius(animatedRadius);
+    }
 
-      return "closing";
-    });
-  }, [completeClose, prefersReducedMotion]);
+    completeClose();
+  }, [activeIndex, activeItem, animatedRadius, completeClose, geometry, getCurrentSourceRect, prefersReducedMotion]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -249,6 +273,42 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     };
   }, [activeIndex, canTrackPointer, close, pointerX, pointerY]);
 
+  useEffect(() => {
+    if (!closingVisual) {
+      return undefined;
+    }
+
+    let frame = 0;
+
+    const syncTargetRect = () => {
+      const nextRect = getCurrentSourceRect(closingVisual.sourceIndex);
+      if (nextRect) {
+        setClosingVisual((currentVisual) => {
+          if (!currentVisual || currentVisual.sourceIndex !== closingVisual.sourceIndex) {
+            return currentVisual;
+          }
+
+          const currentRect = currentVisual.targetRect;
+          const hasChanged =
+            Math.abs(currentRect.x - nextRect.x) > 0.5 ||
+            Math.abs(currentRect.y - nextRect.y) > 0.5 ||
+            Math.abs(currentRect.width - nextRect.width) > 0.5 ||
+            Math.abs(currentRect.height - nextRect.height) > 0.5;
+
+          return hasChanged ? { ...currentVisual, targetRect: nextRect } : currentVisual;
+        });
+      }
+
+      frame = window.requestAnimationFrame(syncTargetRect);
+    };
+
+    frame = window.requestAnimationFrame(syncTargetRect);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [closingVisual, getCurrentSourceRect]);
+
   if (items.length === 0) {
     return null;
   }
@@ -272,6 +332,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                 .slice(0, rowIndex)
                 .reduce((count, currentRow) => count + currentRow.length, 0) + itemIndex;
               const isActiveTrigger = activeIndex === absoluteIndex;
+              const isClosingSourceTrigger = closingSourceIndex === absoluteIndex;
 
               return (
                 <MdxMediaBlock key={`gallery-item-${rowIndex}-${itemIndex}`} className={styles.item}>
@@ -279,6 +340,9 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                     <MediaPlaceholderView media={item} variant={variant} />
                   ) : (
                     <button
+                      ref={(node) => {
+                        triggerRefs.current.set(absoluteIndex, node);
+                      }}
                       type="button"
                       className={[styles.trigger, isActiveTrigger && styles.triggerHidden].filter(Boolean).join(" ")}
                       onClick={(event) => {
@@ -286,6 +350,8 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                         const sourceRect = toRect(event.currentTarget.getBoundingClientRect());
 
                         lastPointerPositionRef.current = nextPointerPosition;
+                        setClosingVisual(null);
+                        setClosingAnimatedRadius(20);
                         setGeometry({
                           sourceRect,
                           targetRect: getModalTargetRect(item)
@@ -297,7 +363,11 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       aria-haspopup="dialog"
                       aria-label={getMediaOpenLabel(item, absoluteIndex)}
                     >
-                      <MediaPlaceholderView media={item} variant={variant} />
+                      <MediaPlaceholderView
+                        media={item}
+                        variant={variant}
+                        appearance={isClosingSourceTrigger ? "skeleton" : "default"}
+                      />
                     </button>
                   )}
                 </MdxMediaBlock>
@@ -328,11 +398,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                 aria-hidden="true"
                 className={styles.backdropVisual}
                 initial={prefersReducedMotion ? false : { opacity: 0, backdropFilter: "blur(0px)" }}
-                animate={
-                  isClosing
-                    ? { opacity: 0, backdropFilter: "blur(0px)" }
-                    : { opacity: 1, backdropFilter: "blur(20px)" }
-                }
+                animate={{ opacity: 1, backdropFilter: "blur(20px)" }}
                 transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.22, ease: "easeOut" }}
               />
 
@@ -400,10 +466,10 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                           }
                     }
                     animate={{
-                      x: isClosing ? geometry.sourceRect.x : geometry.targetRect.x,
-                      y: isClosing ? geometry.sourceRect.y : geometry.targetRect.y,
-                      width: isClosing ? geometry.sourceRect.width : geometry.targetRect.width,
-                      height: isClosing ? geometry.sourceRect.height : geometry.targetRect.height,
+                      x: geometry.targetRect.x,
+                      y: geometry.targetRect.y,
+                      width: geometry.targetRect.width,
+                      height: geometry.targetRect.height,
                       borderRadius: animatedRadius
                     }}
                     transition={
@@ -425,9 +491,13 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       const currentWidth =
                         typeof latest.width === "number"
                           ? latest.width
-                          : isClosing
-                            ? geometry.sourceRect.width
-                            : geometry.targetRect.width;
+                          : geometry.targetRect.width;
+                      activeVisualRectRef.current = {
+                        x: typeof latest.x === "number" ? latest.x : geometry.targetRect.x,
+                        y: typeof latest.y === "number" ? latest.y : geometry.targetRect.y,
+                        width: currentWidth,
+                        height: typeof latest.height === "number" ? latest.height : geometry.targetRect.height
+                      };
                       const progress = Math.max(
                         0,
                         Math.min(
@@ -449,11 +519,6 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
 
                       if (phase === "opening") {
                         setPhase("open");
-                        return;
-                      }
-
-                      if (phase === "closing") {
-                        completeClose();
                       }
                     }}
                   >
@@ -468,6 +533,82 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                   </motion.div>
 
                   {activeItem.caption ? <p className={styles.caption}>{activeItem.caption}</p> : null}
+                </div>
+              </div>
+            </div>,
+            portalTarget
+          )
+        : null}
+
+      {portalTarget && closingVisual
+        ? createPortal(
+            <div className={styles.backdrop} style={{ pointerEvents: "none" }}>
+              <motion.div
+                aria-hidden="true"
+                className={styles.backdropVisual}
+                initial={{ opacity: 1, backdropFilter: "blur(20px)" }}
+                animate={{ opacity: 0, backdropFilter: "blur(0px)" }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+              />
+
+              <div className={styles.dialog} aria-hidden="true">
+                <div className={styles.panel}>
+                  <motion.div
+                    className={styles.animatedMediaShell}
+                    initial={{
+                      x: closingVisual.visualRect.x,
+                      y: closingVisual.visualRect.y,
+                      width: closingVisual.visualRect.width,
+                      height: closingVisual.visualRect.height,
+                      borderRadius: closingAnimatedRadius
+                    }}
+                    animate={{
+                      x: closingVisual.targetRect.x,
+                      y: closingVisual.targetRect.y,
+                      width: closingVisual.targetRect.width,
+                      height: closingVisual.targetRect.height,
+                      borderRadius: closingAnimatedRadius
+                    }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 238,
+                      damping: 20,
+                      mass: 1.08
+                    }}
+                    style={{ ["--lightbox-animated-radius" as string]: `${closingAnimatedRadius}px` } satisfies CSSProperties}
+                    onUpdate={(latest) => {
+                      const currentWidth =
+                        typeof latest.width === "number"
+                          ? latest.width
+                          : closingVisual.targetRect.width;
+                      const progress = Math.max(
+                        0,
+                        Math.min(
+                          1,
+                          (currentWidth - closingVisual.targetRect.width) /
+                            Math.max(closingVisual.visualRect.width - closingVisual.targetRect.width, 1)
+                        )
+                      );
+                      const nextRadius = 20 + progress * 20;
+
+                      setClosingAnimatedRadius((currentRadius) =>
+                        Math.abs(currentRadius - nextRadius) < 0.1 ? currentRadius : nextRadius
+                      );
+                    }}
+                    onAnimationComplete={() => {
+                      setClosingVisual(null);
+                      setClosingAnimatedRadius(20);
+                    }}
+                  >
+                    <MediaPlaceholderView
+                      media={closingVisual.item}
+                      variant={variant}
+                      presentation="modal"
+                      fit="contain"
+                      className={styles.animatedModalMedia}
+                      showCaption={false}
+                    />
+                  </motion.div>
                 </div>
               </div>
             </div>,
