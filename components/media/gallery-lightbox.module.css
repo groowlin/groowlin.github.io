@@ -37,6 +37,10 @@
   cursor: pointer;
 }
 
+.triggerHidden {
+  visibility: hidden;
+}
+
 .trigger:focus-visible {
   outline: 2px solid var(--line-hover);
   outline-offset: var(--space-2xs);
@@ -50,19 +54,24 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-3xl);
-  background: var(--white-20);
-  backdrop-filter: blur(20px);
+  overflow: hidden;
   z-index: 1000;
+}
+
+.backdropVisual {
+  position: absolute;
+  inset: 0;
+  background: var(--white-20);
+  pointer-events: none;
 }
 
 .dialog {
   position: relative;
-  width: auto;
-  max-width: calc(100vw - (var(--space-3xl) * 2));
-  max-height: calc(100vh - (var(--space-3xl) * 2));
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  z-index: 1;
 }
 
 .closeButton {
@@ -108,35 +117,41 @@
 }
 
 .panel {
-  width: auto;
-  max-width: calc(100vw - (var(--space-3xl) * 2));
-  max-height: calc(100vh - (var(--space-3xl) * 2));
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-lg);
 }
 
-.mediaFrame {
-  width: auto;
-  max-width: calc(100vw - (var(--space-3xl) * 2));
-  max-height: calc(100vh - (var(--space-5xl) + var(--space-4xl)));
+.animatedMediaShell {
+  position: fixed;
+  top: 0;
+  left: 0;
   display: grid;
   place-items: center;
+  overflow: hidden;
+  will-change: transform, width, height, border-radius;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  background: transparent;
 }
 
-.modalMedia {
-  --placeholder-radius: var(--radius-2xl);
+.animatedModalMedia {
+  --placeholder-radius: var(--lightbox-animated-radius, var(--radius-2xl));
   --placeholder-border-width: 0px;
   --placeholder-border-color: transparent;
   --placeholder-bg: transparent;
-  --lightbox-media-max-inline: min(calc(100vw - (var(--space-3xl) * 2)), calc(var(--page-max-width) + 640px));
-  --lightbox-media-max-block: calc(100vh - (var(--space-5xl) + var(--space-4xl)));
-  width: auto;
-  max-width: 100%;
+  width: 100%;
+  height: 100%;
 }
 
 .caption {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-3xl);
+  transform: translateX(-50%);
   max-width: 100%;
   color: var(--text-muted);
   font-size: var(--font-size-caption);
@@ -154,8 +169,8 @@
   }
 
   .dialog {
-    max-width: calc(100vw - (var(--space-lg) * 2));
-    max-height: calc(100vh - (var(--space-lg) * 2));
+    width: 100%;
+    height: 100%;
   }
 
   .closeButton {
@@ -169,17 +184,11 @@
   }
 
   .panel {
-    max-width: calc(100vw - (var(--space-lg) * 2));
-    max-height: calc(100vh - (var(--space-lg) * 4));
+    width: 100%;
+    height: 100%;
   }
 
-  .mediaFrame {
-    max-width: calc(100vw - (var(--space-lg) * 2));
-    max-height: calc(100vh - (var(--space-4xl) + var(--space-3xl)));
-  }
-
-  .modalMedia {
-    --lightbox-media-max-inline: min(calc(100vw - (var(--space-lg) * 2)), calc(var(--page-max-width) + 640px));
-    --lightbox-media-max-block: calc(100vh - (var(--space-4xl) + var(--space-3xl)));
+  .caption {
+    bottom: var(--space-lg);
   }
 }

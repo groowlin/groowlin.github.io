@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, type HTMLAttributes, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, useSpring } from "framer-motion";
+import { motion, useReducedMotion, useSpring } from "framer-motion";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import { MdxMediaBlock } from "@/components/motion/MdxMotionComponents";
@@ -17,6 +17,20 @@ interface GalleryLightboxProps extends HTMLAttributes<HTMLDivElement> {
   items: GalleryMediaItem[];
   variant?: "default" | "work";
 }
+
+interface Rect {
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+}
+
+interface LightboxGeometry {
+  sourceRect: Rect;
+  targetRect: Rect;
+}
+
+type LightboxPhase = "opening" | "open" | "closing";
 
 function getGalleryRowSizes(itemCount: number) {
   if (itemCount <= 0) {
@@ -44,13 +58,77 @@ function getMediaOpenLabel(item: MediaPlaceholder, index: number) {
   return `Open ${mediaType} ${index + 1} fullscreen`;
 }
 
+function focusWithoutScroll(target: HTMLElement | null) {
+  target?.focus({ preventScroll: true });
+}
+
+function parseAspectRatio(input?: string) {
+  if (!input) {
+    return null;
+  }
+
+  const [rawWidth, rawHeight] = input.split("/").map((value) => Number(value.trim()));
+  if (!Number.isFinite(rawWidth) || !Number.isFinite(rawHeight) || rawHeight === 0) {
+    return null;
+  }
+
+  return rawWidth / rawHeight;
+}
+
+function getMediaRatio(item: GalleryMediaItem) {
+  if (typeof item.intrinsicWidth === "number" && typeof item.intrinsicHeight === "number" && item.intrinsicHeight > 0) {
+    return item.intrinsicWidth / item.intrinsicHeight;
+  }
+
+  return parseAspectRatio(item.aspectRatio) ?? 1;
+}
+
+function getModalTargetRect(item: GalleryMediaItem): Rect {
+  const isMobile = window.innerWidth <= 767;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const horizontalPadding = isMobile ? 16 : 32;
+  const maxInline = Math.min(viewportWidth - horizontalPadding * 2, 1312);
+  const maxBlock = viewportHeight - (isMobile ? 96 : 144);
+  const ratio = getMediaRatio(item);
+
+  let width = maxInline;
+  let height = width / ratio;
+
+  if (height > maxBlock) {
+    height = maxBlock;
+    width = height * ratio;
+  }
+
+  return {
+    x: (viewportWidth - width) / 2,
+    y: (viewportHeight - height) / 2,
+    width,
+    height
+  };
+}
+
+function toRect(value: DOMRect): Rect {
+  return {
+    x: value.left,
+    y: value.top,
+    width: value.width,
+    height: value.height
+  };
+}
+
 export function GalleryLightbox({ items, variant = "default", className, style, ...props }: GalleryLightboxProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [canTrackPointer, setCanTrackPointer] = useState(false);
+  const [geometry, setGeometry] = useState<LightboxGeometry | null>(null);
+  const [phase, setPhase] = useState<LightboxPhase>("opening");
+  const [animatedRadius, setAnimatedRadius] = useState(20);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const lastPointerPositionRef = useRef<{ x: number; y: number } | null>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const scrollPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const prefersReducedMotion = useReducedMotion();
   const pointerX = useSpring(0, { stiffness: 260, damping: 19, mass: 1.35 });
   const pointerY = useSpring(0, { stiffness: 260, damping: 19, mass: 1.35 });
 
@@ -71,10 +149,29 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
 
   const activeItem = activeIndex === null ? null : items[activeIndex] ?? null;
   const portalTarget = typeof document === "undefined" ? null : document.body;
+  const isClosing = phase === "closing";
+
+  const completeClose = useCallback(() => {
+    setGeometry(null);
+    setActiveIndex(null);
+    setPhase("opening");
+    setAnimatedRadius(20);
+  }, []);
 
   const close = useCallback(() => {
-    setActiveIndex(null);
-  }, []);
+    if (prefersReducedMotion) {
+      completeClose();
+      return;
+    }
+
+    setPhase((currentPhase) => {
+      if (currentPhase === "closing") {
+        return currentPhase;
+      }
+
+      return "closing";
+    });
+  }, [completeClose, prefersReducedMotion]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -100,6 +197,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     }
 
     restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    scrollPositionRef.current = { x: window.scrollX, y: window.scrollY };
 
     const root = document.documentElement;
     const previousRootOverflow = root.style.overflow;
@@ -107,7 +205,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     const previousOverflow = document.body.style.overflow;
 
     root.style.overflow = "hidden";
-    root.style.scrollbarGutter = "auto";
+    root.style.scrollbarGutter = "stable";
     document.body.style.overflow = "hidden";
 
     const frame = window.requestAnimationFrame(() => {
@@ -120,11 +218,11 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
       pointerY.jump(initialPointerPosition.y);
 
       if (canTrackPointer) {
-        dialogRef.current?.focus();
+        focusWithoutScroll(dialogRef.current);
         return;
       }
 
-      closeButtonRef.current?.focus();
+      focusWithoutScroll(closeButtonRef.current);
     });
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -142,7 +240,12 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
       root.style.scrollbarGutter = previousRootScrollbarGutter;
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
-      restoreFocusRef.current?.focus();
+      focusWithoutScroll(restoreFocusRef.current);
+
+      const scrollPosition = scrollPositionRef.current;
+      if (scrollPosition) {
+        window.scrollTo(scrollPosition.x, scrollPosition.y);
+      }
     };
   }, [activeIndex, canTrackPointer, close, pointerX, pointerY]);
 
@@ -154,7 +257,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     <>
       <div
         {...props}
-      className={[styles.gallery, className].filter(Boolean).join(" ")}
+        className={[styles.gallery, className].filter(Boolean).join(" ")}
         style={
           {
             ...style,
@@ -168,6 +271,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
               const absoluteIndex = rows
                 .slice(0, rowIndex)
                 .reduce((count, currentRow) => count + currentRow.length, 0) + itemIndex;
+              const isActiveTrigger = activeIndex === absoluteIndex;
 
               return (
                 <MdxMediaBlock key={`gallery-item-${rowIndex}-${itemIndex}`} className={styles.item}>
@@ -176,9 +280,18 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                   ) : (
                     <button
                       type="button"
-                      className={styles.trigger}
+                      className={[styles.trigger, isActiveTrigger && styles.triggerHidden].filter(Boolean).join(" ")}
                       onClick={(event) => {
-                        lastPointerPositionRef.current = { x: event.clientX, y: event.clientY };
+                        const nextPointerPosition = { x: event.clientX, y: event.clientY };
+                        const sourceRect = toRect(event.currentTarget.getBoundingClientRect());
+
+                        lastPointerPositionRef.current = nextPointerPosition;
+                        setGeometry({
+                          sourceRect,
+                          targetRect: getModalTargetRect(item)
+                        });
+                        setPhase("opening");
+                        setAnimatedRadius(20);
                         setActiveIndex(absoluteIndex);
                       }}
                       aria-haspopup="dialog"
@@ -194,7 +307,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
         ))}
       </div>
 
-      {portalTarget && activeItem
+      {portalTarget && activeItem && geometry
         ? createPortal(
             <div
               className={[styles.backdrop, canTrackPointer && styles.backdropTracked].filter(Boolean).join(" ")}
@@ -211,6 +324,18 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                 pointerY.set(event.clientY);
               }}
             >
+              <motion.div
+                aria-hidden="true"
+                className={styles.backdropVisual}
+                initial={prefersReducedMotion ? false : { opacity: 0, backdropFilter: "blur(0px)" }}
+                animate={
+                  isClosing
+                    ? { opacity: 0, backdropFilter: "blur(0px)" }
+                    : { opacity: 1, backdropFilter: "blur(20px)" }
+                }
+                transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.22, ease: "easeOut" }}
+              />
+
               <div
                 ref={dialogRef}
                 className={styles.dialog}
@@ -261,16 +386,86 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                 )}
 
                 <div className={styles.panel}>
-                  <div className={styles.mediaFrame}>
+                  <motion.div
+                    className={styles.animatedMediaShell}
+                    initial={
+                      prefersReducedMotion
+                        ? false
+                        : {
+                            x: geometry.sourceRect.x,
+                            y: geometry.sourceRect.y,
+                            width: geometry.sourceRect.width,
+                            height: geometry.sourceRect.height,
+                            borderRadius: 20
+                          }
+                    }
+                    animate={{
+                      x: isClosing ? geometry.sourceRect.x : geometry.targetRect.x,
+                      y: isClosing ? geometry.sourceRect.y : geometry.targetRect.y,
+                      width: isClosing ? geometry.sourceRect.width : geometry.targetRect.width,
+                      height: isClosing ? geometry.sourceRect.height : geometry.targetRect.height,
+                      borderRadius: animatedRadius
+                    }}
+                    transition={
+                      prefersReducedMotion
+                        ? { duration: 0 }
+                        : {
+                            type: "spring",
+                            stiffness: 238,
+                            damping: 20,
+                            mass: 1.08
+                          }
+                    }
+                    style={{ ["--lightbox-animated-radius" as string]: `${animatedRadius}px` } satisfies CSSProperties}
+                    onUpdate={(latest) => {
+                      if (!geometry) {
+                        return;
+                      }
+
+                      const currentWidth =
+                        typeof latest.width === "number"
+                          ? latest.width
+                          : isClosing
+                            ? geometry.sourceRect.width
+                            : geometry.targetRect.width;
+                      const progress = Math.max(
+                        0,
+                        Math.min(
+                          1,
+                          (currentWidth - geometry.sourceRect.width) /
+                            Math.max(geometry.targetRect.width - geometry.sourceRect.width, 1)
+                        )
+                      );
+                      const nextRadius = 20 + progress * 20;
+
+                      setAnimatedRadius((currentRadius) =>
+                        Math.abs(currentRadius - nextRadius) < 0.1 ? currentRadius : nextRadius
+                      );
+                    }}
+                    onAnimationComplete={() => {
+                      if (prefersReducedMotion) {
+                        return;
+                      }
+
+                      if (phase === "opening") {
+                        setPhase("open");
+                        return;
+                      }
+
+                      if (phase === "closing") {
+                        completeClose();
+                      }
+                    }}
+                  >
                     <MediaPlaceholderView
                       media={activeItem}
                       variant={variant}
                       presentation="modal"
                       fit="contain"
-                      className={styles.modalMedia}
+                      className={styles.animatedModalMedia}
                       showCaption={false}
                     />
-                  </div>
+                  </motion.div>
 
                   {activeItem.caption ? <p className={styles.caption}>{activeItem.caption}</p> : null}
                 </div>

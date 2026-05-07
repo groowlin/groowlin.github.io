@@ -41,6 +41,7 @@ export function MediaPlaceholderView({
   const isContentMedia = !isHomePreview && !isModal;
   const [intrinsicRatio, setIntrinsicRatio] = useState<number | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const imageStateClass = isModal ? null : isImageLoaded ? styles.assetLoaded : styles.assetLoading;
 
   if (!hasSource) {
     return null;
@@ -173,7 +174,7 @@ export function MediaPlaceholderView({
               className={[
                 styles.asset,
                 isWork && styles.workImageAsset,
-                isImageLoaded ? styles.assetLoaded : styles.assetLoading
+                imageStateClass
               ]
                 .filter(Boolean)
                 .join(" ")}
@@ -182,6 +183,8 @@ export function MediaPlaceholderView({
               width={media.intrinsicWidth}
               height={media.intrinsicHeight}
               loading={isModal ? "eager" : "lazy"}
+              fetchPriority={isModal ? "high" : undefined}
+              decoding={isModal ? "sync" : "async"}
               ref={(node) => {
                 if (!isImageLoaded && node && node.complete && node.naturalWidth > 0) {
                   applyImageIntrinsicSize(node);
