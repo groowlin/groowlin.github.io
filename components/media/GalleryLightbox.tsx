@@ -256,7 +256,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     const previousOverflow = document.body.style.overflow;
 
     root.style.overflow = "hidden";
-    root.style.scrollbarGutter = "stable";
+    root.style.scrollbarGutter = "auto";
     document.body.style.overflow = "hidden";
 
     const frame = window.requestAnimationFrame(() => {
