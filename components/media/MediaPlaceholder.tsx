@@ -10,7 +10,7 @@ interface MediaPlaceholderProps {
   presentation?: "inline" | "modal";
   fit?: "fill" | "contain";
   frame?: "intrinsic" | "square";
-  appearance?: "default" | "skeleton";
+  appearance?: "default" | "skeleton" | "handoff";
   className?: string;
   showCaption?: boolean;
 }
@@ -42,6 +42,7 @@ export function MediaPlaceholderView({
   const isModal = presentation === "modal";
   const isContentMedia = !isHomePreview && !isModal;
   const isSkeleton = appearance === "skeleton";
+  const isHandoff = appearance === "handoff";
   const [intrinsicRatio, setIntrinsicRatio] = useState<number | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const imageStateClass = isModal ? null : isImageLoaded ? styles.assetLoaded : styles.assetLoading;
@@ -160,7 +161,7 @@ export function MediaPlaceholderView({
         >
           {media.kind === "video" ? (
             <video
-              className={[styles.asset, isSkeleton && styles.assetSkeleton].filter(Boolean).join(" ")}
+              className={[styles.asset, isSkeleton && styles.assetSkeleton, isHandoff && styles.assetHandoff].filter(Boolean).join(" ")}
               src={media.src}
               width={media.intrinsicWidth}
               height={media.intrinsicHeight}
@@ -183,6 +184,7 @@ export function MediaPlaceholderView({
               className={[
                 styles.asset,
                 isSkeleton && styles.assetSkeleton,
+                isHandoff && styles.assetHandoff,
                 isWork && styles.workImageAsset,
                 imageStateClass
               ]

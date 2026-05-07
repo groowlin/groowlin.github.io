@@ -37,8 +37,10 @@ interface ClosingVisualState {
   visualRect: Rect;
   accumulatedScroll: number;
   interrupted: boolean;
+  forceDissolve: boolean;
   lastScrollX: number;
   lastScrollY: number;
+  startedAt: number;
 }
 
 type LightboxPhase = "opening" | "open";
@@ -140,6 +142,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const triggerRefs = useRef(new Map<number, HTMLButtonElement | null>());
   const activeVisualRectRef = useRef<Rect | null>(null);
+  const closingVisualRectRef = useRef<Rect | null>(null);
   const lastPointerPositionRef = useRef<{ x: number; y: number } | null>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const scrollPositionRef = useRef<{ x: number; y: number } | null>(null);
@@ -196,10 +199,13 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
         visualRect: activeVisualRectRef.current ?? geometry.targetRect,
         accumulatedScroll: 0,
         interrupted: false,
+        forceDissolve: false,
         lastScrollX: window.scrollX,
-        lastScrollY: window.scrollY
+        lastScrollY: window.scrollY,
+        startedAt: performance.now()
       });
       setClosingAnimatedRadius(animatedRadius);
+      closingVisualRectRef.current = activeVisualRectRef.current ?? geometry.targetRect;
     }
 
     completeClose();
@@ -300,7 +306,9 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
         const scrollDelta =
           Math.abs(nextScrollX - currentVisual.lastScrollX) + Math.abs(nextScrollY - currentVisual.lastScrollY);
         const accumulatedScroll = currentVisual.accumulatedScroll + scrollDelta;
+        const elapsedTime = performance.now() - currentVisual.startedAt;
         const interrupted = currentVisual.interrupted || accumulatedScroll >= 40;
+        const shouldForceDissolve = currentVisual.forceDissolve || elapsedTime >= 4000;
         const currentRect = currentVisual.targetRect;
         const hasRectChanged = Boolean(
           nextRect &&
@@ -311,15 +319,36 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
         );
         const hasScrollChanged = scrollDelta > 0;
 
-        if (!hasRectChanged && !hasScrollChanged && interrupted === currentVisual.interrupted) {
+        if (shouldForceDissolve && !currentVisual.forceDissolve) {
+          const frozenRect = closingVisualRectRef.current ?? currentVisual.targetRect;
+
+          return {
+            ...currentVisual,
+            targetRect: frozenRect,
+            visualRect: frozenRect,
+            accumulatedScroll,
+            interrupted: true,
+            forceDissolve: true,
+            lastScrollX: nextScrollX,
+            lastScrollY: nextScrollY
+          };
+        }
+
+        if (
+          !hasRectChanged &&
+          !hasScrollChanged &&
+          interrupted === currentVisual.interrupted &&
+          shouldForceDissolve === currentVisual.forceDissolve
+        ) {
           return currentVisual;
         }
 
         return {
           ...currentVisual,
-          targetRect: nextRect ?? currentVisual.targetRect,
+          targetRect: shouldForceDissolve ? currentVisual.targetRect : nextRect ?? currentVisual.targetRect,
           accumulatedScroll,
           interrupted,
+          forceDissolve: shouldForceDissolve,
           lastScrollX: nextScrollX,
           lastScrollY: nextScrollY
         };
@@ -359,6 +388,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                 .reduce((count, currentRow) => count + currentRow.length, 0) + itemIndex;
               const isActiveTrigger = activeIndex === absoluteIndex;
               const isClosingSourceTrigger = closingSourceIndex === absoluteIndex;
+              const isClosingHandoffTrigger = isClosingSourceTrigger && closingVisual?.forceDissolve;
 
               return (
                 <MdxMediaBlock key={`gallery-item-${rowIndex}-${itemIndex}`} className={styles.item}>
@@ -392,7 +422,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       <MediaPlaceholderView
                         media={item}
                         variant={variant}
-                        appearance={isClosingSourceTrigger ? "skeleton" : "default"}
+                        appearance={isClosingSourceTrigger ? (isClosingHandoffTrigger ? "handoff" : "skeleton") : "default"}
                       />
                     </button>
                   )}
@@ -586,17 +616,26 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       y: closingVisual.visualRect.y,
                       width: closingVisual.visualRect.width,
                       height: closingVisual.visualRect.height,
-                      borderRadius: closingAnimatedRadius
+                      borderRadius: closingAnimatedRadius,
+                      opacity: 1,
+                      filter: "blur(0px)"
                     }}
                     animate={{
                       x: closingVisual.targetRect.x,
                       y: closingVisual.targetRect.y,
                       width: closingVisual.targetRect.width,
                       height: closingVisual.targetRect.height,
-                      borderRadius: closingAnimatedRadius
+                      borderRadius: closingAnimatedRadius,
+                      opacity: closingVisual.forceDissolve ? 0 : 1,
+                      filter: closingVisual.forceDissolve ? "blur(18px)" : "blur(0px)"
                     }}
                     transition={{
-                      ...(closingVisual.interrupted
+                      ...(closingVisual.forceDissolve
+                        ? {
+                            duration: 0.22,
+                            ease: [0.22, 1, 0.36, 1] as const
+                          }
+                        : closingVisual.interrupted
                         ? {
                             duration: 0.16,
                             ease: [0.22, 1, 0.36, 1] as const
@@ -610,6 +649,17 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                     }}
                     style={{ ["--lightbox-animated-radius" as string]: `${closingAnimatedRadius}px` } satisfies CSSProperties}
                     onUpdate={(latest) => {
+                      closingVisualRectRef.current = {
+                        x: typeof latest.x === "number" ? latest.x : closingVisual.targetRect.x,
+                        y: typeof latest.y === "number" ? latest.y : closingVisual.targetRect.y,
+                        width: typeof latest.width === "number" ? latest.width : closingVisual.targetRect.width,
+                        height: typeof latest.height === "number" ? latest.height : closingVisual.targetRect.height
+                      };
+
+                      if (closingVisual.forceDissolve) {
+                        return;
+                      }
+
                       const currentWidth =
                         typeof latest.width === "number"
                           ? latest.width
@@ -629,6 +679,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       );
                     }}
                     onAnimationComplete={() => {
+                      closingVisualRectRef.current = null;
                       setClosingVisual(null);
                       setClosingAnimatedRadius(20);
                     }}
