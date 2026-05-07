@@ -35,6 +35,10 @@ interface ClosingVisualState {
   sourceIndex: number;
   targetRect: Rect;
   visualRect: Rect;
+  accumulatedScroll: number;
+  interrupted: boolean;
+  lastScrollX: number;
+  lastScrollY: number;
 }
 
 type LightboxPhase = "opening" | "open";
@@ -189,7 +193,11 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
         item: activeItem,
         sourceIndex: activeIndex,
         targetRect: getCurrentSourceRect(activeIndex) ?? geometry.sourceRect,
-        visualRect: activeVisualRectRef.current ?? geometry.targetRect
+        visualRect: activeVisualRectRef.current ?? geometry.targetRect,
+        accumulatedScroll: 0,
+        interrupted: false,
+        lastScrollX: window.scrollX,
+        lastScrollY: window.scrollY
       });
       setClosingAnimatedRadius(animatedRadius);
     }
@@ -274,30 +282,48 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   }, [activeIndex, canTrackPointer, close, pointerX, pointerY]);
 
   useEffect(() => {
-    if (!closingVisual) {
+    if (closingSourceIndex === null) {
       return undefined;
     }
 
     let frame = 0;
 
     const syncTargetRect = () => {
-      const nextRect = getCurrentSourceRect(closingVisual.sourceIndex);
-      if (nextRect) {
-        setClosingVisual((currentVisual) => {
-          if (!currentVisual || currentVisual.sourceIndex !== closingVisual.sourceIndex) {
-            return currentVisual;
-          }
+      const nextRect = getCurrentSourceRect(closingSourceIndex);
+      setClosingVisual((currentVisual) => {
+        if (!currentVisual || currentVisual.sourceIndex !== closingSourceIndex) {
+          return currentVisual;
+        }
 
-          const currentRect = currentVisual.targetRect;
-          const hasChanged =
-            Math.abs(currentRect.x - nextRect.x) > 0.5 ||
-            Math.abs(currentRect.y - nextRect.y) > 0.5 ||
-            Math.abs(currentRect.width - nextRect.width) > 0.5 ||
-            Math.abs(currentRect.height - nextRect.height) > 0.5;
+        const nextScrollX = window.scrollX;
+        const nextScrollY = window.scrollY;
+        const scrollDelta =
+          Math.abs(nextScrollX - currentVisual.lastScrollX) + Math.abs(nextScrollY - currentVisual.lastScrollY);
+        const accumulatedScroll = currentVisual.accumulatedScroll + scrollDelta;
+        const interrupted = currentVisual.interrupted || accumulatedScroll >= 40;
+        const currentRect = currentVisual.targetRect;
+        const hasRectChanged = Boolean(
+          nextRect &&
+            (Math.abs(currentRect.x - nextRect.x) > 0.5 ||
+              Math.abs(currentRect.y - nextRect.y) > 0.5 ||
+              Math.abs(currentRect.width - nextRect.width) > 0.5 ||
+              Math.abs(currentRect.height - nextRect.height) > 0.5)
+        );
+        const hasScrollChanged = scrollDelta > 0;
 
-          return hasChanged ? { ...currentVisual, targetRect: nextRect } : currentVisual;
-        });
-      }
+        if (!hasRectChanged && !hasScrollChanged && interrupted === currentVisual.interrupted) {
+          return currentVisual;
+        }
+
+        return {
+          ...currentVisual,
+          targetRect: nextRect ?? currentVisual.targetRect,
+          accumulatedScroll,
+          interrupted,
+          lastScrollX: nextScrollX,
+          lastScrollY: nextScrollY
+        };
+      });
 
       frame = window.requestAnimationFrame(syncTargetRect);
     };
@@ -307,7 +333,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     return () => {
       window.cancelAnimationFrame(frame);
     };
-  }, [closingVisual, getCurrentSourceRect]);
+  }, [closingSourceIndex, getCurrentSourceRect]);
 
   if (items.length === 0) {
     return null;
@@ -570,10 +596,17 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       borderRadius: closingAnimatedRadius
                     }}
                     transition={{
-                      type: "spring",
-                      stiffness: 238,
-                      damping: 20,
-                      mass: 1.08
+                      ...(closingVisual.interrupted
+                        ? {
+                            duration: 0.16,
+                            ease: [0.22, 1, 0.36, 1] as const
+                          }
+                        : {
+                            type: "spring" as const,
+                            stiffness: 238,
+                            damping: 20,
+                            mass: 1.08
+                          })
                     }}
                     style={{ ["--lightbox-animated-radius" as string]: `${closingAnimatedRadius}px` } satisfies CSSProperties}
                     onUpdate={(latest) => {
