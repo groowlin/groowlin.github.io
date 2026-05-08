@@ -23,12 +23,19 @@ export const homeFrontmatterSchema = z.object({
     siteUrl: z.string().url(),
     siteName: z.string().min(1),
     defaultTitle: z.string().min(1),
-    titleTemplate: z.string().min(1),
     defaultDescription: z.string().min(1),
     defaultOgImage: z.string().optional(),
     faviconUrl: z.string().optional(),
     robotsIndexByDefault: z.boolean().default(true)
   })
+});
+
+export const linkPreviewFrontmatterSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().min(1),
+  url: z.string().min(1),
+  type: z.enum(["website", "article"]).default("website"),
+  image: z.string().optional()
 });
 
 export const topCardFrontmatterSchema = z.object({

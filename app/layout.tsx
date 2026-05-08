@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { getSiteMetadataSettingsContent } from "@/lib/content/site.server";
+import { getLinkPreviewMetadataContent, getSiteMetadataSettingsContent } from "@/lib/content/site.server";
 import { scrollRestorationScript } from "@/app/scroll-restoration-script";
 import "./globals.css";
 
@@ -17,7 +17,7 @@ const inter = localFont({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getSiteMetadataSettingsContent();
+  const [settings, preview] = await Promise.all([getSiteMetadataSettingsContent(), getLinkPreviewMetadataContent()]);
   const siteUrl = settings.siteUrl.endsWith("/") ? settings.siteUrl : `${settings.siteUrl}/`;
   const robots = settings.robotsIndexByDefault
     ? undefined
@@ -28,19 +28,22 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase: new URL(siteUrl),
-    title: {
-      default: settings.defaultTitle,
-      template: settings.titleTemplate
-    },
+    title: settings.defaultTitle,
     description: settings.defaultDescription,
     robots,
     openGraph: {
-      title: settings.defaultTitle,
+      title: preview.title,
       siteName: settings.siteName,
-      description: settings.defaultDescription,
-      type: "website",
-      url: siteUrl,
-      images: settings.defaultOgImage ? [settings.defaultOgImage] : undefined
+      description: preview.description,
+      type: preview.type,
+      url: preview.url,
+      images: preview.image ? [preview.image] : undefined
+    },
+    twitter: {
+      card: preview.image ? "summary_large_image" : "summary",
+      title: preview.title,
+      description: preview.description,
+      images: preview.image ? [preview.image] : undefined
     }
   };
 }

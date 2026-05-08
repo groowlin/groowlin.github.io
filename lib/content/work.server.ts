@@ -69,10 +69,11 @@ export async function getWorkCase(slug: string): Promise<WorkCase | null> {
 
   const filePath = path.join(WORK_DIR, `${slug}.mdx`);
   const { body } = await parseMdxFrontmatter(filePath, workFrontmatterSchema);
+  const canonical = `/work/${current.slug}`;
 
   return {
     slug: current.slug,
-    canonical: current.canonical,
+    canonical,
     summary: {
       title: current.title,
       subtitle: current.subtitle,

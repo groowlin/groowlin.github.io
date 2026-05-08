@@ -29,14 +29,7 @@ export async function generateMetadata({ params }: WorkPageProps): Promise<Metad
   return {
     title: entry.meta.title,
     description: entry.meta.description,
-    alternates: { canonical: entry.canonical },
-    openGraph: {
-      title: entry.meta.title,
-      description: entry.meta.description,
-      type: entry.meta.ogType ?? "article",
-      url: entry.canonical,
-      images: entry.meta.ogImage ? [entry.meta.ogImage] : undefined
-    }
+    alternates: { canonical: entry.canonical }
   };
 }
 

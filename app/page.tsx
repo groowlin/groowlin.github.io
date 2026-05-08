@@ -56,20 +56,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteMetadataSettingsContent();
 
   return {
-    title: {
-      absolute: settings.defaultTitle
-    },
+    title: settings.defaultTitle,
     description: settings.defaultDescription,
     alternates: {
       canonical: "/"
-    },
-    openGraph: {
-      title: settings.defaultTitle,
-      description: settings.defaultDescription,
-      siteName: settings.siteName,
-      type: "website",
-      url: "/",
-      images: settings.defaultOgImage ? [settings.defaultOgImage] : undefined
     }
   };
 }

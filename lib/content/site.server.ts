@@ -4,6 +4,7 @@ import path from "node:path";
 import { cache } from "react";
 import {
   homeFrontmatterSchema,
+  linkPreviewFrontmatterSchema,
   notFoundPageFrontmatterSchema,
   staticPageFrontmatterSchema,
   topCardFrontmatterSchema
@@ -12,6 +13,7 @@ import { getContentDir, parseMdxFrontmatter, renderMdx } from "@/lib/content/mdx
 import type {
   HomeSectionConfig,
   HomeShowcaseConfig,
+  LinkPreviewMetadata,
   NotFoundPageContent,
   SiteMetadataSettings,
   StaticPageContent,
@@ -21,6 +23,7 @@ import type {
 } from "@/lib/content/types";
 
 const SITE_HOME_FILE = getContentDir("site", "home.mdx");
+const SITE_LINK_PREVIEW_FILE = getContentDir("site", "link-preview.mdx");
 const PAGES_DIR = getContentDir("pages");
 const ABOUT_PAGE_FILE = getContentDir("pages", "about.mdx");
 const NOT_FOUND_PAGE_FILE = getContentDir("pages", "not-found.mdx");
@@ -60,9 +63,24 @@ const loadHomeSource = cache(async () => {
   return parseMdxFrontmatter(SITE_HOME_FILE, homeFrontmatterSchema);
 });
 
+const loadLinkPreviewSource = cache(async () => {
+  return parseMdxFrontmatter(SITE_LINK_PREVIEW_FILE, linkPreviewFrontmatterSchema);
+});
+
 export async function getSiteMetadataSettingsContent(): Promise<SiteMetadataSettings> {
   const { frontmatter: home } = await loadHomeSource();
   return home.seo;
+}
+
+export async function getLinkPreviewMetadataContent(): Promise<LinkPreviewMetadata> {
+  const { frontmatter } = await loadLinkPreviewSource();
+  return {
+    title: frontmatter.title,
+    description: frontmatter.description,
+    url: frontmatter.url,
+    type: frontmatter.type,
+    image: frontmatter.image
+  };
 }
 
 function normalizeHomeSlug(value: string): string | null {

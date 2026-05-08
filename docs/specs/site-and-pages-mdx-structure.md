@@ -14,7 +14,6 @@
 - `seo.siteUrl: string (url)`
 - `seo.siteName: string`
 - `seo.defaultTitle: string`
-- `seo.titleTemplate: string`
 - `seo.defaultDescription: string`
 - `seo.robotsIndexByDefault: boolean`
 
@@ -22,6 +21,22 @@
 - `subtitle: string`
 - `seo.defaultOgImage: string`
 - `seo.faviconUrl: string`
+
+## 2.1 Link Preview Settings (`content/site/link-preview.mdx`)
+
+### Frontmatter (required)
+- `title: string`
+- `description: string`
+- `url: string`
+- `type: "website" | "article"`
+
+### Frontmatter (optional)
+- `image: string`
+
+### Behavior
+- This file defines the shared Open Graph and Twitter preview metadata.
+- Preview cards are intentionally identical across all pages.
+- Page-level metadata still controls per-page `title`, `description`, and `canonical`.
 
 ### Body
 - Управляет секциями списка кейсов на главной.
@@ -77,10 +92,6 @@
 - `description: string`
 - `canonical: string`
 
-### Frontmatter (optional)
-- `ogImage: string`
-- `ogType: "article" | "website"`
-
 ### Body
 - Рендерится через тот же `WorkArticle`, что и кейсы.
 - Использует MDX variant `work`.
@@ -89,3 +100,15 @@
 ## 6. Validation and Loading
 - Frontmatter валидируется через Zod в `lib/content/schemas.ts`.
 - Загрузка и рендер выполняются через `lib/content/site.server.ts`.
+
+## 7. Motion and Reveal Contract
+- Home (`/`) uses `SiteShell` plus a custom `HomeShowcase` motion path. The top card is still rendered through `AnimatedTopCard`, while the showcase area owns its own list/preview/hover motion.
+- About (`/about`), work detail (`/work/[slug]`), and not-found (`/404`) use `SiteShell`, which applies:
+  - animated top-card replacement through `components/navigation/AnimatedTopCard.tsx`;
+  - sequential page reveal through `components/motion/PageRevealSequence.tsx`.
+- Static page and MDX content do not expose motion controls in frontmatter. Motion is renderer-defined and must stay consistent across pages.
+- MDX elements rendered through `lib/content/mdx-components.tsx` participate in page reveal via `components/motion/MdxMotionComponents.tsx`.
+- The reveal language for page content is fixed to soft `opacity + blur + translateY` sequencing. New page-level motion variants should not be introduced through content files.
+- Reduced motion is part of the rendering contract:
+  - top-card swaps fall back to static rendering;
+  - page-reveal sequence resolves to immediately visible content without animation.

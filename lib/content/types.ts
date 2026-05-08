@@ -10,11 +10,18 @@ export interface SiteMetadataSettings {
   siteUrl: string;
   siteName: string;
   defaultTitle: string;
-  titleTemplate: string;
   defaultDescription: string;
   defaultOgImage?: string;
   faviconUrl?: string;
   robotsIndexByDefault: boolean;
+}
+
+export interface LinkPreviewMetadata {
+  title: string;
+  description: string;
+  url: string;
+  type: "website" | "article";
+  image?: string;
 }
 
 export type TopCardVariant = "to-profile" | "to-home" | "default";
