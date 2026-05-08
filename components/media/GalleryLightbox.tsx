@@ -172,7 +172,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   }, [items]);
 
   const activeItem = activeIndex === null ? null : items[activeIndex] ?? null;
-  const portalTarget = typeof document === "undefined" ? null : document.body;
+  const portalTarget = typeof document === "undefined" ? null : document.documentElement;
   const closingSourceIndex = closingVisual?.sourceIndex ?? null;
 
   const completeClose = useCallback(() => {
@@ -256,12 +256,12 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     const previousOverflow = document.body.style.overflow;
 
     root.style.overflow = "hidden";
-    root.style.scrollbarGutter = "auto";
+    root.style.scrollbarGutter = "stable";
     document.body.style.overflow = "hidden";
 
     const frame = window.requestAnimationFrame(() => {
       const initialPointerPosition = lastPointerPositionRef.current ?? {
-        x: window.innerWidth / 2,
+        x: document.documentElement.clientWidth / 2,
         y: window.innerHeight / 2
       };
 
@@ -285,12 +285,25 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
 
     document.addEventListener("keydown", onKeyDown);
 
+    const onPointerMove = (event: PointerEvent) => {
+      if (!canTrackPointer) {
+        return;
+      }
+
+      lastPointerPositionRef.current = { x: event.clientX, y: event.clientY };
+      pointerX.set(event.clientX);
+      pointerY.set(event.clientY);
+    };
+
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+
     return () => {
       window.cancelAnimationFrame(frame);
       root.style.overflow = previousRootOverflow;
       root.style.scrollbarGutter = previousRootScrollbarGutter;
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("pointermove", onPointerMove);
       focusWithoutScroll(restoreFocusRef.current);
 
       const scrollPosition = scrollPositionRef.current;
