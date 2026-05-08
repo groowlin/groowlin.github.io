@@ -29,7 +29,16 @@
 - Для `<Gallery />` встроено fullscreen-открытие media по клику или тапу только внутри самого gallery-блока.
 - Для отдельного media внутри `<Gallery />` fullscreen можно отключить через `openable={false}`.
 
-## 5. Publication Rules
+## 5. Motion Contract
+- Motion не задаётся через frontmatter и не настраивается из MDX-контента.
+- `/work/[slug]` использует общесистемный page-reveal для header и MDX-блоков через `SiteShell` + `PageRevealSequence`.
+- Media внутри `Gallery` используют системное fullscreen motion-поведение:
+  - переход из thumbnail в modal bounds и обратно;
+  - backdrop fade/blur;
+  - reduced-motion fallback без анимации.
+- Отдельные кейсы не должны вводить собственные motion-правила поверх этих паттернов без изменения дизайн-системы.
+
+## 6. Publication Rules
 - `published`:
   - показывается на `/`
   - доступен на `/work/[slug]`
@@ -37,12 +46,12 @@
   - не показывается на `/`
   - недоступен на `/work/[slug]`
 
-## 6. Validation and Loading
+## 7. Validation and Loading
 - Frontmatter валидируется через Zod (`lib/content/schemas.ts`).
 - Контент читается из файловой системы (`lib/content/work.server.ts`).
 - MDX рендерится server-side через `next-mdx-remote/rsc`.
 
-## 7. Example
+## 8. Example
 ```mdx
 ---
 slug: "demo-case"

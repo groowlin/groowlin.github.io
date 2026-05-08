@@ -23,6 +23,7 @@ Props:
 - Для контента кейса media растягивается по ширине контейнера.
 - Media выходит за границы текстового контейнера на `20px` слева и справа.
 - Скругление media — `20px`.
+- При загрузке media допускается только короткое системное состояние `blur + opacity + scale` из `MediaPlaceholder`; отдельные кастомные анимации на уровне MDX-контента не поддерживаются.
 
 ### 2) `Gallery`
 Использование:
@@ -50,6 +51,12 @@ Props:
 - Fullscreen media сохраняет свой тип (`image`/`video`) и вписывается в viewport с `contain`.
 - Горизонтальный размер fullscreen media ограничен правилом `min(viewport, page container + 640px)`.
 - Backdrop fullscreen-overlay использует `var(--white-20)` и `blur(20px)`.
+- Open/close motion fullscreen-overlay задаётся самим UI-рендерером:
+  - открытие и закрытие происходят через переход между source bounds media и modal bounds;
+  - backdrop появляется/исчезает через короткий fade + blur;
+  - на fine pointer floating close-indicator следует за курсором;
+  - на reduced motion все эти переходы схлопываются в мгновенное состояние без анимации.
+- Hover-отклик trigger внутри `Gallery` допустим только как лёгкий системный feedback. Контент не управляет его параметрами.
 
 Пример:
 ```mdx

@@ -7,7 +7,6 @@ export async function generateMetadata(): Promise<Metadata> {
   const content = await getStaticPageContent("about");
 
   return {
-    title: content.meta.title,
     description: content.meta.description,
     alternates: { canonical: content.meta.canonical }
   };

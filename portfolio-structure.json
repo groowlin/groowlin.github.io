@@ -13,6 +13,38 @@
         "top": 60,
         "bottom": 40
       }
+    },
+    "motion": {
+      "principles": [
+        "Motion supports orientation, hierarchy, and state change.",
+        "Primary reveal language is opacity + blur + translateY.",
+        "Primary surface-swap language is opacity + blur + scale.",
+        "Continuous loops are allowed only for top-card hover feedback.",
+        "Reduced-motion fallback is required for reveal, top-card swap, and lightbox choreography."
+      ],
+      "easing": {
+        "expressive": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "standard": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "softOut": "easeOut",
+        "basic": "ease"
+      },
+      "durationsMs": {
+        "micro": 180,
+        "fast": 220,
+        "base": 280,
+        "basePlus": 320,
+        "emphasis": 420,
+        "layout": 600,
+        "pageReveal": 700,
+        "ambientEnter": 1240,
+        "loopIcon": 1400,
+        "loopShimmer": 4200
+      },
+      "pageReveal": {
+        "translateYPx": [12, 16],
+        "blurPx": 8,
+        "staggerMs": 80
+      }
     }
   },
   "pages": [
@@ -20,6 +52,12 @@
       "page": "home",
       "path": "/",
       "legacy": false,
+      "motion": [
+        "Top card swaps through AnimatedTopCard.",
+        "Home heading and case list use sequenced page reveal.",
+        "Active case uses a glass highlight with spring-driven geometry and restrained pointer-reactive tilt/shift.",
+        "Hover preview is a fine-pointer desktop enhancement and swaps media with blur/opacity/scale transitions."
+      ],
       "sections": [
         {
           "name": "top-card-to-profile",
@@ -30,6 +68,11 @@
             "top-card-subtitle",
             "top-card-icons",
             "top-card-arrow"
+          ],
+          "motion": [
+            "Hover-only icon wave and shimmer feedback.",
+            "Background-color transition on hover.",
+            "AnimatedTopCard enter/exit applies at shell level."
           ]
         },
         {
@@ -37,6 +80,9 @@
           "components": [
             "home-title",
             "home-subtitle"
+          ],
+          "motion": [
+            "Participates in page reveal sequencing."
           ]
         },
         {
@@ -47,6 +93,11 @@
             "case-item-label",
             "case-item-meta",
             "glass-highlight-layer"
+          ],
+          "motion": [
+            "Case items reveal with the shared page-reveal language.",
+            "Active case text shifts subtly inside the glass highlight.",
+            "Glass highlight follows pointer movement with restrained transform depth."
           ]
         },
         {
@@ -54,6 +105,11 @@
           "components": [
             "preview-pane",
             "preview-media"
+          ],
+          "motion": [
+            "Preview pane enters and exits with blur and opacity.",
+            "Preview media swaps with blur, opacity, and light scale settle.",
+            "Disabled on non-hover/coarse-pointer layouts."
           ]
         }
       ]
@@ -62,6 +118,11 @@
       "page": "work-detail",
       "path": "/work/[slug]",
       "legacy": false,
+      "motion": [
+        "Top card swaps through AnimatedTopCard.",
+        "Header and MDX content use sequenced page reveal.",
+        "Gallery media can transition to fullscreen overlay with system lightbox choreography."
+      ],
       "sections": [
         {
           "name": "top-card-to-home",
@@ -72,6 +133,10 @@
             "top-card-subtitle",
             "top-card-icons",
             "top-card-arrow"
+          ],
+          "motion": [
+            "Hover-only icon wave and shimmer feedback.",
+            "AnimatedTopCard enter/exit applies at shell level."
           ]
         },
         {
@@ -79,6 +144,9 @@
           "components": [
             "work-title",
             "work-subtitle"
+          ],
+          "motion": [
+            "Participates in page reveal sequencing."
           ]
         },
         {
@@ -87,6 +155,11 @@
             "markdown-blocks",
             "mdx-media",
             "mdx-cta"
+          ],
+          "motion": [
+            "MDX headings, paragraphs, list items, blockquotes, sections, and media wrappers reveal sequentially.",
+            "GalleryLightbox owns fullscreen media open/close motion and reduced-motion fallback.",
+            "Scroll-to-top button reveals after scroll and uses compact hover feedback."
           ]
         }
       ]
@@ -95,6 +168,10 @@
       "page": "about",
       "path": "/about",
       "legacy": false,
+      "motion": [
+        "Top card swaps through AnimatedTopCard.",
+        "Header and MDX content use sequenced page reveal."
+      ],
       "sections": [
         {
           "name": "top-card-to-home",
@@ -105,12 +182,19 @@
             "top-card-subtitle",
             "top-card-icons",
             "top-card-arrow"
+          ],
+          "motion": [
+            "Hover-only icon wave and shimmer feedback.",
+            "AnimatedTopCard enter/exit applies at shell level."
           ]
         },
         {
           "name": "profile-mdx-content",
           "components": [
             "markdown-blocks"
+          ],
+          "motion": [
+            "MDX content participates in page reveal sequencing."
           ]
         }
       ]
@@ -119,6 +203,10 @@
       "page": "not-found",
       "path": "/404",
       "legacy": false,
+      "motion": [
+        "Top card swaps through AnimatedTopCard.",
+        "Header and MDX content use sequenced page reveal."
+      ],
       "sections": [
         {
           "name": "top-card-default",
@@ -129,6 +217,10 @@
             "top-card-subtitle",
             "top-card-icons",
             "top-card-arrow"
+          ],
+          "motion": [
+            "Hover-only icon wave and shimmer feedback.",
+            "AnimatedTopCard enter/exit applies at shell level."
           ]
         },
         {
@@ -136,6 +228,9 @@
           "components": [
             "work-title",
             "work-subtitle"
+          ],
+          "motion": [
+            "Participates in page reveal sequencing."
           ]
         },
         {
@@ -144,6 +239,10 @@
             "markdown-blocks",
             "mdx-media",
             "mdx-cta"
+          ],
+          "motion": [
+            "MDX content participates in page reveal sequencing.",
+            "Scroll-to-top button reveals after scroll and uses compact hover feedback."
           ]
         }
       ]

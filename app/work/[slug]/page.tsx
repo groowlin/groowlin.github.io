@@ -21,13 +21,10 @@ export async function generateMetadata({ params }: WorkPageProps): Promise<Metad
   const entry = await getWorkCase(slug);
 
   if (!entry) {
-    return {
-      title: "Кейс"
-    };
+    return {};
   }
 
   return {
-    title: entry.meta.title,
     description: entry.meta.description,
     alternates: { canonical: entry.canonical }
   };

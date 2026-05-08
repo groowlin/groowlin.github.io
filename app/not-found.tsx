@@ -8,7 +8,6 @@ export async function generateMetadata(): Promise<Metadata> {
   const content = await getNotFoundPageContent();
 
   return {
-    title: content.meta.title,
     description: content.meta.description,
     alternates: { canonical: content.meta.canonical }
   };

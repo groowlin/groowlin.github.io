@@ -132,6 +132,58 @@
 - `--home-icon-size = 16px`
 - `--home-arrow-size = 24px`
 
+## Motion System
+
+### Motion principles
+- Motion supports orientation, hierarchy, and state change; it must not exist as decoration detached from interaction or layout.
+- Default motion language is soft, blurred, and slightly eased into place: `opacity + blur + translateY` for reveal, `opacity + blur + scale` for surface swaps, and restrained pointer-reactive transforms only where already designed.
+- Ambient infinite animation is not allowed by default. Continuous loops are reserved for the home top-card hover state only.
+- Scroll-linked animation patterns (`useScroll`, parallax, while-in-view transforms, progress-based transforms) are not part of the current design system.
+- New motion values should reuse the existing motion tiers below. If a new duration/easing family is needed, it must be added here first.
+
+### Motion implementation rules
+- Use `Framer Motion` for stateful enter/exit, geometry transitions, pointer-follow behavior, and portal-based overlays.
+- Use CSS transitions/keyframes for simple hover, asset loading, and deterministic page-reveal sequencing.
+- Prefer property-specific transitions. Avoid `transition: all` for new UI work.
+- Reduced motion support is mandatory for page reveal, top-card swaps, lightbox open/close, and any keyframe-driven effect with semantic meaning.
+
+### Motion tokens
+
+#### Easings
+- `motion-expressive = cubic-bezier(0.22, 1, 0.36, 1)`; primary easing for reveal, modal geometry changes, hover transforms, and media handoff.
+- `motion-standard = cubic-bezier(0.4, 0, 0.2, 1)`; secondary easing for small UI feedback and legacy link hover.
+- `motion-soft-out = easeOut`; allowed for simple backdrop fade/blur.
+- `motion-basic = ease`; allowed for media load-state transitions only.
+- `motion-soft-in-out = ease-in-out`; allowed for top-card background-color hover only.
+
+#### Duration tiers
+- `motion-instant = 0ms`; reduced-motion fallback.
+- `motion-micro = 180ms`; micro fade-out and compact icon-state changes.
+- `motion-fast = 200ms`
+- `motion-fast-plus = 220ms`; default for quick overlay fade, trigger hover, media handoff, and close-button enter.
+- `motion-base = 280ms`; default for media shell open, button reveal transforms, and standard UI state changes.
+- `motion-base-plus = 320ms`; allowed for asset settle/load completion and top-card background color.
+- `motion-emphasis = 420ms`; reserved for home active-item text shift.
+- `motion-layout = 600ms`; reserved for home glass/highlight positioning and preview enter/swap.
+- `motion-page-reveal = 700ms`
+- `motion-spring-soft = 800ms`; used by shared Framer Motion item reveal.
+- `motion-ambient-enter = 1240ms`; reserved for animated top-card content replacement.
+- `motion-loop-icon = 1400ms`; reserved for top-card icon wave on hover.
+- `motion-loop-shimmer = 4200ms`; reserved for top-card shimmer on hover.
+
+#### Reveal primitives
+- Page and MDX reveal uses `opacity + blur(8px) + translateY(12px..16px)`.
+- Sequenced reveal stagger is `80ms` between siblings.
+- Surface swap reveal may add `scale` in the `0.97..1` or `0.985..1` range.
+- Media loading/handoff may use blur up to `18px`; this is the upper bound in the current system.
+
+### Reduced motion policy
+- `PageRevealSequence` must resolve to fully visible static content when `prefers-reduced-motion: reduce` is active.
+- `AnimatedTopCard` must render the static `TopCard` without animated crossfade when reduced motion is requested.
+- `GalleryLightbox` must collapse motion transitions to `duration: 0` for open/close/backdrop/close-button choreography when reduced motion is requested.
+- CSS hover/loop/keyframe effects must expose a `prefers-reduced-motion` fallback that disables transition/animation when the effect is not essential.
+- Home hover preview and active-case pointer tilt currently keep their interactive behavior; any future extension of that system must include explicit reduced-motion handling before release.
+
 ## Home Top Card Tokens
 - `--home-top-card-width = 360px`
 - `--home-top-card-padding = 20px`
@@ -267,6 +319,36 @@ Spacing:
 Typography:
 - section title: `font-weight-medium`
 - quote attribution: `font-size-caption`
+
+## Motion Patterns By Area
+
+### Shared page reveal
+- `components/motion/PageRevealSequence.tsx` + `components/motion/page-reveal-sequence.module.css` are the canonical sequential reveal system used by `SiteShell`.
+- `components/motion/MdxMotionComponents.tsx` marks MDX headings, paragraphs, list items, blockquotes, sections, and media wrappers with `data-page-reveal`, so case/about content participates in the same reveal contract.
+- `components/motion/MotionPage.tsx` and `components/motion/MotionItem.tsx` mirror the same language in Framer Motion form: `opacity + blur + y`, `staggerChildren: 0.08`, `spring` item settle.
+- New page-level reveal patterns must stay visually aligned with this system: no new reveal direction, no aggressive overshoot, no larger blur than `18px`.
+
+### Home showcase motion
+- Home uses the shared reveal language for heading/list entry, then adds a dedicated interactive layer for the active case bubble and preview pane.
+- The active glass bubble may animate geometry (`top/left/width/height`) with `Framer Motion` and `motion-layout` timing, plus restrained pointer-reactive `rotateX`, `rotateY`, `x`, and `y`.
+- The right preview pane is a fine-pointer desktop enhancement. It enters/exits with soft blur and opacity and swaps media with the same motion family.
+- Hover motion in home must stay informational and tactile, not playful: small tilt, shallow shift, no large scale jumps, no bounce-heavy springs.
+
+### Top-card motion
+- `AnimatedTopCard` is the page-to-page/top-shell card replacement pattern for `/`, `/about`, `/work/[slug]`, and `/404`.
+- The card swap uses `opacity + blur + scale` with `motion-ambient-enter` for enter and a shorter standard exit.
+- `top-card.module.css` may animate hover-only feedback: background-color shift, icon wave, and shimmer sweep.
+- Those hover loops are only allowed while the card is actively hovered. No idle autoplay version should be introduced.
+
+### Media and lightbox motion
+- `MediaPlaceholder` may use blur/opacity/scale state changes for asset loading and a short handoff reveal when switching from placeholder/skeleton to loaded asset.
+- `GalleryLightbox` owns all fullscreen media motion. Open and close are geometry-aware transitions between source media bounds and modal bounds, paired with backdrop fade/blur.
+- The floating close indicator on fine-pointer devices follows the pointer through springs; touch/coarse devices use a fixed close button instead.
+- Gallery-trigger hover feedback may scale slightly, but fullscreen motion rules belong only to media opened from `Gallery`.
+
+### Utility motion
+- `ScrollToTopButton` may reveal itself with opacity + upward settle and may stretch its inner visual on hover/focus.
+- Global text links use a simple underline-color feedback and should remain understated relative to component-level motion.
 
 ## Что было токенизировано
 Хардкод-значения цветов/отступов/радиусов/типографики заменены на `var(--...)` в:
