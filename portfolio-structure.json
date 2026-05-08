@@ -114,6 +114,39 @@
           ]
         }
       ]
+    },
+    {
+      "page": "not-found",
+      "path": "/404",
+      "legacy": false,
+      "sections": [
+        {
+          "name": "top-card-default",
+          "components": [
+            "top-card",
+            "top-card-avatar",
+            "top-card-title",
+            "top-card-subtitle",
+            "top-card-icons",
+            "top-card-arrow"
+          ]
+        },
+        {
+          "name": "page-header",
+          "components": [
+            "work-title",
+            "work-subtitle"
+          ]
+        },
+        {
+          "name": "work-mdx-content",
+          "components": [
+            "markdown-blocks",
+            "mdx-media",
+            "mdx-cta"
+          ]
+        }
+      ]
     }
   ]
 }

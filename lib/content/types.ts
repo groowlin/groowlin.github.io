@@ -127,6 +127,24 @@ export interface StaticPageFrontmatter {
   canonical: string;
 }
 
+export interface NotFoundPageFrontmatter {
+  title: string;
+  subtitle: string;
+  description: string;
+  canonical: string;
+  ogImage?: string;
+  ogType?: "article" | "website";
+}
+
+export interface NotFoundPageContent {
+  meta: PageMeta;
+  summary: {
+    title: string;
+    subtitle: string;
+  };
+  content: React.ReactNode;
+}
+
 export interface WorkFrontmatter {
   slug: string;
   title: string;

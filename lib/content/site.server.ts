@@ -2,11 +2,17 @@ import "server-only";
 
 import path from "node:path";
 import { cache } from "react";
-import { homeFrontmatterSchema, staticPageFrontmatterSchema, topCardFrontmatterSchema } from "@/lib/content/schemas";
+import {
+  homeFrontmatterSchema,
+  notFoundPageFrontmatterSchema,
+  staticPageFrontmatterSchema,
+  topCardFrontmatterSchema
+} from "@/lib/content/schemas";
 import { getContentDir, parseMdxFrontmatter, renderMdx } from "@/lib/content/mdx.server";
 import type {
   HomeSectionConfig,
   HomeShowcaseConfig,
+  NotFoundPageContent,
   SiteMetadataSettings,
   StaticPageContent,
   StaticPageKey,
@@ -16,6 +22,8 @@ import type {
 
 const SITE_HOME_FILE = getContentDir("site", "home.mdx");
 const PAGES_DIR = getContentDir("pages");
+const ABOUT_PAGE_FILE = getContentDir("pages", "about.mdx");
+const NOT_FOUND_PAGE_FILE = getContentDir("pages", "not-found.mdx");
 const TOP_CARD_FILE_BY_VARIANT: Record<TopCardVariant, string> = {
   "to-profile": "top-card-to-profile.mdx",
   "to-home": "top-card-to-home.mdx",
@@ -25,6 +33,28 @@ const HOME_SECTION_SPLIT_RE = /\n\s*---\s*\n/g;
 const HOME_SECTION_TITLE_RE = /^##\s+(.+)$/;
 const HOME_SECTION_ITEM_RE = /^-\s+(.+)$/;
 const HOME_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function extractMarkdownSection(body: string, heading: string): string | null {
+  const normalizedBody = body.replace(/\r\n/g, "\n").trim();
+  const lines = normalizedBody.split("\n");
+  const normalizedHeading = heading.trim();
+  const startIndex = lines.findIndex((line) => line.trim() === `## ${normalizedHeading}`);
+
+  if (startIndex === -1) {
+    return null;
+  }
+
+  let endIndex = lines.length;
+
+  for (let index = startIndex + 1; index < lines.length; index += 1) {
+    if (/^#{1,6}\s+/.test(lines[index]?.trim() ?? "")) {
+      endIndex = index;
+      break;
+    }
+  }
+
+  return lines.slice(startIndex, endIndex).join("\n").trim() || null;
+}
 
 const loadHomeSource = cache(async () => {
   return parseMdxFrontmatter(SITE_HOME_FILE, homeFrontmatterSchema);
@@ -166,4 +196,30 @@ const loadStaticPage = cache(async (key: StaticPageKey): Promise<StaticPageConte
 
 export async function getStaticPageContent(key: StaticPageKey) {
   return loadStaticPage(key);
+}
+
+const loadNotFoundPage = cache(async (): Promise<NotFoundPageContent> => {
+  const { frontmatter, body } = await parseMdxFrontmatter(NOT_FOUND_PAGE_FILE, notFoundPageFrontmatterSchema);
+  const { body: aboutBody } = await parseMdxFrontmatter(ABOUT_PAGE_FILE, staticPageFrontmatterSchema);
+  const contactsSection = extractMarkdownSection(aboutBody, "Контакты");
+  const mergedBody = [body.trim(), contactsSection].filter(Boolean).join("\n\n");
+
+  return {
+    meta: {
+      title: frontmatter.title,
+      description: frontmatter.description,
+      canonical: frontmatter.canonical,
+      ogImage: frontmatter.ogImage,
+      ogType: frontmatter.ogType ?? "website"
+    },
+    summary: {
+      title: frontmatter.title,
+      subtitle: frontmatter.subtitle
+    },
+    content: renderMdx(mergedBody, "work")
+  };
+});
+
+export async function getNotFoundPageContent(): Promise<NotFoundPageContent> {
+  return loadNotFoundPage();
 }

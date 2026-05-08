@@ -48,6 +48,15 @@ export const staticPageFrontmatterSchema = z.object({
   canonical: z.string().min(1)
 });
 
+export const notFoundPageFrontmatterSchema = z.object({
+  title: z.string().min(1),
+  subtitle: z.string().min(1),
+  description: z.string().min(1),
+  canonical: z.string().min(1),
+  ogImage: z.string().optional(),
+  ogType: z.enum(["article", "website"]).optional()
+});
+
 export const workFrontmatterSchema = z.object({
   slug: z.string().min(1),
   title: z.string().min(1),
