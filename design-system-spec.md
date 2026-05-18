@@ -8,6 +8,9 @@
 - Base grid: 4px (основной ритм 8px, с поддержкой micro-step для плотных элементов)
 - Content max-width: `--page-max-width = 42rem` (672px)
 - Main side padding: `--layout-main-padding-x = 2rem` (32px)
+- Mobile surface side padding: `--layout-mobile-surface-padding-x = --space-lg` (16px)
+- Mobile content side padding: `--layout-mobile-content-padding-x = --space-3xl` (32px)
+- Mobile content inset inside the surface grid: `--layout-mobile-content-inset = 16px`
 - Main top padding: `--layout-main-padding-top = 6rem` (96px)
 - Main bottom padding: `--layout-main-padding-bottom = 200px`
 - Default vertical section gap: `--layout-content-gap = 2rem` (32px)
@@ -218,6 +221,7 @@ Shape:
 Rules:
 - top-card uses `--home-top-card-bg`
 - typography uses общий системный стек `--font-family-sans` и home font-size tokens
+- on mobile, top-card occupies the surface grid (`16px` from viewport edge)
 
 ### Home Case Card (`.item`)
 Structure:
@@ -236,6 +240,7 @@ Rules:
 - label всегда сверху meta
 - underline для label использует `--home-line-default`
 - hover glass-слой использует `surface` и `shadow` токены
+- on mobile, hover-only glass/highlight behavior and active text shift are disabled; list content follows the content grid (`32px` from viewport edge)
 
 ### Top Card (`.card`)
 Structure:
@@ -278,6 +283,7 @@ Shape:
 Rules:
 - вся палитра placeholder и наложений берётся из color/alpha токенов
 - video dot size переключается через `--size-dot-md`/`--size-dot-sm`
+- on mobile, inline content media bleeds from the content grid back to the surface grid (`16px` from viewport edge)
 
 ### Gallery Fullscreen Overlay (`GalleryLightbox`)
 Structure:

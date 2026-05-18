@@ -189,6 +189,21 @@
   }
 }
 
+@media (max-width: 767px) {
+  .card {
+    width: 100%;
+  }
+
+  .card:hover {
+    background-color: var(--home-top-card-bg);
+  }
+
+  .card:hover .icon,
+  .card:hover::after {
+    animation: none;
+  }
+}
+
 .card:focus-visible {
   outline: 2px solid var(--text-primary);
   outline-offset: 2px;

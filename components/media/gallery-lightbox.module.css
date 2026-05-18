@@ -172,8 +172,19 @@
 }
 
 @media (max-width: 767px) {
+  .gallery {
+    gap: var(--layout-mobile-content-inset);
+    width: calc(100% + (var(--layout-mobile-content-inset) * 2));
+    margin-inline: calc(var(--layout-mobile-content-inset) * -1);
+  }
+
+  .row {
+    gap: var(--layout-mobile-content-inset);
+  }
+
+  .row[data-columns="2"],
   .row[data-columns="3"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .backdrop {

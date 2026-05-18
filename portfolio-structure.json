@@ -4,6 +4,13 @@
   "designSystem": {
     "fontFamily": "Inter",
     "letterSpacing": "0.03em",
+    "layout": {
+      "mobile": {
+        "surfacePaddingX": 16,
+        "contentPaddingX": 32,
+        "contentInset": 16
+      }
+    },
     "rhythm": {
       "titleSubtitle": {
         "top": 60,

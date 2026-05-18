@@ -112,3 +112,9 @@
 .workCaption {
   margin-top: var(--space-md);
 }
+
+@media (max-width: 767px) {
+  .caption {
+    margin-left: var(--layout-mobile-content-inset);
+  }
+}

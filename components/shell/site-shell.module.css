@@ -103,3 +103,23 @@
     width: 100%;
   }
 }
+
+@media (max-width: 767px) {
+  .main {
+    padding-inline: var(--layout-mobile-surface-padding-x);
+    --media-bleed-offset: var(--layout-mobile-content-inset);
+  }
+
+  .inner {
+    width: 100%;
+  }
+
+  .compensated {
+    padding-inline: var(--layout-mobile-content-inset);
+  }
+
+  .topCard,
+  .topCardStage {
+    width: 100%;
+  }
+}

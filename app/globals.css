@@ -57,6 +57,11 @@
   --layout-main-padding-bottom: 200px;
   --layout-main-padding-x: 2rem;
   --layout-content-gap: 2rem;
+  --layout-mobile-surface-padding-x: var(--space-lg);
+  --layout-mobile-content-padding-x: var(--space-3xl);
+  --layout-mobile-content-inset: calc(
+    var(--layout-mobile-content-padding-x) - var(--layout-mobile-surface-padding-x)
+  );
   --layout-header-gap: 0.25rem;
   --rhythm-title-block-top: 60px;
   --rhythm-title-block-bottom: 40px;
