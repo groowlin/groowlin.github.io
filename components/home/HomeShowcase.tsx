@@ -318,7 +318,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
               ) : null}
             </header>
 
-            <div
+            <motion.div
               className={styles.listWrap}
               ref={listWrapRef}
               onMouseMove={onMouseMove}
@@ -427,7 +427,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                   </section>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </PageRevealSequence>
         </div>
       </div>
