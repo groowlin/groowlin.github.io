@@ -48,8 +48,8 @@ export function MediaPlaceholderView({
   const isSkeleton = appearance === "skeleton";
   const isHandoff = appearance === "handoff";
   const [intrinsicRatio, setIntrinsicRatio] = useState<number | null>(null);
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
-  const imageStateClass = isModal ? null : isImageLoaded ? styles.assetLoaded : styles.assetLoading;
+  const [isAssetLoaded, setIsAssetLoaded] = useState(false);
+  const assetStateClass = isModal || isSkeleton || isHandoff ? null : isAssetLoaded ? styles.assetLoaded : styles.assetLoading;
 
   if (!hasSource) {
     return null;
@@ -60,7 +60,19 @@ export function MediaPlaceholderView({
     if (naturalHeight > 0) {
       setIntrinsicRatio(naturalWidth / naturalHeight);
     }
-    setIsImageLoaded(true);
+    setIsAssetLoaded(true);
+  }
+
+  function applyVideoIntrinsicSize(element: HTMLVideoElement) {
+    const { videoWidth, videoHeight } = element;
+    if (videoHeight > 0) {
+      setIntrinsicRatio(videoWidth / videoHeight);
+    }
+  }
+
+  function markVideoLoaded(element: HTMLVideoElement) {
+    applyVideoIntrinsicSize(element);
+    setIsAssetLoaded(true);
   }
 
   const declaredRatio = parseAspectRatio(media.aspectRatio);
@@ -166,7 +178,9 @@ export function MediaPlaceholderView({
         >
           {media.kind === "video" ? (
             <video
-              className={[styles.asset, assetClassName, isSkeleton && styles.assetSkeleton, isHandoff && styles.assetHandoff].filter(Boolean).join(" ")}
+              className={[styles.asset, assetClassName, isSkeleton && styles.assetSkeleton, isHandoff && styles.assetHandoff, assetStateClass]
+                .filter(Boolean)
+                .join(" ")}
               src={media.src}
               width={media.intrinsicWidth}
               height={media.intrinsicHeight}
@@ -175,11 +189,19 @@ export function MediaPlaceholderView({
               loop
               playsInline
               preload={isModal ? "metadata" : "auto"}
-              onLoadedMetadata={(event) => {
-                const { videoWidth: nextWidth, videoHeight: nextHeight } = event.currentTarget;
-                if (nextHeight > 0) {
-                  setIntrinsicRatio(nextWidth / nextHeight);
+              ref={(node) => {
+                if (!isAssetLoaded && node && node.readyState >= 2) {
+                  markVideoLoaded(node);
                 }
+              }}
+              onLoadedMetadata={(event) => {
+                applyVideoIntrinsicSize(event.currentTarget);
+              }}
+              onLoadedData={(event) => {
+                markVideoLoaded(event.currentTarget);
+              }}
+              onCanPlay={(event) => {
+                markVideoLoaded(event.currentTarget);
               }}
             />
           ) : (
@@ -192,7 +214,7 @@ export function MediaPlaceholderView({
                 isSkeleton && styles.assetSkeleton,
                 isHandoff && styles.assetHandoff,
                 isWork && styles.workImageAsset,
-                imageStateClass
+                assetStateClass
               ]
                 .filter(Boolean)
                 .join(" ")}
@@ -204,7 +226,7 @@ export function MediaPlaceholderView({
               fetchPriority={isModal ? "high" : undefined}
               decoding={isModal ? "sync" : "async"}
               ref={(node) => {
-                if (!isImageLoaded && node && node.complete && node.naturalWidth > 0) {
+                if (!isAssetLoaded && node && node.complete && node.naturalWidth > 0) {
                   applyImageIntrinsicSize(node);
                 }
               }}
