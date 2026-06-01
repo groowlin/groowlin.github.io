@@ -57,6 +57,7 @@
   --layout-main-padding-bottom: 200px;
   --layout-main-padding-x: 2rem;
   --layout-content-gap: 2rem;
+  --layout-mobile-main-padding-top: 40px;
   --layout-mobile-surface-padding-x: var(--space-lg);
   --layout-mobile-content-padding-x: var(--space-3xl);
   --layout-mobile-content-inset: calc(

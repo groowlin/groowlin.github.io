@@ -6,6 +6,7 @@
     "letterSpacing": "0.03em",
     "layout": {
       "mobile": {
+        "mainPaddingTop": 40,
         "surfacePaddingX": 16,
         "contentPaddingX": 32,
         "contentInset": 16

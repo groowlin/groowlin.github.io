@@ -8,6 +8,7 @@
 - Base grid: 4px (основной ритм 8px, с поддержкой micro-step для плотных элементов)
 - Content max-width: `--page-max-width = 42rem` (672px)
 - Main side padding: `--layout-main-padding-x = 2rem` (32px)
+- Mobile main top padding: `--layout-mobile-main-padding-top = 40px`
 - Mobile surface side padding: `--layout-mobile-surface-padding-x = --space-lg` (16px)
 - Mobile content side padding: `--layout-mobile-content-padding-x = --space-3xl` (32px)
 - Mobile content inset inside the surface grid: `--layout-mobile-content-inset = 16px`
