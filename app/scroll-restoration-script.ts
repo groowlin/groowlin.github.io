@@ -12,16 +12,49 @@ export const scrollRestorationScript = `
   const navigationType = navigationEntry && "type" in navigationEntry ? navigationEntry.type : "navigate";
   let hasFinishedRestore = false;
   let hasStartedRestore = false;
+  let lastStoredPosition = null;
 
   if ("scrollRestoration" in window.history) {
     window.history.scrollRestoration = "manual";
   }
 
-  const saveScrollPosition = () => {
+  const isValidPosition = (position) =>
+    Boolean(position) &&
+    typeof position.x === "number" &&
+    typeof position.y === "number";
+
+  const readStoredPosition = () => {
+    try {
+      const rawValue = window.sessionStorage.getItem(storageKey);
+      const parsedValue = rawValue ? JSON.parse(rawValue) : null;
+
+      return isValidPosition(parsedValue) ? parsedValue : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const saveScrollPosition = ({ preserveNonZeroTop = false } = {}) => {
+    const nextPosition = { x: window.scrollX, y: window.scrollY };
+    const previousPosition = lastStoredPosition || readStoredPosition();
+
+    if (
+      preserveNonZeroTop &&
+      nextPosition.x === 0 &&
+      nextPosition.y === 0 &&
+      previousPosition &&
+      (previousPosition.x > 0 || previousPosition.y > 0)
+    ) {
+      lastStoredPosition = previousPosition;
+      return;
+    }
+
+    lastStoredPosition = nextPosition;
+
     try {
       window.sessionStorage.setItem(
         storageKey,
-        JSON.stringify({ x: window.scrollX, y: window.scrollY })
+        JSON.stringify(nextPosition)
       );
     } catch {}
   };
@@ -39,19 +72,10 @@ export const scrollRestorationScript = `
     });
   };
 
-  let savedPosition = null;
+  const savedPosition = readStoredPosition();
+  lastStoredPosition = savedPosition;
 
-  try {
-    const rawValue = window.sessionStorage.getItem(storageKey);
-    savedPosition = rawValue ? JSON.parse(rawValue) : null;
-  } catch {
-    savedPosition = null;
-  }
-
-  const hasSavedPosition =
-    Boolean(savedPosition) &&
-    typeof savedPosition.x === "number" &&
-    typeof savedPosition.y === "number";
+  const hasSavedPosition = isValidPosition(savedPosition);
 
   const shouldGuardInitialPaint =
     !window.location.hash &&
@@ -119,11 +143,11 @@ export const scrollRestorationScript = `
   };
 
   window.addEventListener("scroll", scheduleSave, { passive: true });
-  window.addEventListener("pagehide", saveScrollPosition);
-  window.addEventListener("beforeunload", saveScrollPosition);
+  window.addEventListener("pagehide", () => saveScrollPosition({ preserveNonZeroTop: true }));
+  window.addEventListener("beforeunload", () => saveScrollPosition({ preserveNonZeroTop: true }));
   window.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
-      saveScrollPosition();
+      saveScrollPosition({ preserveNonZeroTop: true });
     }
   });
 
