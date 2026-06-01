@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, type Ref, useState } from "react";
+import { type CSSProperties, type Ref, useEffect, useState } from "react";
 import { type MediaPlaceholder } from "@/lib/content/types";
 import styles from "@/components/media/media-placeholder.module.css";
 
@@ -28,6 +28,12 @@ function toHomePreviewRatio(value: number) {
   return value >= 1 ? 2 : 0.5;
 }
 
+interface AssetLoadState {
+  ready: boolean;
+  revealed: boolean;
+  src: string;
+}
+
 export function MediaPlaceholderView({
   media,
   variant = "default",
@@ -48,8 +54,56 @@ export function MediaPlaceholderView({
   const isSkeleton = appearance === "skeleton";
   const isHandoff = appearance === "handoff";
   const [intrinsicRatio, setIntrinsicRatio] = useState<number | null>(null);
-  const [isAssetLoaded, setIsAssetLoaded] = useState(false);
-  const assetStateClass = isModal || isSkeleton || isHandoff ? null : isAssetLoaded ? styles.assetLoaded : styles.assetLoading;
+  const currentSrc = media.src ?? "";
+  const [assetLoadState, setAssetLoadState] = useState<AssetLoadState>({
+    ready: false,
+    revealed: false,
+    src: currentSrc
+  });
+  const isCurrentAssetReady = assetLoadState.src === currentSrc && assetLoadState.ready;
+  const isCurrentAssetRevealed = assetLoadState.src === currentSrc && assetLoadState.revealed;
+  const assetStateClass = isModal || isSkeleton || isHandoff ? null : isCurrentAssetRevealed ? styles.assetLoaded : styles.assetLoading;
+
+  function markAssetReady() {
+    setAssetLoadState((current) => {
+      if (current.src === currentSrc && current.ready) {
+        return current;
+      }
+
+      return {
+        ready: true,
+        revealed: false,
+        src: currentSrc
+      };
+    });
+  }
+
+  useEffect(() => {
+    if (!isCurrentAssetReady || isCurrentAssetRevealed || isModal || isSkeleton || isHandoff) {
+      return undefined;
+    }
+
+    let outerFrame = 0;
+    let innerFrame = 0;
+
+    outerFrame = window.requestAnimationFrame(() => {
+      innerFrame = window.requestAnimationFrame(() => {
+        setAssetLoadState((current) =>
+          current.src === currentSrc && current.ready
+            ? {
+                ...current,
+                revealed: true
+              }
+            : current
+        );
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(outerFrame);
+      window.cancelAnimationFrame(innerFrame);
+    };
+  }, [currentSrc, isCurrentAssetReady, isCurrentAssetRevealed, isHandoff, isModal, isSkeleton]);
 
   if (!hasSource) {
     return null;
@@ -60,7 +114,7 @@ export function MediaPlaceholderView({
     if (naturalHeight > 0) {
       setIntrinsicRatio(naturalWidth / naturalHeight);
     }
-    setIsAssetLoaded(true);
+    markAssetReady();
   }
 
   function applyVideoIntrinsicSize(element: HTMLVideoElement) {
@@ -72,7 +126,7 @@ export function MediaPlaceholderView({
 
   function markVideoLoaded(element: HTMLVideoElement) {
     applyVideoIntrinsicSize(element);
-    setIsAssetLoaded(true);
+    markAssetReady();
   }
 
   const declaredRatio = parseAspectRatio(media.aspectRatio);
@@ -190,7 +244,7 @@ export function MediaPlaceholderView({
               playsInline
               preload={isModal ? "metadata" : "auto"}
               ref={(node) => {
-                if (!isAssetLoaded && node && node.readyState >= 2) {
+                if (!isCurrentAssetReady && node && node.readyState >= 2) {
                   markVideoLoaded(node);
                 }
               }}
@@ -226,7 +280,7 @@ export function MediaPlaceholderView({
               fetchPriority={isModal ? "high" : undefined}
               decoding={isModal ? "sync" : "async"}
               ref={(node) => {
-                if (!isAssetLoaded && node && node.complete && node.naturalWidth > 0) {
+                if (!isCurrentAssetReady && node && node.complete && node.naturalWidth > 0) {
                   applyImageIntrinsicSize(node);
                 }
               }}
