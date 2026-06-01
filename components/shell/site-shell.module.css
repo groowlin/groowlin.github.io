@@ -106,6 +106,7 @@
 
 @media (max-width: 767px) {
   .main {
+    padding-top: var(--layout-mobile-surface-padding-x);
     padding-inline: var(--layout-mobile-surface-padding-x);
     --media-bleed-offset: var(--layout-mobile-content-inset);
   }
