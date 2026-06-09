@@ -47,7 +47,7 @@ export default async function WorkPage({ params }: WorkPageProps) {
       topCardVariant="to-home"
     >
       <div className={styles.stack}>
-        <WorkArticle content={entry.content} />
+        <WorkArticle content={entry.content} shortSummary={entry.shortSummary} />
       </div>
     </SiteShell>
   );

@@ -99,6 +99,11 @@ export interface WorkCaseSummary {
   preview: HomePreview;
 }
 
+export interface WorkCaseShortSummary {
+  title?: string;
+  items: string[];
+}
+
 export interface WorkCaseMeta {
   title: string;
   description: string;
@@ -109,6 +114,7 @@ export interface WorkCaseMeta {
 export interface WorkCase {
   slug: string;
   summary: WorkCaseSummary;
+  shortSummary?: WorkCaseShortSummary;
   meta: WorkCaseMeta;
   canonical: string;
   content: React.ReactNode;
@@ -158,6 +164,7 @@ export interface WorkFrontmatter {
   subtitle: string;
   status: WorkCaseStatus;
   preview: HomePreview;
+  shortSummary?: WorkCaseShortSummary;
   description: string;
   canonical: string;
   ogImage?: string;

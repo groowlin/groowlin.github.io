@@ -79,6 +79,7 @@ export async function getWorkCase(slug: string): Promise<WorkCase | null> {
       subtitle: current.subtitle,
       preview: hydrateHomePreview(current.preview)
     },
+    shortSummary: current.shortSummary,
     meta: {
       title: current.title,
       description: current.description,

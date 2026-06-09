@@ -70,6 +70,12 @@ export const workFrontmatterSchema = z.object({
   subtitle: z.string().min(1),
   status: z.enum(["published", "hidden"]),
   preview: homePreviewSchema,
+  shortSummary: z
+    .object({
+      title: z.string().min(1).optional(),
+      items: z.array(z.string().min(1)).min(1)
+    })
+    .optional(),
   description: z.string().min(1),
   canonical: z.string().min(1),
   ogImage: z.string().optional(),

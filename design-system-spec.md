@@ -357,6 +357,14 @@ Typography:
 - `ScrollToTopButton` may reveal itself with opacity + upward settle and may stretch its inner visual on hover/focus.
 - Global text links use a simple underline-color feedback and should remain understated relative to component-level motion.
 
+### Work short-summary motion
+- `WorkShortSummaryToggle` is the case-level switch between full MDX content and the optional `shortSummary` content.
+- The switch uses a compact fixed-position floating pill control and must not be styled as a primary CTA.
+- The collapse transition applies to the whole case content block, including media, using `opacity + blur + slight scale + SVG displacement`.
+- The visual sweep is a short semantic transition only during user-triggered switching; it must not loop or autoplay.
+- Duration uses `motion-page-reveal` timing (`700ms`) and `motion-expressive` easing.
+- Reduced motion must skip blur, displacement, and sweep animation, switching content immediately.
+
 ## Что было токенизировано
 Хардкод-значения цветов/отступов/радиусов/типографики заменены на `var(--...)` в:
 - `/Users/aleksandrlebed/Spizheno/app/globals.css`
