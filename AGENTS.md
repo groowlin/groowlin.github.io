@@ -108,7 +108,7 @@ pnpm build
 - Перед редактированием кейсов обязательно сверяться с `docs/specs/product-case-writing-rules.md`.
 - Не переписывать недописанные кейсы как финальные без явного запроса.
 - `Globus` считать готовым status-кейсом ожидания релиза, а не черновиком.
-- Если меняется `subtitle`, соблюдать формат `period · action/effect` из `docs/specs/portfolio-case-json-structure.md`.
+- Если меняется `subtitle`, соблюдать формат `period · role/format/status` из `docs/specs/portfolio-case-json-structure.md`.
 - Не добавлять short-mode, summary-паспорт, отдельное поле для главной или новые контентные поля без явного запроса.
 
 ## 14) Политика использования субагентов

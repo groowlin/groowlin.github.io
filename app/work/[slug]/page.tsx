@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { WorkArticle } from "@/components/sections/WorkArticle";
+import { WorkShortSummaryButton, WorkShortSummaryProvider } from "@/components/sections/WorkShortSummaryToggle";
 import { SiteShell } from "@/components/shell/SiteShell";
 import { getWorkCase, getWorkSlugs } from "@/lib/content/work.server";
 import styles from "@/app/page-content.module.css";
@@ -39,16 +40,19 @@ export default async function WorkPage({ params }: WorkPageProps) {
   }
 
   return (
-    <SiteShell
-      title={entry.summary.title}
-      subtitle={entry.summary.subtitle}
-      subtitleMuted={false}
-      subtitleVariant="workMeta"
-      topCardVariant="to-home"
-    >
-      <div className={styles.stack}>
-        <WorkArticle content={entry.content} shortSummary={entry.shortSummary} />
-      </div>
-    </SiteShell>
+    <WorkShortSummaryProvider shortSummary={entry.shortSummary}>
+      <SiteShell
+        title={entry.summary.title}
+        subtitle={entry.summary.subtitle}
+        headerAction={<WorkShortSummaryButton />}
+        subtitleMuted={false}
+        subtitleVariant="workMeta"
+        topCardVariant="to-home"
+      >
+        <div className={styles.stack}>
+          <WorkArticle content={entry.content} />
+        </div>
+      </SiteShell>
+    </WorkShortSummaryProvider>
   );
 }

@@ -359,11 +359,9 @@ Typography:
 
 ### Work short-summary motion
 - `WorkShortSummaryToggle` is the case-level switch between full MDX content and the optional `shortSummary` content.
-- The switch uses a compact fixed-position floating pill control and must not be styled as a primary CTA.
-- The collapse transition applies to the whole case content block, including media, using `opacity + blur + slight scale + SVG displacement`.
-- The visual sweep is a short semantic transition only during user-triggered switching; it must not loop or autoplay.
-- Duration uses `motion-page-reveal` timing (`700ms`) and `motion-expressive` easing.
-- Reduced motion must skip blur, displacement, and sweep animation, switching content immediately.
+- The switch uses a compact inline control inside the case title container, aligned to the right edge of the content area, and must not be styled as a primary CTA.
+- The control height spans the title + subtitle header block.
+- Content switching is instant: no blur, displacement, sweep, timer, or transition state.
 
 ## Что было токенизировано
 Хардкод-значения цветов/отступов/радиусов/типографики заменены на `var(--...)` в:

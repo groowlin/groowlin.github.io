@@ -15,9 +15,23 @@
 }
 
 .headerBlock {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-lg);
+  align-items: stretch;
+}
+
+.headerText {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: var(--layout-header-gap);
+}
+
+.headerAction {
+  display: flex;
+  align-self: stretch;
+  justify-self: end;
 }
 
 .pageStack {

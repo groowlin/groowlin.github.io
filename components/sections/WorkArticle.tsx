@@ -1,19 +1,17 @@
 import styles from "@/components/sections/work-article.module.css";
 import { ScrollToTopButton } from "@/components/sections/ScrollToTopButton";
-import { WorkShortSummaryToggle } from "@/components/sections/WorkShortSummaryToggle";
-import type { WorkCaseShortSummary } from "@/lib/content/types";
+import { WorkShortSummaryContent } from "@/components/sections/WorkShortSummaryToggle";
 
 interface WorkArticleProps {
   content: React.ReactNode;
-  shortSummary?: WorkCaseShortSummary;
 }
 
-export function WorkArticle({ content, shortSummary }: WorkArticleProps) {
+export function WorkArticle({ content }: WorkArticleProps) {
   return (
     <article className={styles.article}>
-      <WorkShortSummaryToggle shortSummary={shortSummary}>
+      <WorkShortSummaryContent>
         <div className={styles.mdxRoot}>{content}</div>
-      </WorkShortSummaryToggle>
+      </WorkShortSummaryContent>
       <ScrollToTopButton />
     </article>
   );
