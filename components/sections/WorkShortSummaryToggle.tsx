@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { createContext, useContext, useState, type ReactNode } from "react";
+import { GalleryLightbox } from "@/components/media/GalleryLightbox";
 import styles from "@/components/sections/work-short-summary-toggle.module.css";
 import type { WorkCaseShortSummary } from "@/lib/content/types";
 
@@ -13,7 +15,12 @@ interface WorkShortSummaryContentProps {
   children: ReactNode;
 }
 
+interface WorkShortSummaryButtonProps {
+  className?: string;
+}
+
 type DisplayMode = "full" | "short";
+const ICON_SIZE = 36;
 
 interface WorkShortSummaryContextValue {
   displayMode: DisplayMode;
@@ -41,7 +48,7 @@ export function WorkShortSummaryProvider({ children, shortSummary }: WorkShortSu
   );
 }
 
-export function WorkShortSummaryButton() {
+export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProps) {
   const context = useWorkShortSummary();
 
   if (!context?.shortSummary) {
@@ -49,23 +56,19 @@ export function WorkShortSummaryButton() {
   }
 
   const { displayMode, toggleDisplayMode } = context;
-  const label = displayMode === "full" ? "Коротко" : "Полностью";
+  const iconSrc = displayMode === "full" ? "/media/system/read-fast.svg" : "/media/system/read-detailed.svg";
 
   return (
     <button
       type="button"
-      className={styles.toggleButton}
+      className={[styles.toggleButton, className].filter(Boolean).join(" ")}
       aria-pressed={displayMode === "short"}
       aria-label={displayMode === "full" ? "Показать короткую версию кейса" : "Показать полный кейс"}
       onClick={toggleDisplayMode}
     >
-      <span className={styles.icon} aria-hidden="true">
-        <span />
-        <span />
-        <span />
-        <span />
+      <span className={styles.buttonContent}>
+        <Image className={styles.icon} src={iconSrc} width={ICON_SIZE} height={ICON_SIZE} alt="" aria-hidden="true" />
       </span>
-      <span>{label}</span>
     </button>
   );
 }
@@ -89,14 +92,19 @@ export function WorkShortSummaryContent({ children }: WorkShortSummaryContentPro
         children
       ) : (
         <section className={styles.shortSummary} aria-label="Короткая версия кейса">
-          {shortSummary.title ? <h1 data-page-reveal="">{shortSummary.title}</h1> : null}
-          <ul>
-            {shortSummary.items.map((item) => (
-              <li key={item} data-page-reveal="">
-                {item}
-              </li>
+          <div className={styles.shortText}>
+            {shortSummary.paragraphs.map((paragraph) => (
+              <p key={paragraph} data-page-reveal="">
+                {paragraph}
+              </p>
             ))}
-          </ul>
+          </div>
+          {shortSummary.media && shortSummary.media.length > 0 ? (
+            <>
+              <br />
+              <GalleryLightbox items={shortSummary.media} variant="work" />
+            </>
+          ) : null}
         </section>
       )}
     </div>

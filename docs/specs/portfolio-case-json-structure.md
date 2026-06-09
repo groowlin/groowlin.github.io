@@ -21,7 +21,7 @@
 Опциональные поля:
 - `ogImage: string`
 - `ogType: "article" | "website"`
-- `shortSummary: { title?: string; items: string[] }`
+- `shortSummary: { paragraphs: string[]; media?: MediaPlaceholder[] }`
 
 ### `subtitle` rules
 
@@ -52,8 +52,9 @@
 
 Правила:
 
-- `shortSummary.items` содержит 3-5 тезисов;
-- тезисы должны опираться только на полный текст кейса;
+- `shortSummary.paragraphs` содержит 1-2 абзаца;
+- `shortSummary.media` опционально содержит медиа после текстового блока короткой версии;
+- абзацы должны опираться только на полный текст кейса;
 - неподтвержденные эффекты формулируются как `ожидаемый эффект`;
 - поле не используется на главной и не заменяет `description`;
 - если у кейса нет `shortSummary`, переключатель короткой версии не показывается.
@@ -99,11 +100,12 @@ preview:
   aspectRatio: "2 / 1"
   placeholderToken: "demo"
 shortSummary:
-  title: "Короткая версия"
-  items:
-    - "Главный вывод кейса."
-    - "Ключевой барьер или причина работы."
-    - "Логика решения."
+  paragraphs:
+    - "Главный вывод кейса и ключевой барьер."
+    - "Логика решения и ожидаемый эффект."
+  media:
+    - kind: "image"
+      src: "/media/shot-1.png"
 description: "Описание кейса"
 canonical: "/work/demo-case"
 ---

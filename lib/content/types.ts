@@ -100,8 +100,8 @@ export interface WorkCaseSummary {
 }
 
 export interface WorkCaseShortSummary {
-  title?: string;
-  items: string[];
+  paragraphs: string[];
+  media?: MediaPlaceholder[];
 }
 
 export interface WorkCaseMeta {

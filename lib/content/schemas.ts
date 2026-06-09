@@ -16,6 +16,14 @@ export const homePreviewSchema = z.object({
   centered: z.boolean().optional()
 });
 
+const mediaPlaceholderSchema = z.object({
+  kind: mediaKindSchema,
+  src: z.string().optional(),
+  aspectRatio: z.string().min(1).optional(),
+  caption: z.string().optional(),
+  placeholderToken: z.string().optional()
+});
+
 export const homeFrontmatterSchema = z.object({
   title: z.string().min(1),
   subtitle: z.string().min(1).optional(),
@@ -72,8 +80,8 @@ export const workFrontmatterSchema = z.object({
   preview: homePreviewSchema,
   shortSummary: z
     .object({
-      title: z.string().min(1).optional(),
-      items: z.array(z.string().min(1)).min(1)
+      paragraphs: z.array(z.string().min(1)).min(1).max(2),
+      media: z.array(mediaPlaceholderSchema).optional()
     })
     .optional(),
   description: z.string().min(1),

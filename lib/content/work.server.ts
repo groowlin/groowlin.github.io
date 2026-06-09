@@ -2,7 +2,7 @@ import "server-only";
 
 import path from "node:path";
 import { cache } from "react";
-import { hydrateHomePreview } from "@/lib/content/media-metadata.server";
+import { hydrateHomePreview, hydrateMediaPlaceholder } from "@/lib/content/media-metadata.server";
 import { parseMdxFrontmatter, listMdxFilenames, renderMdx, getContentDir } from "@/lib/content/mdx.server";
 import { workFrontmatterSchema } from "@/lib/content/schemas";
 import type { HomeWorkEntry, WorkCase, WorkFrontmatter } from "@/lib/content/types";
@@ -79,7 +79,12 @@ export async function getWorkCase(slug: string): Promise<WorkCase | null> {
       subtitle: current.subtitle,
       preview: hydrateHomePreview(current.preview)
     },
-    shortSummary: current.shortSummary,
+    shortSummary: current.shortSummary
+      ? {
+          ...current.shortSummary,
+          media: current.shortSummary.media?.map((item) => hydrateMediaPlaceholder(item))
+        }
+      : undefined,
     meta: {
       title: current.title,
       description: current.description,

@@ -359,8 +359,10 @@ Typography:
 
 ### Work short-summary motion
 - `WorkShortSummaryToggle` is the case-level switch between full MDX content and the optional `shortSummary` content.
-- The switch uses a compact inline control inside the case title container, aligned to the right edge of the content area, and must not be styled as a primary CTA.
-- The control height spans the title + subtitle header block.
+- The switch uses an icon-only inline action inside the case title container, aligned to the right edge of the content area.
+- The control is icon-only.
+- The control uses `/media/system/read-fast.svg` and `/media/system/read-detailed.svg`.
+- The control has no bubble/glass surface; hover/focus only scales the icon slightly.
 - Content switching is instant: no blur, displacement, sweep, timer, or transition state.
 
 ## Что было токенизировано
