@@ -4,6 +4,7 @@ import Image from "next/image";
 import { createContext, useContext, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { GalleryLightbox } from "@/components/media/GalleryLightbox";
+import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
 import styles from "@/components/sections/work-short-summary-toggle.module.css";
 import type { WorkCaseShortSummary } from "@/lib/content/types";
 
@@ -30,6 +31,7 @@ interface WorkShortSummaryContextValue {
 }
 
 const WorkShortSummaryContext = createContext<WorkShortSummaryContextValue | null>(null);
+const SHORT_SUMMARY_LABELS = new Set(["Проблема", "Решение", "Ожидаемый эффект", "Задача", "Подход", "Что получилось"]);
 
 function useWorkShortSummary() {
   return useContext(WorkShortSummaryContext);
@@ -46,10 +48,17 @@ function useIsHydrated() {
 function renderLineBreaks(text: string) {
   return text.split("\n").map((line, index, lines) => (
     <span key={`${line}-${index}`}>
-      {line.endsWith(":") ? <span className={styles.shortLabel}>{line}</span> : line}
+      {SHORT_SUMMARY_LABELS.has(line.trim().replace(/:$/, "")) ? <span className={styles.shortLabel}>{line}</span> : line}
       {index < lines.length - 1 ? <br /> : null}
     </span>
   ));
+}
+
+function getShortSummaryBlocks(paragraph: string) {
+  return paragraph
+    .split(/\n\s*\n/)
+    .map((block) => block.trim())
+    .filter(Boolean);
 }
 
 export function WorkShortSummaryProvider({ children, shortSummary }: WorkShortSummaryProviderProps) {
@@ -135,25 +144,29 @@ export function WorkShortSummaryContent({ children }: WorkShortSummaryContentPro
 
   return (
     <div className={styles.contentShell}>
-      {displayMode === "full" ? (
-        children
-      ) : (
-        <section className={styles.shortSummary} aria-label="Короткая версия кейса">
-          <div className={styles.shortText}>
-            {shortSummary.paragraphs.map((paragraph) => (
-              <p key={paragraph} data-page-reveal="">
-                {renderLineBreaks(paragraph)}
-              </p>
-            ))}
-          </div>
-          {shortSummary.media && shortSummary.media.length > 0 ? (
-            <>
-              <br />
-              <GalleryLightbox items={shortSummary.media} variant="work" />
-            </>
-          ) : null}
-        </section>
-      )}
+      <PageRevealSequence key={displayMode}>
+        {displayMode === "full" ? (
+          children
+        ) : (
+          <section className={styles.shortSummary} aria-label="Короткая версия кейса">
+            <div className={styles.shortText}>
+              {shortSummary.paragraphs.flatMap((paragraph) =>
+                getShortSummaryBlocks(paragraph).map((block) => (
+                  <p key={block} data-page-reveal="">
+                    {renderLineBreaks(block)}
+                  </p>
+                ))
+              )}
+            </div>
+            {shortSummary.media && shortSummary.media.length > 0 ? (
+              <>
+                <br />
+                <GalleryLightbox items={shortSummary.media} variant="work" />
+              </>
+            ) : null}
+          </section>
+        )}
+      </PageRevealSequence>
     </div>
   );
 }
