@@ -6,6 +6,10 @@
     var(--layout-main-padding-bottom);
 }
 
+.main[data-trim-bottom-padding="true"] {
+  padding-bottom: var(--space-0);
+}
+
 .inner {
   max-width: var(--page-max-width);
   margin: 0 auto;

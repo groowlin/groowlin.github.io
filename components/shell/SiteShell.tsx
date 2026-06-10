@@ -1,5 +1,6 @@
 import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
 import { AnimatedTopCard } from "@/components/navigation/AnimatedTopCard";
+import { BottomPaddingController } from "@/components/shell/BottomPaddingController";
 import { getTopCardContent } from "@/lib/content/site.server";
 import type { TopCardVariant } from "@/lib/content/types";
 import styles from "@/components/shell/site-shell.module.css";
@@ -29,7 +30,7 @@ export async function SiteShell({
   const bodyClassName = topCard && hasHeaderBlock ? styles.compensated : undefined;
 
   return (
-    <main className={styles.main}>
+    <main className={styles.main} data-page-main="">
       <div className={styles.inner}>
         <div className={styles.pageStack}>
           {topCard && <AnimatedTopCard card={topCard} className={styles.topCard} />}
@@ -70,8 +71,10 @@ export async function SiteShell({
               {children}
             </div>
           </PageRevealSequence>
+          <div aria-hidden="true" data-page-content-end="" />
         </div>
       </div>
+      <BottomPaddingController />
     </main>
   );
 }

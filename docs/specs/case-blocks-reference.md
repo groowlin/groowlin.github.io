@@ -67,6 +67,18 @@ Props:
 </Gallery>
 ```
 
+### 2.1) `shortSummary.media`
+
+`shortSummary.media` описывается во frontmatter кейса, а не в MDX body.
+По структуре это тот же `MediaPlaceholder[]`, что используется для `<Media />`.
+
+Правила:
+- media короткой версии рендерится после текста shortSummary через системную gallery/lightbox-логику;
+- fullscreen, caption, intrinsic dimensions и загрузочное состояние наследуют поведение `MediaPlaceholder` и `GalleryLightbox`;
+- assets должны оставаться внутри media-папки своего кейса (`public/media/cases/{slug}/...`);
+- отдельная подпапка для short-assets не обязательна;
+- имена файлов должны быть уникальными относительно основных media кейса, например `short-before.png` / `short-after.png`.
+
 ### 3) `Cta`
 Props:
 - `href: string`

@@ -359,11 +359,16 @@ Typography:
 
 ### Work short-summary motion
 - `WorkShortSummaryToggle` is the case-level switch between full MDX content and the optional `shortSummary` content.
-- The switch uses an icon-only inline action inside the case title container, aligned to the right edge of the content area.
+- On desktop, the switch uses an icon-only inline action inside the case title container, aligned to the right edge of the content area.
+- On mobile, the switch is rendered as a portal-based floating control so it is not constrained by transformed page/header containers.
 - The control is icon-only.
 - The control uses `/media/system/read-fast.svg` and `/media/system/read-detailed.svg`.
-- The control has no bubble/glass surface; hover/focus only scales the icon slightly.
+- Mobile floating controls use `36px` square visible buttons with `--space-lg` (`16px`) vertical gap between stacked actions.
+- The control has no bubble/glass surface; hover/focus only scales the icon slightly on fine-pointer devices.
+- Hover feedback must be guarded by `(hover: hover) and (pointer: fine)`; touch/coarse devices must not preserve hover-expanded states.
+- Mobile switching scrolls to the top of the case page after toggling short/full mode.
 - Content switching is instant: no blur, displacement, sweep, timer, or transition state.
+- `shortSummary` passport labels use `--font-weight-heavy`; do not set raw `font-weight: 800` in component CSS.
 
 ## Что было токенизировано
 Хардкод-значения цветов/отступов/радиусов/типографики заменены на `var(--...)` в:

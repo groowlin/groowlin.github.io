@@ -43,12 +43,6 @@
     transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.button:hover .visual,
-.button:focus-visible .visual {
-  height: 68px;
-  transform: scale(1.06);
-}
-
 .button:focus-visible .visual {
   outline: 2px solid var(--color-black);
   outline-offset: 4px;
@@ -89,15 +83,23 @@
     transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.button:hover .background,
-.button:focus-visible .background {
-  height: 68px;
-}
+@media (hover: hover) and (pointer: fine) {
+  .button:hover .visual,
+  .button:focus-visible .visual {
+    height: 68px;
+    transform: scale(1.06);
+  }
 
-.button:hover .shaft,
-.button:focus-visible .shaft {
-  opacity: 1;
-  transform: translateY(0) scaleY(1);
+  .button:hover .background,
+  .button:focus-visible .background {
+    height: 68px;
+  }
+
+  .button:hover .shaft,
+  .button:focus-visible .shaft {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
 }
 
 @media (max-width: 1180px) {
@@ -117,21 +119,32 @@
 @media (max-width: 768px) {
   .button {
     right: var(--space-2xl);
-    bottom: var(--space-2xl);
-    width: calc(36px + var(--space-2xl));
-    height: calc(36px + var(--space-2xl));
+    bottom: calc(var(--space-2xl) + 36px + var(--space-lg));
+    width: 36px;
+    height: 36px;
   }
 
   .visual {
-    right: var(--space-sm);
-    bottom: var(--space-sm);
+    right: var(--space-0);
+    bottom: var(--space-0);
+    height: 36px;
+    transform: none;
+  }
+
+  .background {
+    height: 36px;
+  }
+
+  .shaft {
+    opacity: 0;
+    transform: translateY(-14px) scaleY(0.3);
   }
 }
 
 @media (hover: none), (pointer: coarse) {
   .button {
-    width: calc(36px + var(--space-2xl));
-    height: calc(36px + var(--space-2xl));
+    width: 36px;
+    height: 36px;
   }
 }
 

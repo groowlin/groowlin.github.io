@@ -110,6 +110,8 @@ pnpm build
 - `Globus` считать готовым status-кейсом ожидания релиза, а не черновиком.
 - Если меняется `subtitle`, соблюдать формат `period · role/format/status` из `docs/specs/portfolio-case-json-structure.md`.
 - Не добавлять short-mode, summary-паспорт, отдельное поле для главной или новые контентные поля без явного запроса.
+- Если редактируется `shortSummary`, соблюдать правила из `docs/specs/portfolio-case-json-structure.md` и формат второго уровня пирамиды Минто из `docs/specs/product-case-writing-rules.md`.
+- Media для `shortSummary` хранить внутри media-папки соответствующего кейса и называть уникально относительно основных assets кейса.
 
 ## 14) Политика использования субагентов
 
