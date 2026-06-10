@@ -367,7 +367,7 @@ Typography:
 - The control has no bubble/glass surface; hover/focus only scales the icon slightly on fine-pointer devices.
 - Hover feedback must be guarded by `(hover: hover) and (pointer: fine)`; touch/coarse devices must not preserve hover-expanded states.
 - Mobile switching scrolls to the top of the case page after toggling short/full mode.
-- Content switching is instant: no blur, displacement, sweep, timer, or transition state.
+- Content switching reuses the shared `PageRevealSequence` contract; do not add a separate transition system on top of it.
 - `shortSummary` passport labels use `--font-weight-heavy`; do not set raw `font-weight: 800` in component CSS.
 
 ## Что было токенизировано

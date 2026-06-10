@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import styles from "@/components/motion/page-reveal-sequence.module.css";
 
 interface PageRevealSequenceProps {
@@ -15,7 +15,7 @@ function joinClassNames(...values: Array<string | undefined>) {
 export function PageRevealSequence({ children, className }: PageRevealSequenceProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) {
       return;
@@ -24,15 +24,23 @@ export function PageRevealSequence({ children, className }: PageRevealSequencePr
     root.dataset.state = "pending";
 
     const allTargets = Array.from(root.querySelectorAll("[data-page-reveal]")) as HTMLElement[];
-    const targets = allTargets.filter((target) => !target.querySelector("[data-page-reveal]"));
+    const targets = allTargets.filter(
+      (target) => !target.querySelector("[data-page-reveal]") && target.closest("[data-page-reveal-root]") === root
+    );
 
     let frameId = 0;
     let timeoutId = 0;
+
+    targets.forEach((target) => {
+      target.dataset.pageRevealState = "pending";
+    });
 
     const prepareTargets = () => {
       let revealIndex = 0;
 
       targets.forEach((target) => {
+        delete target.dataset.pageRevealActive;
+
         const rect = target.getBoundingClientRect();
         const isAboveViewport = rect.bottom <= 0;
 
@@ -44,6 +52,7 @@ export function PageRevealSequence({ children, className }: PageRevealSequencePr
 
         target.dataset.pageRevealState = "animate";
         target.style.setProperty("--page-reveal-index", String(revealIndex));
+        target.dataset.pageRevealActive = "true";
         revealIndex += 1;
       });
 
@@ -74,13 +83,14 @@ export function PageRevealSequence({ children, className }: PageRevealSequencePr
       delete root.dataset.state;
       targets.forEach((target) => {
         target.style.removeProperty("--page-reveal-index");
+        delete target.dataset.pageRevealActive;
         delete target.dataset.pageRevealState;
       });
     };
   }, []);
 
   return (
-    <div ref={rootRef} className={joinClassNames(styles.root, className)} data-state="pending">
+    <div ref={rootRef} className={joinClassNames(styles.root, className)} data-page-reveal-root="" data-state="pending">
       {children}
     </div>
   );
