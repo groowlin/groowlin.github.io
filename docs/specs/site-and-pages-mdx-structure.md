@@ -109,6 +109,15 @@
 - Static page and MDX content do not expose motion controls in frontmatter. Motion is renderer-defined and must stay consistent across pages.
 - MDX elements rendered through `lib/content/mdx-components.tsx` participate in page reveal via `components/motion/MdxMotionComponents.tsx`.
 - The reveal language for page content is fixed to soft `opacity + blur + translateY` sequencing. New page-level motion variants should not be introduced through content files.
+- The page-reveal sequence is split into two synchronized tracks inside `components/motion/page-reveal-sequence.module.css`:
+  - `pageRevealVisibility` controls `opacity + blur`;
+  - `pageRevealMove` controls `translateY`.
+- Current page-reveal timing contract:
+  - visibility track: `0.7s`, `cubic-bezier(0.22, 1, 0.36, 1)`;
+  - move track: `1.12s`, `cubic-bezier(0.18, 0.88, 0.28, 1)`;
+  - shared stagger: `calc(var(--page-reveal-index, 0) * 80ms)`;
+  - initial offset: `translateY(28px)`.
+- Bottom page padding is still renderer-controlled. `components/shell/BottomPaddingController.tsx` must re-check trim state after `load` and `app:scroll-restored` so reload/scroll-restore does not collapse the page container height incorrectly.
 - Reduced motion is part of the rendering contract:
   - top-card swaps fall back to static rendering;
   - page-reveal sequence resolves to immediately visible content without animation.

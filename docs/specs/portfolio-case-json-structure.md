@@ -81,6 +81,11 @@
 ## 5. Motion Contract
 - Motion не задаётся через frontmatter и не настраивается из MDX-контента.
 - `/work/[slug]` использует общесистемный page-reveal для header и MDX-блоков через `SiteShell` + `PageRevealSequence`.
+- Для этого page-reveal зафиксирован единый renderer-level motion contract:
+  - `opacity + blur` и `translateY` анимируются раздельно;
+  - `opacity + blur` используют `0.7s` и `cubic-bezier(0.22, 1, 0.36, 1)`;
+  - `translateY` использует `1.12s`, `cubic-bezier(0.18, 0.88, 0.28, 1)` и стартовый offset `28px`;
+  - stagger остаётся общесистемным: `calc(var(--page-reveal-index, 0) * 80ms)`.
 - Media внутри `Gallery` используют системное fullscreen motion-поведение:
   - переход из thumbnail в modal bounds и обратно;
   - backdrop fade/blur;

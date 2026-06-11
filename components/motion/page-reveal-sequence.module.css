@@ -5,14 +5,14 @@
 
 :global([data-page-reveal-root][data-state="pending"] [data-page-reveal]) {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(28px);
   filter: blur(8px);
 }
 
 :global([data-page-reveal][data-page-reveal-state="pending"]),
 :global([data-page-reveal][data-page-reveal-state="animate"]:not([data-page-reveal-active="true"])) {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(28px);
   filter: blur(8px);
 }
 
@@ -23,24 +23,32 @@
 }
 
 :global([data-page-reveal][data-page-reveal-active="true"]) {
-  animation-name: pageRevealIn;
-  animation-duration: 0.7s;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  animation-delay: calc(var(--page-reveal-index, 0) * 80ms);
-  animation-fill-mode: both;
+  animation-name: pageRevealVisibility, pageRevealMove;
+  animation-duration: 0.7s, 1.12s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.18, 0.88, 0.28, 1);
+  animation-delay: calc(var(--page-reveal-index, 0) * 80ms), calc(var(--page-reveal-index, 0) * 80ms);
+  animation-fill-mode: both, both;
 }
 
-@keyframes pageRevealIn {
+@keyframes pageRevealVisibility {
   from {
     opacity: 0;
-    transform: translateY(12px);
     filter: blur(8px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
     filter: blur(0);
+  }
+}
+
+@keyframes pageRevealMove {
+  from {
+    transform: translateY(28px);
+  }
+
+  to {
+    transform: translateY(0);
   }
 }
 
