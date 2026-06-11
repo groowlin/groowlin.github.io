@@ -23,15 +23,16 @@ interface WorkShortSummaryButtonProps {
 
 type DisplayMode = "full" | "short";
 const ICON_SIZE = 36;
+const SHORT_SUMMARY_LABELS = new Set(["Проблема", "Решение", "Ожидаемый эффект", "Задача", "Подход", "Что получилось"]);
 
 interface WorkShortSummaryContextValue {
   displayMode: DisplayMode;
+  hasToggled: boolean;
   shortSummary?: WorkCaseShortSummary;
   toggleDisplayMode: () => void;
 }
 
 const WorkShortSummaryContext = createContext<WorkShortSummaryContextValue | null>(null);
-const SHORT_SUMMARY_LABELS = new Set(["Проблема", "Решение", "Ожидаемый эффект", "Задача", "Подход", "Что получилось"]);
 
 function useWorkShortSummary() {
   return useContext(WorkShortSummaryContext);
@@ -63,8 +64,10 @@ function getShortSummaryBlocks(paragraph: string) {
 
 export function WorkShortSummaryProvider({ children, shortSummary }: WorkShortSummaryProviderProps) {
   const [displayMode, setDisplayMode] = useState<DisplayMode>("full");
+  const [hasToggled, setHasToggled] = useState(false);
 
   function toggleDisplayMode() {
+    setHasToggled(true);
     setDisplayMode((currentMode) => (currentMode === "full" ? "short" : "full"));
 
     if (window.matchMedia("(max-width: 768px)").matches) {
@@ -78,7 +81,7 @@ export function WorkShortSummaryProvider({ children, shortSummary }: WorkShortSu
   }
 
   return (
-    <WorkShortSummaryContext.Provider value={{ displayMode, shortSummary, toggleDisplayMode }}>
+    <WorkShortSummaryContext.Provider value={{ displayMode, hasToggled, shortSummary, toggleDisplayMode }}>
       {children}
     </WorkShortSummaryContext.Provider>
   );
@@ -136,37 +139,34 @@ export function WorkShortSummaryContent({ children }: WorkShortSummaryContentPro
     return <>{children}</>;
   }
 
-  const { displayMode, shortSummary } = context;
+  const { displayMode, hasToggled, shortSummary } = context;
 
   if (!shortSummary) {
     return <>{children}</>;
   }
 
-  return (
-    <div className={styles.contentShell}>
-      <PageRevealSequence key={displayMode}>
-        {displayMode === "full" ? (
-          children
-        ) : (
-          <section className={styles.shortSummary} aria-label="Короткая версия кейса">
-            <div className={styles.shortText}>
-              {shortSummary.paragraphs.flatMap((paragraph) =>
-                getShortSummaryBlocks(paragraph).map((block) => (
-                  <p key={block} data-page-reveal="">
-                    {renderLineBreaks(block)}
-                  </p>
-                ))
-              )}
-            </div>
-            {shortSummary.media && shortSummary.media.length > 0 ? (
-              <>
-                <br />
-                <GalleryLightbox items={shortSummary.media} variant="work" />
-              </>
-            ) : null}
-          </section>
-        )}
-      </PageRevealSequence>
-    </div>
-  );
+  const content =
+    displayMode === "full" ? (
+      children
+    ) : (
+      <section className={styles.shortSummary} aria-label="Короткая версия кейса">
+        <div className={styles.shortText}>
+          {shortSummary.paragraphs.flatMap((paragraph) =>
+            getShortSummaryBlocks(paragraph).map((block) => (
+              <p key={block} data-page-reveal="">
+                {renderLineBreaks(block)}
+              </p>
+            ))
+          )}
+        </div>
+        {shortSummary.media && shortSummary.media.length > 0 ? (
+          <>
+            <br />
+            <GalleryLightbox items={shortSummary.media} variant="work" />
+          </>
+        ) : null}
+      </section>
+    );
+
+  return <div className={styles.contentShell}>{hasToggled ? <PageRevealSequence key={displayMode}>{content}</PageRevealSequence> : content}</div>;
 }

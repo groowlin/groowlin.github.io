@@ -3,6 +3,12 @@
   flex-direction: column;
 }
 
+:global([data-page-reveal-root][data-state="pending"] [data-page-reveal]) {
+  opacity: 0;
+  transform: translateY(12px);
+  filter: blur(8px);
+}
+
 :global([data-page-reveal][data-page-reveal-state="pending"]),
 :global([data-page-reveal][data-page-reveal-state="animate"]:not([data-page-reveal-active="true"])) {
   opacity: 0;
