@@ -62,10 +62,6 @@ function isLocalEnvironment(hostname: string) {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
 }
 
-function isLocalhostTrackingEnabled() {
-  return process.env.NEXT_PUBLIC_YANDEX_METRICA_ALLOW_LOCALHOST === "true";
-}
-
 export function getYandexMetricaCounterId() {
   return parseCounterId(process.env.NEXT_PUBLIC_YANDEX_METRICA_ID);
 }
@@ -75,7 +71,7 @@ export function isAnalyticsDisabled() {
     return true;
   }
 
-  if (isLocalEnvironment(window.location.hostname) && !isLocalhostTrackingEnabled()) {
+  if (isLocalEnvironment(window.location.hostname)) {
     return true;
   }
 

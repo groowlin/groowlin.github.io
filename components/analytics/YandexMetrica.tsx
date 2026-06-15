@@ -71,7 +71,6 @@ export function YandexMetrica() {
             var storageKey = "${ANALYTICS_DISABLE_STORAGE_KEY}";
             var hostname = window.location.hostname;
             var isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
-            var allowLocalhost = ${process.env.NEXT_PUBLIC_YANDEX_METRICA_ALLOW_LOCALHOST === "true" ? "true" : "false"};
             var isDisabled = false;
 
             try {
@@ -80,7 +79,7 @@ export function YandexMetrica() {
               isDisabled = document.cookie.indexOf("portfolio_analytics_disabled=1") !== -1;
             }
 
-            if ((isLocalhost && !allowLocalhost) || isDisabled) {
+            if (isLocalhost || isDisabled) {
               return;
             }
 
