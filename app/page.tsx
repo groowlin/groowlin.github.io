@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageGoalTracker } from "@/components/analytics/PageGoalTracker";
 import { HomeShowcase } from "@/components/home/HomeShowcase";
 import { SiteShell } from "@/components/shell/SiteShell";
 import { getHomeShowcaseConfigContent, getSiteMetadataSettingsContent } from "@/lib/content/site.server";
@@ -70,6 +71,7 @@ export default async function HomePage() {
 
   return (
     <SiteShell topCardVariant="to-profile">
+      <PageGoalTracker goal="view_home" />
       <HomeShowcase title={homeConfig.title} subtitle={homeConfig.subtitle} sections={sections} />
     </SiteShell>
   );

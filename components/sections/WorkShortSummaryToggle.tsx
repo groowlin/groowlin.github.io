@@ -5,6 +5,7 @@ import { createContext, useContext, useState, useSyncExternalStore, type ReactNo
 import { createPortal } from "react-dom";
 import { GalleryLightbox } from "@/components/media/GalleryLightbox";
 import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
+import { getCurrentPath, trackMetricaGoal } from "@/lib/analytics/yandex-metrica";
 import styles from "@/components/sections/work-short-summary-toggle.module.css";
 import type { WorkCaseShortSummary } from "@/lib/content/types";
 
@@ -38,6 +39,10 @@ function useWorkShortSummary() {
   return useContext(WorkShortSummaryContext);
 }
 
+export function useWorkShortSummaryState() {
+  return useWorkShortSummary();
+}
+
 function useIsHydrated() {
   return useSyncExternalStore(
     () => () => undefined,
@@ -68,7 +73,13 @@ export function WorkShortSummaryProvider({ children, shortSummary }: WorkShortSu
 
   function toggleDisplayMode() {
     setHasToggled(true);
-    setDisplayMode((currentMode) => (currentMode === "full" ? "short" : "full"));
+    setDisplayMode((currentMode) => {
+      const nextMode = currentMode === "full" ? "short" : "full";
+      trackMetricaGoal(nextMode === "short" ? "short_mode_toggle_on" : "short_mode_toggle_off", {
+        page_path: getCurrentPath()
+      });
+      return nextMode;
+    });
 
     if (window.matchMedia("(max-width: 768px)").matches) {
       window.requestAnimationFrame(() => {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageGoalTracker } from "@/components/analytics/PageGoalTracker";
 import { SiteShell } from "@/components/shell/SiteShell";
 import { getStaticPageContent } from "@/lib/content/site.server";
 import styles from "@/app/page-content.module.css";
@@ -17,6 +18,7 @@ export default async function AboutPage() {
 
   return (
     <SiteShell title={content.meta.title} topCardVariant="to-home">
+      <PageGoalTracker goal="view_about" />
       <div className={styles.stack}>
         <article className={styles.mdxContent}>{content.content}</article>
       </div>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { WorkCaseAnalyticsTracker } from "@/components/analytics/WorkCaseAnalyticsTracker";
 import { notFound } from "next/navigation";
 import { WorkArticle } from "@/components/sections/WorkArticle";
 import { WorkShortSummaryButton, WorkShortSummaryProvider } from "@/components/sections/WorkShortSummaryToggle";
@@ -41,6 +42,7 @@ export default async function WorkPage({ params }: WorkPageProps) {
 
   return (
     <WorkShortSummaryProvider shortSummary={entry.shortSummary}>
+      <WorkCaseAnalyticsTracker slug={slug} title={entry.summary.title} />
       <SiteShell
         title={entry.summary.title}
         subtitle={entry.summary.subtitle}

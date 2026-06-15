@@ -6,6 +6,7 @@ import Image from "next/image";
 import { createPortal } from "react-dom";
 import { MdxMediaBlock } from "@/components/motion/MdxMotionComponents";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
+import { getCurrentPath, trackMetricaGoal } from "@/lib/analytics/yandex-metrica";
 import type { MediaPlaceholder } from "@/lib/content/types";
 import styles from "@/components/media/gallery-lightbox.module.css";
 
@@ -453,6 +454,12 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                         setPhase("opening");
                         setAnimatedRadius(20);
                         setActiveIndex(absoluteIndex);
+                        trackMetricaGoal("image_fullscreen_open", {
+                          page_path: getCurrentPath(),
+                          image_index: absoluteIndex + 1,
+                          media_kind: item.kind,
+                          gallery_variant: variant
+                        });
                       }}
                       aria-haspopup="dialog"
                       aria-label={getMediaOpenLabel(item, absoluteIndex)}

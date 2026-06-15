@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useMotionTemplate, useMotionValue, useSpring }
 import { createPortal } from "react-dom";
 import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
+import { getCaseSlugFromHref, getCurrentPath, trackMetricaGoal } from "@/lib/analytics/yandex-metrica";
 import { type HomeShowcaseSection, type HomeWorkEntry } from "@/lib/content/types";
 import shellStyles from "@/components/shell/site-shell.module.css";
 import styles from "@/components/home/home-showcase.module.css";
@@ -63,6 +64,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   const listWrapRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasTrackedPreviewOpen = useRef(false);
 
   const shiftXRaw = useMotionValue(0);
   const shiftYRaw = useMotionValue(0);
@@ -233,6 +235,26 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
 
   function openIndex(index: number) {
     cancelCloseIndex();
+
+    const nextEntry = displayEntries[index];
+    if (nextEntry) {
+      if (!hasTrackedPreviewOpen.current) {
+        hasTrackedPreviewOpen.current = true;
+        trackMetricaGoal("home_preview_open", {
+          case_slug: getCaseSlugFromHref(nextEntry.href),
+          case_title: nextEntry.label,
+          page_path: getCurrentPath()
+        });
+      } else if (activeIndex !== null && activeIndex !== index) {
+        const previousEntry = displayEntries[activeIndex];
+        trackMetricaGoal("home_preview_change", {
+          case_slug: getCaseSlugFromHref(nextEntry.href),
+          previous_case_slug: previousEntry ? getCaseSlugFromHref(previousEntry.href) : null,
+          case_title: nextEntry.label,
+          page_path: getCurrentPath()
+        });
+      }
+    }
 
     setActiveIndex(index);
     setPreviewIndex(index);
@@ -413,6 +435,14 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                             onMouseEnter={() => openIndex(index)}
                             onFocus={() => openIndex(index)}
                             onBlur={closeIndex}
+                            onClick={() => {
+                              trackMetricaGoal("click_case_card", {
+                                case_slug: getCaseSlugFromHref(entry.href),
+                                case_title: entry.label,
+                                section_title: section.title,
+                                page_path: getCurrentPath()
+                              });
+                            }}
                           >
                             <span className={styles.itemContent}>
                               <span className={styles.itemLabel}>{entry.label}</span>

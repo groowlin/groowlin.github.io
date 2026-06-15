@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { YandexMetrica } from "@/components/analytics/YandexMetrica";
 import { getLinkPreviewMetadataContent, getSiteMetadataSettingsContent } from "@/lib/content/site.server";
 import { scrollRestorationScript } from "@/app/scroll-restoration-script";
 import "./globals.css";
@@ -57,6 +58,7 @@ export default function RootLayout({
     <html lang="ru" className={inter.variable} suppressHydrationWarning>
       <body>
         <script dangerouslySetInnerHTML={{ __html: scrollRestorationScript }} />
+        <YandexMetrica />
         {children}
       </body>
     </html>
