@@ -11,6 +11,7 @@ export const scrollRestorationScript = `
   const restoredEventName = "app:scroll-restored";
   const navigationEntry = performance.getEntriesByType("navigation")[0];
   const navigationType = navigationEntry && "type" in navigationEntry ? navigationEntry.type : "navigate";
+  const isHistoryNavigation = navigationType === "back_forward";
   let hasFinishedRestore = false;
   let hasStartedRestore = false;
   let hasUserInteracted = false;
@@ -83,7 +84,7 @@ export const scrollRestorationScript = `
 
   if ("scrollRestoration" in window.history) {
     window.history.scrollRestoration =
-      navigationType === "reload" && !hasSavedPosition ? "auto" : "manual";
+      (navigationType === "reload" && !hasSavedPosition) || isHistoryNavigation ? "auto" : "manual";
   }
 
   const shouldGuardInitialPaint =
@@ -145,6 +146,12 @@ export const scrollRestorationScript = `
 
     hasStartedRestore = true;
 
+    if (isHistoryNavigation) {
+      window.scrollTo(0, 0);
+      finishRestore();
+      return;
+    }
+
     if (window.location.hash) {
       finishRestore();
       return;
@@ -189,6 +196,12 @@ export const scrollRestorationScript = `
   window.addEventListener("touchstart", () => { hasUserInteracted = true; }, { passive: true, capture: true });
   window.addEventListener("pointerdown", () => { hasUserInteracted = true; }, { passive: true, capture: true });
   window.addEventListener("keydown", () => { hasUserInteracted = true; }, { capture: true });
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted || isHistoryNavigation) {
+      window.scrollTo(0, 0);
+      finishRestore();
+    }
+  });
   window.addEventListener("pagehide", () => saveScrollPosition({ preserveNonZeroTop: true }));
   window.addEventListener("beforeunload", () => saveScrollPosition({ preserveNonZeroTop: true }));
   window.addEventListener("visibilitychange", () => {
