@@ -193,7 +193,15 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
       kind: entry.preview.kind,
       src: entry.preview.src,
       aspectRatio: entry.preview.src ? entry.preview.aspectRatio : "2 / 1",
-      placeholderToken: entry.preview.placeholderToken
+      placeholderToken: entry.preview.placeholderToken,
+      intrinsicWidth: entry.preview.intrinsicWidth,
+      intrinsicHeight: entry.preview.intrinsicHeight,
+      srcSet: entry.preview.srcSet,
+      fullSrc: entry.preview.fullSrc,
+      fullIntrinsicWidth: entry.preview.fullIntrinsicWidth,
+      fullIntrinsicHeight: entry.preview.fullIntrinsicHeight,
+      videoSources: entry.preview.videoSources,
+      fullVideoSources: entry.preview.fullVideoSources
     } as const;
   }, [previewIndex, displayEntries]);
 

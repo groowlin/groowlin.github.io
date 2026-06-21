@@ -48,6 +48,11 @@ export interface TopCardContent {
 
 export type MediaKind = "image" | "video" | "gif";
 
+export interface MediaAssetSource {
+  src: string;
+  type: string;
+}
+
 export interface MediaPlaceholder {
   kind: MediaKind;
   aspectRatio?: string;
@@ -56,6 +61,12 @@ export interface MediaPlaceholder {
   placeholderToken?: string;
   intrinsicWidth?: number;
   intrinsicHeight?: number;
+  srcSet?: string;
+  fullSrc?: string;
+  fullIntrinsicWidth?: number;
+  fullIntrinsicHeight?: number;
+  videoSources?: MediaAssetSource[];
+  fullVideoSources?: MediaAssetSource[];
 }
 
 export interface HomePreview {
@@ -66,6 +77,12 @@ export interface HomePreview {
   centered?: boolean;
   intrinsicWidth?: number;
   intrinsicHeight?: number;
+  srcSet?: string;
+  fullSrc?: string;
+  fullIntrinsicWidth?: number;
+  fullIntrinsicHeight?: number;
+  videoSources?: MediaAssetSource[];
+  fullVideoSources?: MediaAssetSource[];
 }
 
 export interface HomeWorkEntry {

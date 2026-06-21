@@ -1,4 +1,10 @@
-import { Children, isValidElement, type AnchorHTMLAttributes, type HTMLAttributes, type ReactNode } from "react";
+import {
+  Children,
+  isValidElement,
+  type AnchorHTMLAttributes,
+  type HTMLAttributes,
+  type ReactNode
+} from "react";
 import Link from "next/link";
 import { GalleryLightbox } from "@/components/media/GalleryLightbox";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";

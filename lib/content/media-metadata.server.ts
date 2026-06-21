@@ -2,7 +2,7 @@ import "server-only";
 
 import fs from "node:fs";
 import path from "node:path";
-import type { HomePreview, MediaPlaceholder } from "@/lib/content/types";
+import type { HomePreview, MediaAssetSource, MediaPlaceholder } from "@/lib/content/types";
 
 interface MediaDimensions {
   width: number;
@@ -11,7 +11,9 @@ interface MediaDimensions {
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 const MP4_CONTAINER_TYPES = new Set(["moov", "trak", "mdia", "minf", "stbl", "edts", "dinf", "udta", "meta"]);
+const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".avif"]);
 const localMediaMetadataCache = new Map<string, MediaDimensions | null>();
+const localMediaExistenceCache = new Map<string, boolean>();
 
 function isInternalMediaPath(src?: string): src is string {
   return Boolean(src && src.startsWith("/") && !src.startsWith("//"));
@@ -28,6 +30,18 @@ function normalizeMediaPath(src: string) {
 
 function getMediaFilePath(src: string) {
   return path.join(PUBLIC_DIR, normalizeMediaPath(src).replace(/^\/+/, ""));
+}
+
+function doesInternalMediaExist(src: string) {
+  const normalizedSrc = normalizeMediaPath(src);
+
+  if (localMediaExistenceCache.has(normalizedSrc)) {
+    return localMediaExistenceCache.get(normalizedSrc) ?? false;
+  }
+
+  const exists = fs.existsSync(getMediaFilePath(normalizedSrc));
+  localMediaExistenceCache.set(normalizedSrc, exists);
+  return exists;
 }
 
 function isFinitePositiveNumber(value: number) {
@@ -183,6 +197,20 @@ function readMp4Dimensions(buffer: Buffer): MediaDimensions | null {
   return readMp4TrackDimensions(buffer, 0, buffer.length);
 }
 
+function readWebmDimensions(buffer: Buffer): MediaDimensions | null {
+  const widthIndex = buffer.indexOf(Buffer.from([0xb0]));
+  const heightIndex = buffer.indexOf(Buffer.from([0xba]));
+
+  if (widthIndex === -1 || heightIndex === -1) {
+    return null;
+  }
+
+  const width = buffer.readUInt16BE(widthIndex + 1);
+  const height = buffer.readUInt16BE(heightIndex + 1);
+
+  return hasUsableDimensions({ width, height }) ? { width, height } : null;
+}
+
 function readLocalMediaDimensions(filePath: string): MediaDimensions | null {
   const extension = path.extname(filePath).toLowerCase();
 
@@ -196,6 +224,10 @@ function readLocalMediaDimensions(filePath: string): MediaDimensions | null {
 
   if (extension === ".mp4") {
     return readMp4Dimensions(fs.readFileSync(filePath));
+  }
+
+  if (extension === ".webm") {
+    return readWebmDimensions(fs.readFileSync(filePath));
   }
 
   return null;
@@ -224,21 +256,126 @@ export function getLocalMediaDimensions(src?: string): MediaDimensions | null {
   return dimensions;
 }
 
+function getDerivedImageVariantPath(src: string, suffix: "@2x" | "-full") {
+  const normalizedSrc = normalizeMediaPath(src);
+  const extension = path.extname(normalizedSrc);
+
+  if (!IMAGE_EXTENSIONS.has(extension.toLowerCase())) {
+    return null;
+  }
+
+  const directory = path.posix.dirname(normalizedSrc);
+  const basename = path.posix.basename(normalizedSrc, extension);
+  return path.posix.join(directory, `${basename}${suffix}${extension}`);
+}
+
+function getExistingDerivedImageVariant(src: string, suffix: "@2x" | "-full") {
+  const variantPath = getDerivedImageVariantPath(src, suffix);
+  return variantPath && doesInternalMediaExist(variantPath) ? variantPath : null;
+}
+
+function toMimeType(extension: string) {
+  switch (extension.toLowerCase()) {
+    case ".mp4":
+      return "video/mp4";
+    case ".webm":
+      return "video/webm";
+    default:
+      return "";
+  }
+}
+
+function getVideoSources(src: string): MediaAssetSource[] {
+  const normalizedSrc = normalizeMediaPath(src);
+  const extension = path.extname(normalizedSrc).toLowerCase();
+  const basePath = normalizedSrc.slice(0, normalizedSrc.length - extension.length);
+  const candidates = [`${basePath}.webm`, `${basePath}.mp4`];
+
+  return candidates
+    .filter((candidate) => doesInternalMediaExist(candidate))
+    .map((candidate) => ({
+      src: candidate,
+      type: toMimeType(path.extname(candidate))
+    }));
+}
+
+function getFullVideoSources(src: string): MediaAssetSource[] {
+  const normalizedSrc = normalizeMediaPath(src);
+  const extension = path.extname(normalizedSrc).toLowerCase();
+  const basePath = normalizedSrc.slice(0, normalizedSrc.length - extension.length);
+  const candidates = [`${basePath}-full.webm`, `${basePath}-full.mp4`];
+
+  return candidates
+    .filter((candidate) => doesInternalMediaExist(candidate))
+    .map((candidate) => ({
+      src: candidate,
+      type: toMimeType(path.extname(candidate))
+    }));
+}
+
+function getFirstSourceDimensions(sources: MediaAssetSource[], fallbackSrc?: string) {
+  for (const source of sources) {
+    const dimensions = getLocalMediaDimensions(source.src);
+    if (hasUsableDimensions(dimensions)) {
+      return dimensions;
+    }
+  }
+
+  return fallbackSrc ? getLocalMediaDimensions(fallbackSrc) : null;
+}
+
+function hydrateDerivedMediaFields(src: string, kind: MediaPlaceholder["kind"] | HomePreview["kind"]) {
+  if (kind === "video") {
+    const videoSources = getVideoSources(src);
+    const fullVideoSources = getFullVideoSources(src);
+    const dimensions = getFirstSourceDimensions(videoSources, src) ?? getFirstSourceDimensions(fullVideoSources);
+
+    return {
+      dimensions,
+      srcSet: undefined,
+      fullSrc: undefined,
+      fullDimensions: undefined,
+      videoSources,
+      fullVideoSources
+    };
+  }
+
+  const dimensions = getLocalMediaDimensions(src);
+  const retinaSrc = getExistingDerivedImageVariant(src, "@2x");
+  const fullSrc = getExistingDerivedImageVariant(src, "-full");
+  const fullDimensions = fullSrc ? getLocalMediaDimensions(fullSrc) : null;
+
+  return {
+    dimensions,
+    srcSet: retinaSrc ? `${src} 1x, ${retinaSrc} 2x` : undefined,
+    fullSrc,
+    fullDimensions,
+    videoSources: undefined,
+    fullVideoSources: undefined
+  };
+}
+
 export function hydrateMediaPlaceholder<T extends MediaPlaceholder>(media: T): T {
   if (!media.src) {
     return media;
   }
 
-  const dimensions = getLocalMediaDimensions(media.src);
-  if (!hasUsableDimensions(dimensions)) {
-    return media;
-  }
+  const { dimensions, srcSet, fullSrc, fullDimensions, videoSources, fullVideoSources } = hydrateDerivedMediaFields(
+    media.src,
+    media.kind
+  );
 
   return {
     ...media,
-    aspectRatio: media.aspectRatio ?? toAspectRatioString(dimensions),
-    intrinsicWidth: media.intrinsicWidth ?? dimensions.width,
-    intrinsicHeight: media.intrinsicHeight ?? dimensions.height
+    aspectRatio: media.aspectRatio ?? (hasUsableDimensions(dimensions) ? toAspectRatioString(dimensions) : media.aspectRatio),
+    intrinsicWidth: media.intrinsicWidth ?? dimensions?.width,
+    intrinsicHeight: media.intrinsicHeight ?? dimensions?.height,
+    srcSet: media.srcSet ?? srcSet,
+    fullSrc: media.fullSrc ?? fullSrc ?? undefined,
+    fullIntrinsicWidth: media.fullIntrinsicWidth ?? fullDimensions?.width,
+    fullIntrinsicHeight: media.fullIntrinsicHeight ?? fullDimensions?.height,
+    videoSources: media.videoSources ?? videoSources,
+    fullVideoSources: media.fullVideoSources ?? fullVideoSources
   };
 }
 
@@ -247,14 +384,20 @@ export function hydrateHomePreview<T extends HomePreview>(preview: T): T {
     return preview;
   }
 
-  const dimensions = getLocalMediaDimensions(preview.src);
-  if (!hasUsableDimensions(dimensions)) {
-    return preview;
-  }
+  const { dimensions, srcSet, fullSrc, fullDimensions, videoSources, fullVideoSources } = hydrateDerivedMediaFields(
+    preview.src,
+    preview.kind
+  );
 
   return {
     ...preview,
-    intrinsicWidth: preview.intrinsicWidth ?? dimensions.width,
-    intrinsicHeight: preview.intrinsicHeight ?? dimensions.height
+    intrinsicWidth: preview.intrinsicWidth ?? dimensions?.width,
+    intrinsicHeight: preview.intrinsicHeight ?? dimensions?.height,
+    srcSet: preview.srcSet ?? srcSet,
+    fullSrc: preview.fullSrc ?? fullSrc ?? undefined,
+    fullIntrinsicWidth: preview.fullIntrinsicWidth ?? fullDimensions?.width,
+    fullIntrinsicHeight: preview.fullIntrinsicHeight ?? fullDimensions?.height,
+    videoSources: preview.videoSources ?? videoSources,
+    fullVideoSources: preview.fullVideoSources ?? fullVideoSources
   };
 }

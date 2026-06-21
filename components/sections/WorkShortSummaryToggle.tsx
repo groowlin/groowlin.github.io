@@ -24,7 +24,18 @@ interface WorkShortSummaryButtonProps {
 
 type DisplayMode = "full" | "short";
 const ICON_SIZE = 36;
-const SHORT_SUMMARY_LABELS = new Set(["Проблема", "Решение", "Ожидаемый эффект", "Задача", "Подход", "Что получилось"]);
+const SHORT_SUMMARY_LABELS = new Set([
+  "Проблема",
+  "Решение",
+  "Решения",
+  "Ожидаемый эффект",
+  "Задача",
+  "Подход",
+  "Что получилось",
+  "Продуктовая задача",
+  "Аналитика и развитие",
+  "Автоматизация и AI"
+]);
 
 interface WorkShortSummaryContextValue {
   displayMode: DisplayMode;

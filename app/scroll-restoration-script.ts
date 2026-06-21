@@ -5,7 +5,6 @@ export const scrollRestorationScript = `
   }
 
   const root = document.documentElement;
-  const storageKey = "scroll:" + window.location.pathname + window.location.search;
   const maxRestoreAttempts = 120;
   const postRestoreStabilizationMs = 1600;
   const restoredEventName = "app:scroll-restored";
@@ -22,9 +21,12 @@ export const scrollRestorationScript = `
     typeof position.x === "number" &&
     typeof position.y === "number";
 
+  const getStorageKey = () =>
+    "scroll:" + window.location.pathname + window.location.search;
+
   const readStoredPosition = () => {
     try {
-      const rawValue = window.sessionStorage.getItem(storageKey);
+      const rawValue = window.sessionStorage.getItem(getStorageKey());
       const parsedValue = rawValue ? JSON.parse(rawValue) : null;
 
       return isValidPosition(parsedValue) ? parsedValue : null;
@@ -38,7 +40,7 @@ export const scrollRestorationScript = `
 
     try {
       window.sessionStorage.setItem(
-        storageKey,
+        getStorageKey(),
         JSON.stringify(position)
       );
     } catch {}
@@ -83,8 +85,7 @@ export const scrollRestorationScript = `
   const hasSavedPosition = isValidPosition(savedPosition);
 
   if ("scrollRestoration" in window.history) {
-    window.history.scrollRestoration =
-      (navigationType === "reload" && !hasSavedPosition) || isHistoryNavigation ? "auto" : "manual";
+    window.history.scrollRestoration = "auto";
   }
 
   const shouldGuardInitialPaint =
@@ -147,7 +148,6 @@ export const scrollRestorationScript = `
     hasStartedRestore = true;
 
     if (isHistoryNavigation) {
-      window.scrollTo(0, 0);
       finishRestore();
       return;
     }
@@ -198,7 +198,6 @@ export const scrollRestorationScript = `
   window.addEventListener("keydown", () => { hasUserInteracted = true; }, { capture: true });
   window.addEventListener("pageshow", (event) => {
     if (event.persisted || isHistoryNavigation) {
-      window.scrollTo(0, 0);
       finishRestore();
     }
   });

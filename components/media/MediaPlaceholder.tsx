@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, type Ref, useEffect, useState } from "react";
-import { type MediaPlaceholder } from "@/lib/content/types";
+import { type MediaAssetSource, type MediaPlaceholder } from "@/lib/content/types";
 import styles from "@/components/media/media-placeholder.module.css";
 
 interface MediaPlaceholderProps {
@@ -34,6 +34,10 @@ interface AssetLoadState {
   src: string;
 }
 
+function getFallbackVideoSources(media: MediaPlaceholder): MediaAssetSource[] {
+  return media.src ? [{ src: media.src, type: "" }] : [];
+}
+
 export function MediaPlaceholderView({
   media,
   variant = "default",
@@ -53,8 +57,14 @@ export function MediaPlaceholderView({
   const isContentMedia = !isHomePreview && !isModal;
   const isSkeleton = appearance === "skeleton";
   const isHandoff = appearance === "handoff";
+  const imageSrc = isModal && media.fullSrc ? media.fullSrc : media.src;
+  const imageWidth = isModal && media.fullIntrinsicWidth ? media.fullIntrinsicWidth : media.intrinsicWidth;
+  const imageHeight = isModal && media.fullIntrinsicHeight ? media.fullIntrinsicHeight : media.intrinsicHeight;
+  const inlineVideoSources = media.videoSources?.length ? media.videoSources : getFallbackVideoSources(media);
+  const modalVideoSources = media.fullVideoSources?.length ? media.fullVideoSources : inlineVideoSources;
+  const videoSources = isModal ? modalVideoSources : inlineVideoSources;
   const [intrinsicRatio, setIntrinsicRatio] = useState<number | null>(null);
-  const currentSrc = media.src ?? "";
+  const currentSrc = media.kind === "video" ? videoSources.map((source) => source.src).join("|") : imageSrc ?? "";
   const [assetLoadState, setAssetLoadState] = useState<AssetLoadState>({
     ready: false,
     revealed: false,
@@ -235,14 +245,13 @@ export function MediaPlaceholderView({
               className={[styles.asset, assetClassName, isSkeleton && styles.assetSkeleton, isHandoff && styles.assetHandoff, assetStateClass]
                 .filter(Boolean)
                 .join(" ")}
-              src={media.src}
               width={media.intrinsicWidth}
               height={media.intrinsicHeight}
               autoPlay
               muted
               loop
               playsInline
-              preload={isModal ? "metadata" : "auto"}
+              preload="metadata"
               ref={(node) => {
                 if (!isCurrentAssetReady && node && node.readyState >= 2) {
                   markVideoLoaded(node);
@@ -257,7 +266,11 @@ export function MediaPlaceholderView({
               onCanPlay={(event) => {
                 markVideoLoaded(event.currentTarget);
               }}
-            />
+            >
+              {videoSources.map((source) => (
+                <source key={source.src} src={source.src} type={source.type || undefined} />
+              ))}
+            </video>
           ) : (
             // We intentionally allow plain <img> to support arbitrary trusted URL schemes from JSON content.
             // eslint-disable-next-line @next/next/no-img-element
@@ -272,10 +285,11 @@ export function MediaPlaceholderView({
               ]
                 .filter(Boolean)
                 .join(" ")}
-              src={media.src}
+              src={imageSrc}
               alt={media.caption ?? ""}
-              width={media.intrinsicWidth}
-              height={media.intrinsicHeight}
+              width={imageWidth}
+              height={imageHeight}
+              srcSet={isModal ? undefined : media.srcSet}
               loading={isModal ? "eager" : "lazy"}
               fetchPriority={isModal ? "high" : undefined}
               decoding={isModal ? "sync" : "async"}

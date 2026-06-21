@@ -80,7 +80,7 @@ export const workFrontmatterSchema = z.object({
   preview: homePreviewSchema,
   shortSummary: z
     .object({
-      paragraphs: z.array(z.string().min(1)).min(1).max(2),
+      paragraphs: z.array(z.string().min(1)).min(1).max(4),
       media: z.array(mediaPlaceholderSchema).optional()
     })
     .optional(),

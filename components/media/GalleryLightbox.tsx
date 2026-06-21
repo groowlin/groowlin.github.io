@@ -47,6 +47,52 @@ interface ClosingVisualState {
 }
 
 type LightboxPhase = "opening" | "open";
+const preloadedImageSources = new Set<string>();
+const pendingImagePreloads = new Map<string, Promise<void>>();
+
+function preloadImageSource(src?: string) {
+  if (!src || typeof window === "undefined") {
+    return Promise.resolve();
+  }
+
+  if (preloadedImageSources.has(src) || pendingImagePreloads.has(src)) {
+    return pendingImagePreloads.get(src) ?? Promise.resolve();
+  }
+
+  const preloadPromise = new Promise<void>((resolve) => {
+    const image = new window.Image();
+    image.decoding = "async";
+
+    const markReady = () => {
+      preloadedImageSources.add(src);
+      pendingImagePreloads.delete(src);
+      resolve();
+    };
+
+    image.onload = () => {
+      if (typeof image.decode === "function") {
+        image.decode().catch(() => undefined).finally(markReady);
+        return;
+      }
+
+      markReady();
+    };
+
+    image.onerror = () => {
+      pendingImagePreloads.delete(src);
+      resolve();
+    };
+
+    image.src = src;
+
+    if (image.complete) {
+      markReady();
+    }
+  });
+
+  pendingImagePreloads.set(src, preloadPromise);
+  return preloadPromise;
+}
 
 function getGalleryRowSizes(itemCount: number) {
   if (itemCount <= 0) {
@@ -141,6 +187,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   const [phase, setPhase] = useState<LightboxPhase>("opening");
   const [animatedRadius, setAnimatedRadius] = useState(20);
   const [closingAnimatedRadius, setClosingAnimatedRadius] = useState(20);
+  const [fullAssetRevision, setFullAssetRevision] = useState(0);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const triggerRefs = useRef(new Map<number, HTMLButtonElement | null>());
@@ -176,6 +223,40 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   const portalTarget = typeof document === "undefined" ? null : document.documentElement;
   const closingSourceIndex = closingVisual?.sourceIndex ?? null;
 
+  const isFullImageReady = useCallback((item: GalleryMediaItem | null) => {
+    return Boolean(item?.kind === "image" && item.fullSrc && preloadedImageSources.has(item.fullSrc));
+  }, []);
+
+  const activeModalItem = useMemo(() => {
+    const revision = fullAssetRevision;
+    void revision;
+
+    if (
+      !activeItem ||
+      activeItem.kind !== "image" ||
+      !activeItem.fullSrc ||
+      !isFullImageReady(activeItem) ||
+      phase !== "open"
+    ) {
+      return activeItem;
+    }
+
+    return activeItem;
+  }, [activeItem, fullAssetRevision, isFullImageReady, phase]);
+
+  const openingModalItem = useMemo(() => {
+    if (!activeItem || activeItem.kind !== "image" || !activeItem.fullSrc) {
+      return activeItem;
+    }
+
+    return {
+      ...activeItem,
+      fullSrc: undefined,
+      fullIntrinsicWidth: undefined,
+      fullIntrinsicHeight: undefined
+    } satisfies GalleryMediaItem;
+  }, [activeItem]);
+
   const completeClose = useCallback(() => {
     setGeometry(null);
     setActiveIndex(null);
@@ -203,9 +284,11 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
       return;
     }
 
-    if (activeIndex !== null && activeItem && geometry) {
+    const displayedItem = phase === "open" ? activeModalItem : openingModalItem ?? activeModalItem;
+
+    if (activeIndex !== null && displayedItem && geometry) {
       setClosingVisual({
-        item: activeItem,
+        item: displayedItem,
         sourceIndex: activeIndex,
         targetRect: getCurrentSourceRect(activeIndex) ?? geometry.sourceRect,
         visualRect: activeVisualRectRef.current ?? geometry.targetRect,
@@ -223,7 +306,18 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     }
 
     completeClose();
-  }, [activeIndex, activeItem, animatedRadius, canTrackPointer, completeClose, geometry, getCurrentSourceRect, prefersReducedMotion]);
+  }, [
+    activeIndex,
+    activeModalItem,
+    animatedRadius,
+    canTrackPointer,
+    completeClose,
+    geometry,
+    getCurrentSourceRect,
+    openingModalItem,
+    phase,
+    prefersReducedMotion
+  ]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -403,6 +497,62 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     };
   }, [closingSourceIndex, getCurrentSourceRect]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const preloadableItems = items.filter((item) => item.kind === "image" && item.openable !== false && item.fullSrc);
+    if (preloadableItems.length === 0) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    const schedule = window.requestIdleCallback
+      ? window.requestIdleCallback(() => {
+          if (cancelled) {
+            return;
+          }
+
+          preloadableItems.forEach((item) => preloadImageSource(item.fullSrc));
+        })
+      : window.setTimeout(() => {
+          if (cancelled) {
+            return;
+          }
+
+          preloadableItems.forEach((item) => preloadImageSource(item.fullSrc));
+        }, 120);
+
+    return () => {
+      cancelled = true;
+      if (typeof schedule === "number") {
+        window.clearTimeout(schedule);
+        return;
+      }
+
+      window.cancelIdleCallback?.(schedule);
+    };
+  }, [items]);
+
+  useEffect(() => {
+    if (!activeItem || activeItem.kind !== "image" || !activeItem.fullSrc || isFullImageReady(activeItem)) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    preloadImageSource(activeItem.fullSrc)?.finally(() => {
+      if (!cancelled) {
+        setFullAssetRevision((current) => current + 1);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeItem, isFullImageReady]);
+
   if (items.length === 0) {
     return null;
   }
@@ -440,6 +590,12 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       }}
                       type="button"
                       className={[styles.trigger, isActiveTrigger && styles.triggerHidden].filter(Boolean).join(" ")}
+                      onPointerEnter={() => {
+                        preloadImageSource(item.fullSrc);
+                      }}
+                      onFocus={() => {
+                        preloadImageSource(item.fullSrc);
+                      }}
                       onClick={(event) => {
                         const nextPointerPosition = { x: event.clientX, y: event.clientY };
                         const sourceRect = getCurrentSourceRect(absoluteIndex) ?? toRect(event.currentTarget.getBoundingClientRect());
@@ -482,7 +638,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
         ))}
       </div>
 
-      {portalTarget && activeItem && geometry
+      {portalTarget && activeModalItem && geometry
         ? createPortal(
             <div
               className={[styles.backdrop, canTrackPointer && styles.backdropTracked].filter(Boolean).join(" ")}
@@ -512,7 +668,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                 className={styles.dialog}
                 role="dialog"
                 aria-modal="true"
-                aria-label={getMediaOpenLabel(activeItem, activeIndex ?? 0)}
+                aria-label={getMediaOpenLabel(activeModalItem, activeIndex ?? 0)}
                 tabIndex={-1}
               >
                 {canTrackPointer ? (
@@ -673,7 +829,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                     // }}
                   >
                     <MediaPlaceholderView
-                      media={activeItem}
+                      media={phase === "open" ? activeModalItem : openingModalItem ?? activeModalItem}
                       variant={variant}
                       presentation="modal"
                       fit="contain"

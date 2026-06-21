@@ -14,7 +14,12 @@ function getExternalLinkProps(href: string) {
 
 export function TopCard({ card, className }: TopCardProps) {
   return (
-    <Link href={card.link} className={[styles.card, className].filter(Boolean).join(" ")} {...getExternalLinkProps(card.link)}>
+    <Link
+      href={card.link}
+      scroll={false}
+      className={[styles.card, className].filter(Boolean).join(" ")}
+      {...getExternalLinkProps(card.link)}
+    >
       <span className={styles.row}>
         <span className={styles.photoWrap}>
           <Image className={styles.photo} src={card.photo} alt={card.title} width={64} height={64} />

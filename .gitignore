@@ -10,6 +10,7 @@ build/
 ## Caches
 .turbo/
 .cache/
+.pnpm-store/
 
 ## Coverage / reports
 coverage/
