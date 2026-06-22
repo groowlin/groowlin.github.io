@@ -265,6 +265,7 @@ function toRect(value: DOMRect): Rect {
 
 export function GalleryLightbox({ items, variant = "default", className, style, ...props }: GalleryLightboxProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [canTrackPointer, setCanTrackPointer] = useState(false);
   const [geometry, setGeometry] = useState<LightboxGeometry | null>(null);
   const [closingVisual, setClosingVisual] = useState<ClosingVisualState | null>(null);
@@ -464,6 +465,14 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
       return undefined;
     }
 
+    const viewportQuery = window.matchMedia("(max-width: 767px)");
+    const syncViewport = () => {
+      setIsMobileViewport(viewportQuery.matches);
+    };
+
+    syncViewport();
+    viewportQuery.addEventListener("change", syncViewport);
+
     const mediaQuery = window.matchMedia("(pointer: fine)");
     const syncPointerCapability = () => {
       setCanTrackPointer(mediaQuery.matches);
@@ -473,6 +482,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     mediaQuery.addEventListener("change", syncPointerCapability);
 
     return () => {
+      viewportQuery.removeEventListener("change", syncViewport);
       mediaQuery.removeEventListener("change", syncPointerCapability);
     };
   }, []);
@@ -721,7 +731,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
 
               return (
                 <MdxMediaBlock key={`gallery-item-${rowIndex}-${itemIndex}`} className={styles.item}>
-                  {item.openable === false ? (
+                  {item.openable === false || isMobileViewport ? (
                     <MediaPlaceholderView media={item} variant={variant} />
                   ) : (
                     <button

@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, type Ref, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type Ref, useEffect, useMemo, useRef, useState } from "react";
 import { type MediaAssetSource, type MediaPlaceholder } from "@/lib/content/types";
 import styles from "@/components/media/media-placeholder.module.css";
 
@@ -78,6 +78,36 @@ function getFallbackVideoSources(media: MediaPlaceholder): MediaAssetSource[] {
   return media.src ? [{ src: media.src, type: "" }] : [];
 }
 
+function parseRetinaSrc(srcSet?: string) {
+  if (!srcSet) {
+    return undefined;
+  }
+
+  const candidates = srcSet
+    .split(",")
+    .map((entry) => entry.trim())
+    .map((entry) => {
+      const [src, descriptor] = entry.split(/\s+/, 2);
+      return { src, descriptor };
+    });
+
+  return candidates.find((candidate) => candidate.descriptor === "2x")?.src;
+}
+
+function preloadImageSource(src: string) {
+  return new Promise<void>((resolve, reject) => {
+    const image = new window.Image();
+    image.decoding = "async";
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error(`Failed to preload image: ${src}`));
+    image.src = src;
+
+    if (image.complete && image.naturalWidth > 0) {
+      resolve();
+    }
+  });
+}
+
 export function MediaPlaceholderView({
   media,
   variant = "default",
@@ -103,9 +133,33 @@ export function MediaPlaceholderView({
   const isContentMedia = !isHomePreview && !isModal;
   const isSkeleton = appearance === "skeleton";
   const isHandoff = appearance === "handoff";
-  const imageSrc = isModal && media.fullSrc ? media.fullSrc : media.src;
-  const imageWidth = isModal && media.fullIntrinsicWidth ? media.fullIntrinsicWidth : media.intrinsicWidth;
-  const imageHeight = isModal && media.fullIntrinsicHeight ? media.fullIntrinsicHeight : media.intrinsicHeight;
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const baseImageSrc = media.src;
+  const retinaImageSrc = parseRetinaSrc(media.srcSet);
+  const fullImageSrc = media.fullSrc;
+  const isMobileInlineImage = media.kind === "image" && isContentMedia && !isModal && isMobileViewport;
+  const mobileImageUpgradeQueue = useMemo(
+    () => [retinaImageSrc, fullImageSrc].filter((value, index, all): value is string => Boolean(value) && all.indexOf(value) === index),
+    [fullImageSrc, retinaImageSrc]
+  );
+  const [displayedInlineImageSrc, setDisplayedInlineImageSrc] = useState(baseImageSrc);
+  const imageSrc = isModal
+    ? fullImageSrc ?? baseImageSrc
+    : isMobileInlineImage
+      ? displayedInlineImageSrc ?? baseImageSrc
+      : baseImageSrc;
+  const imageWidth =
+    isModal && media.fullIntrinsicWidth
+      ? media.fullIntrinsicWidth
+      : isMobileInlineImage && imageSrc === fullImageSrc && media.fullIntrinsicWidth
+        ? media.fullIntrinsicWidth
+        : media.intrinsicWidth;
+  const imageHeight =
+    isModal && media.fullIntrinsicHeight
+      ? media.fullIntrinsicHeight
+      : isMobileInlineImage && imageSrc === fullImageSrc && media.fullIntrinsicHeight
+        ? media.fullIntrinsicHeight
+        : media.intrinsicHeight;
   const inlineVideoSources = media.videoSources?.length ? media.videoSources : getFallbackVideoSources(media);
   const modalVideoSources = media.fullVideoSources?.length ? media.fullVideoSources : inlineVideoSources;
   const videoSources = isModal ? modalVideoSources : inlineVideoSources;
@@ -144,6 +198,58 @@ export function MediaPlaceholderView({
       };
     });
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const syncViewport = () => {
+      setIsMobileViewport(mediaQuery.matches);
+    };
+
+    syncViewport();
+    mediaQuery.addEventListener("change", syncViewport);
+
+    return () => {
+      mediaQuery.removeEventListener("change", syncViewport);
+    };
+  }, []);
+
+  useEffect(() => {
+    setDisplayedInlineImageSrc(baseImageSrc);
+  }, [baseImageSrc]);
+
+  useEffect(() => {
+    if (!isMobileInlineImage || !baseImageSrc || mobileImageUpgradeQueue.length === 0) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const promoteInlineImage = async () => {
+      for (const candidateSrc of mobileImageUpgradeQueue) {
+        try {
+          await preloadImageSource(candidateSrc);
+        } catch {
+          continue;
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        setDisplayedInlineImageSrc(candidateSrc);
+      }
+    };
+
+    void promoteInlineImage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [baseImageSrc, isMobileInlineImage, mobileImageUpgradeQueue]);
 
   useEffect(() => {
     if (!isCurrentAssetReady || isCurrentAssetRevealed || isModal || isSkeleton || isHandoff) {
@@ -543,7 +649,7 @@ export function MediaPlaceholderView({
               alt={media.caption ?? ""}
               width={imageWidth}
               height={imageHeight}
-              srcSet={isModal ? undefined : media.srcSet}
+              srcSet={isModal || isMobileInlineImage ? undefined : media.srcSet}
               loading={isModal ? "eager" : "lazy"}
               fetchPriority={isModal ? "high" : undefined}
               decoding={isModal ? "sync" : "async"}
