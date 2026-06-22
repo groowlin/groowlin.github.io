@@ -171,6 +171,16 @@
   box-sizing: border-box;
 }
 
+button,
+[role="button"],
+img,
+svg,
+video,
+canvas {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 html {
   scrollbar-gutter: stable;
   line-height: var(--line-height-base);

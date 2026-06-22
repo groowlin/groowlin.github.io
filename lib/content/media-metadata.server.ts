@@ -9,6 +9,11 @@ interface MediaDimensions {
   height: number;
 }
 
+interface Mp4TrackMetadata {
+  isVideo: boolean;
+  dimensions: MediaDimensions | null;
+}
+
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 const MP4_CONTAINER_TYPES = new Set(["moov", "trak", "mdia", "minf", "stbl", "edts", "dinf", "udta", "meta"]);
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".avif"]);
@@ -126,7 +131,7 @@ function readSvgDimensions(source: string): MediaDimensions | null {
   };
 }
 
-function readMp4TrackDimensions(buffer: Buffer, start: number, end: number): MediaDimensions | null {
+function readMp4TrackMetadata(buffer: Buffer, start: number, end: number): Mp4TrackMetadata | null {
   let offset = start;
   let trackIsVideo = false;
   let trackHeaderDimensions: MediaDimensions | null = null;
@@ -178,37 +183,25 @@ function readMp4TrackDimensions(buffer: Buffer, start: number, end: number): Med
 
     if (MP4_CONTAINER_TYPES.has(type)) {
       const childStart = type === "meta" ? contentStart + 4 : contentStart;
-      const nestedDimensions = readMp4TrackDimensions(buffer, childStart, contentEnd);
-      if (type === "trak" && nestedDimensions) {
-        return nestedDimensions;
-      }
-      if (nestedDimensions && type !== "trak") {
-        trackHeaderDimensions = trackHeaderDimensions ?? nestedDimensions;
+      const nestedMetadata = readMp4TrackMetadata(buffer, childStart, contentEnd);
+      if (nestedMetadata) {
+        trackIsVideo ||= nestedMetadata.isVideo;
+        trackHeaderDimensions ??= nestedMetadata.dimensions;
       }
     }
 
     offset = contentEnd;
   }
 
-  return trackIsVideo && hasUsableDimensions(trackHeaderDimensions) ? trackHeaderDimensions : null;
+  return {
+    isVideo: trackIsVideo,
+    dimensions: hasUsableDimensions(trackHeaderDimensions) ? trackHeaderDimensions : null
+  };
 }
 
 function readMp4Dimensions(buffer: Buffer): MediaDimensions | null {
-  return readMp4TrackDimensions(buffer, 0, buffer.length);
-}
-
-function readWebmDimensions(buffer: Buffer): MediaDimensions | null {
-  const widthIndex = buffer.indexOf(Buffer.from([0xb0]));
-  const heightIndex = buffer.indexOf(Buffer.from([0xba]));
-
-  if (widthIndex === -1 || heightIndex === -1) {
-    return null;
-  }
-
-  const width = buffer.readUInt16BE(widthIndex + 1);
-  const height = buffer.readUInt16BE(heightIndex + 1);
-
-  return hasUsableDimensions({ width, height }) ? { width, height } : null;
+  const metadata = readMp4TrackMetadata(buffer, 0, buffer.length);
+  return metadata?.isVideo ? metadata.dimensions : null;
 }
 
 function readLocalMediaDimensions(filePath: string): MediaDimensions | null {
@@ -224,10 +217,6 @@ function readLocalMediaDimensions(filePath: string): MediaDimensions | null {
 
   if (extension === ".mp4") {
     return readMp4Dimensions(fs.readFileSync(filePath));
-  }
-
-  if (extension === ".webm") {
-    return readWebmDimensions(fs.readFileSync(filePath));
   }
 
   return null;
@@ -313,22 +302,20 @@ function getFullVideoSources(src: string): MediaAssetSource[] {
     }));
 }
 
-function getFirstSourceDimensions(sources: MediaAssetSource[], fallbackSrc?: string) {
-  for (const source of sources) {
-    const dimensions = getLocalMediaDimensions(source.src);
-    if (hasUsableDimensions(dimensions)) {
-      return dimensions;
-    }
-  }
+function getMp4SourceDimensions(sources: MediaAssetSource[], fallbackSrc?: string) {
+  const mp4Source = sources.find((source) => path.extname(normalizeMediaPath(source.src)).toLowerCase() === ".mp4");
+  const fallbackMp4Src =
+    fallbackSrc && path.extname(normalizeMediaPath(fallbackSrc)).toLowerCase() === ".mp4" ? fallbackSrc : undefined;
+  const canonicalSrc = mp4Source?.src ?? fallbackMp4Src;
 
-  return fallbackSrc ? getLocalMediaDimensions(fallbackSrc) : null;
+  return canonicalSrc ? getLocalMediaDimensions(canonicalSrc) : null;
 }
 
 function hydrateDerivedMediaFields(src: string, kind: MediaPlaceholder["kind"] | HomePreview["kind"]) {
   if (kind === "video") {
     const videoSources = getVideoSources(src);
     const fullVideoSources = getFullVideoSources(src);
-    const dimensions = getFirstSourceDimensions(videoSources, src) ?? getFirstSourceDimensions(fullVideoSources);
+    const dimensions = getMp4SourceDimensions(videoSources, src) ?? getMp4SourceDimensions(fullVideoSources);
 
     return {
       dimensions,

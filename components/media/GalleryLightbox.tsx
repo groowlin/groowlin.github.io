@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, type HTMLAttributes, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type HTMLAttributes, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion, useSpring } from "framer-motion";
 import Image from "next/image";
 import { createPortal } from "react-dom";
@@ -49,6 +49,90 @@ interface ClosingVisualState {
 type LightboxPhase = "opening" | "open";
 const preloadedImageSources = new Set<string>();
 const pendingImagePreloads = new Map<string, Promise<void>>();
+const VIDEO_FRAME_TOLERANCE_SECONDS = 1 / 60;
+
+function getVideoTimelineDelta(firstTime: number, secondTime: number, duration: number) {
+  const directDelta = Math.abs(firstTime - secondTime);
+  return Number.isFinite(duration) && duration > 0 ? Math.min(directDelta, Math.abs(duration - directDelta)) : directDelta;
+}
+
+function waitForVideoSeek(element: HTMLVideoElement) {
+  if (!element.seeking) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      element.removeEventListener("seeked", finish);
+      window.clearTimeout(timeout);
+      resolve();
+    };
+    const timeout = window.setTimeout(finish, 120);
+    element.addEventListener("seeked", finish, { once: true });
+  });
+}
+
+function waitForPresentedVideoFrame(element: HTMLVideoElement) {
+  return new Promise<number>((resolve) => {
+    if (typeof element.requestVideoFrameCallback !== "function") {
+      window.requestAnimationFrame(() => resolve(element.currentTime));
+      return;
+    }
+
+    let settled = false;
+    const finish = (mediaTime: number) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      window.clearTimeout(timeout);
+      resolve(mediaTime);
+    };
+    const timeout = window.setTimeout(() => finish(element.currentTime), 100);
+    element.requestVideoFrameCallback((_now, metadata) => finish(metadata.mediaTime));
+  });
+}
+
+async function synchronizePresentedVideo(
+  target: HTMLVideoElement,
+  reference: HTMLVideoElement,
+  shouldContinue: () => boolean = () => true
+) {
+  if (!Number.isFinite(target.duration) || target.duration <= 0) {
+    return;
+  }
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (!shouldContinue()) {
+      return;
+    }
+
+    target.currentTime = Math.min(
+      reference.currentTime % target.duration,
+      Math.max(target.duration - 0.05, 0)
+    );
+    await waitForVideoSeek(target);
+    const mediaTime = await waitForPresentedVideoFrame(target);
+
+    if (!shouldContinue()) {
+      return;
+    }
+
+    if (
+      getVideoTimelineDelta(mediaTime, reference.currentTime, target.duration) <=
+      VIDEO_FRAME_TOLERANCE_SECONDS
+    ) {
+      return;
+    }
+  }
+}
 
 function preloadImageSource(src?: string) {
   if (!src || typeof window === "undefined") {
@@ -188,8 +272,14 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   const [animatedRadius, setAnimatedRadius] = useState(20);
   const [closingAnimatedRadius, setClosingAnimatedRadius] = useState(20);
   const [fullAssetRevision, setFullAssetRevision] = useState(0);
+  const [modalVideoStartTime, setModalVideoStartTime] = useState<number | undefined>(undefined);
+  const [modalVideoReady, setModalVideoReady] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const activeModalMediaRef = useRef<HTMLDivElement | null>(null);
+  const openingVideoSourceRef = useRef<HTMLVideoElement | null>(null);
+  const openingVideoFrameRef = useRef<HTMLCanvasElement | null>(null);
+  const videoSyncRevisionRef = useRef(0);
   const triggerRefs = useRef(new Map<number, HTMLButtonElement | null>());
   const triggerMediaRefs = useRef(new Map<number, HTMLDivElement | null>());
   const activeVisualRectRef = useRef<Rect | null>(null);
@@ -222,6 +312,9 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   const activeItem = activeIndex === null ? null : items[activeIndex] ?? null;
   const portalTarget = typeof document === "undefined" ? null : document.documentElement;
   const closingSourceIndex = closingVisual?.sourceIndex ?? null;
+  const isVideoClosing = Boolean(
+    closingVisual && activeItem?.kind === "video" && closingVisual.sourceIndex === activeIndex
+  );
 
   const isFullImageReady = useCallback((item: GalleryMediaItem | null) => {
     return Boolean(item?.kind === "image" && item.fullSrc && preloadedImageSources.has(item.fullSrc));
@@ -262,7 +355,37 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     setActiveIndex(null);
     setPhase("opening");
     setAnimatedRadius(20);
+    setModalVideoStartTime(undefined);
+    setModalVideoReady(false);
+    openingVideoSourceRef.current = null;
   }, []);
+
+  useLayoutEffect(() => {
+    const sourceVideo = openingVideoSourceRef.current;
+    const frameCanvas = openingVideoFrameRef.current;
+
+    if (activeItem?.kind !== "video" || !sourceVideo || !frameCanvas) {
+      return;
+    }
+
+    const frameWidth = sourceVideo.videoWidth || activeItem.intrinsicWidth || 1;
+    const frameHeight = sourceVideo.videoHeight || activeItem.intrinsicHeight || 1;
+    const context = frameCanvas.getContext("2d");
+
+    if (!context) {
+      frameCanvas.style.display = "none";
+      return;
+    }
+
+    frameCanvas.width = frameWidth;
+    frameCanvas.height = frameHeight;
+
+    try {
+      context.drawImage(sourceVideo, 0, 0, frameWidth, frameHeight);
+    } catch {
+      frameCanvas.style.display = "none";
+    }
+  }, [activeItem, modalVideoReady]);
 
   const getCurrentSourceRect = useCallback((index: number) => {
     const triggerMedia = triggerMediaRefs.current.get(index);
@@ -287,6 +410,21 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     const displayedItem = phase === "open" ? activeModalItem : openingModalItem ?? activeModalItem;
 
     if (activeIndex !== null && displayedItem && geometry) {
+      if (displayedItem.kind === "video") {
+        const triggerVideo = triggerMediaRefs.current.get(activeIndex)?.querySelector("video");
+        const modalVideo =
+          activeModalMediaRef.current?.querySelector<HTMLVideoElement>('video[data-video-active="true"]');
+
+        if (triggerVideo && modalVideo) {
+          const syncRevision = ++videoSyncRevisionRef.current;
+          void synchronizePresentedVideo(
+            triggerVideo,
+            modalVideo,
+            () => videoSyncRevisionRef.current === syncRevision
+          );
+        }
+      }
+
       setClosingVisual({
         item: displayedItem,
         sourceIndex: activeIndex,
@@ -305,7 +443,9 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
       closingVisualRectRef.current = activeVisualRectRef.current ?? geometry.targetRect;
     }
 
-    completeClose();
+    if (displayedItem?.kind !== "video") {
+      completeClose();
+    }
   }, [
     activeIndex,
     activeModalItem,
@@ -589,7 +729,12 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                         triggerRefs.current.set(absoluteIndex, node);
                       }}
                       type="button"
-                      className={[styles.trigger, isActiveTrigger && styles.triggerHidden].filter(Boolean).join(" ")}
+                      className={[
+                        styles.trigger,
+                        isActiveTrigger && !isVideoClosing && styles.triggerHidden
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                       onPointerEnter={() => {
                         preloadImageSource(item.fullSrc);
                       }}
@@ -597,9 +742,10 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                         preloadImageSource(item.fullSrc);
                       }}
                       onClick={(event) => {
+                        videoSyncRevisionRef.current += 1;
                         const nextPointerPosition = { x: event.clientX, y: event.clientY };
                         const sourceRect = getCurrentSourceRect(absoluteIndex) ?? toRect(event.currentTarget.getBoundingClientRect());
-
+                        const sourceVideo = triggerMediaRefs.current.get(absoluteIndex)?.querySelector("video");
                         lastPointerPositionRef.current = nextPointerPosition;
                         setClosingVisual(null);
                         setClosingAnimatedRadius(20);
@@ -609,6 +755,9 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                         });
                         setPhase("opening");
                         setAnimatedRadius(20);
+                        setModalVideoStartTime(sourceVideo?.currentTime);
+                        setModalVideoReady(item.kind !== "video");
+                        openingVideoSourceRef.current = item.kind === "video" ? sourceVideo ?? null : null;
                         setActiveIndex(absoluteIndex);
                         trackMetricaGoal("image_fullscreen_open", {
                           page_path: getCurrentPath(),
@@ -642,6 +791,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
         ? createPortal(
             <div
               className={[styles.backdrop, canTrackPointer && styles.backdropTracked].filter(Boolean).join(" ")}
+              style={isVideoClosing ? { pointerEvents: "none" } : undefined}
               onClick={() => {
                 close();
               }}
@@ -659,7 +809,11 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                 aria-hidden="true"
                 className={styles.backdropVisual}
                 initial={prefersReducedMotion ? false : { opacity: 0, backdropFilter: "blur(0px)" }}
-                animate={{ opacity: 1, backdropFilter: "blur(20px)" }}
+                animate={
+                  isVideoClosing
+                    ? { opacity: 0, backdropFilter: "blur(0px)" }
+                    : { opacity: 1, backdropFilter: "blur(20px)" }
+                }
                 transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.22, ease: "easeOut" }}
               />
 
@@ -682,7 +836,11 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                     aria-label="Close fullscreen media"
                     style={{ x: pointerX, y: pointerY }}
                     initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.76 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    animate={
+                      isVideoClosing
+                        ? { opacity: 0, scale: 0.88 }
+                        : { opacity: 1, scale: 1 }
+                    }
                     transition={
                       prefersReducedMotion
                         ? { duration: 0 }
@@ -695,6 +853,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       aria-hidden="true"
                       width={36}
                       height={36}
+                      draggable={false}
                       className={styles.closeIcon}
                     />
                   </motion.button>
@@ -708,7 +867,11 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                     }}
                     aria-label="Close fullscreen media"
                     initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.76 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    animate={
+                      isVideoClosing
+                        ? { opacity: 0, scale: 0.88 }
+                        : { opacity: 1, scale: 1 }
+                    }
                     transition={
                       prefersReducedMotion
                         ? { duration: 0 }
@@ -721,6 +884,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       aria-hidden="true"
                       width={36}
                       height={36}
+                      draggable={false}
                       className={styles.closeIcon}
                     />
                   </motion.button>
@@ -741,11 +905,19 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                           }
                     }
                     animate={{
-                      x: geometry.targetRect.x,
-                      y: geometry.targetRect.y,
-                      width: geometry.targetRect.width,
-                      height: geometry.targetRect.height,
-                      borderRadius: animatedRadius
+                      x: isVideoClosing
+                        ? closingVisual?.targetRect.x
+                        : geometry.targetRect.x,
+                      y: isVideoClosing
+                        ? closingVisual?.targetRect.y
+                        : geometry.targetRect.y,
+                      width: isVideoClosing
+                        ? closingVisual?.targetRect.width
+                        : geometry.targetRect.width,
+                      height: isVideoClosing
+                        ? closingVisual?.targetRect.height
+                        : geometry.targetRect.height,
+                      borderRadius: isVideoClosing ? 20 : animatedRadius
                     }}
                     transition={
                       prefersReducedMotion
@@ -760,7 +932,11 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                             ease: [0.22, 1, 0.36, 1]
                           }
                     }
-                    style={{ ["--lightbox-animated-radius" as string]: `${animatedRadius}px` } satisfies CSSProperties}
+                    style={
+                      {
+                        ["--lightbox-animated-radius" as string]: `${animatedRadius}px`
+                      } satisfies CSSProperties
+                    }
                     onUpdate={(latest) => {
                       if (!geometry) {
                         return;
@@ -791,6 +967,15 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       );
                     }}
                     onAnimationComplete={() => {
+                      if (isVideoClosing) {
+                        activeVisualRectRef.current = null;
+                        closingVisualRectRef.current = null;
+                        setClosingVisual(null);
+                        setClosingAnimatedRadius(20);
+                        completeClose();
+                        return;
+                      }
+
                       if (prefersReducedMotion) {
                         return;
                       }
@@ -835,7 +1020,19 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       fit="contain"
                       className={styles.animatedModalMedia}
                       showCaption={false}
+                      mediaRef={activeModalMediaRef}
+                      progressiveVideo
+                      revealFullVideo={phase === "open" || Boolean(prefersReducedMotion)}
+                      videoStartTime={modalVideoStartTime}
+                      onVideoReady={() => setModalVideoReady(true)}
                     />
+                    {activeModalItem.kind === "video" && !modalVideoReady && (
+                      <canvas
+                        ref={openingVideoFrameRef}
+                        className={styles.openingVideoFrame}
+                        aria-hidden="true"
+                      />
+                    )}
                   </motion.div>
                 </div>
               </div>
@@ -844,7 +1041,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
           )
         : null}
 
-      {portalTarget && closingVisual
+      {portalTarget && closingVisual && closingVisual.item.kind !== "video"
         ? createPortal(
             <div className={styles.backdrop} style={{ pointerEvents: "none" }}>
               <motion.div
@@ -870,6 +1067,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       aria-hidden="true"
                       width={36}
                       height={36}
+                      draggable={false}
                       className={styles.closeIcon}
                     />
                   </motion.div>
@@ -886,6 +1084,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       aria-hidden="true"
                       width={36}
                       height={36}
+                      draggable={false}
                       className={styles.closeIcon}
                     />
                   </motion.div>

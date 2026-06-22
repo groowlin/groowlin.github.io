@@ -155,8 +155,19 @@
   --placeholder-border-width: 0px;
   --placeholder-border-color: transparent;
   --placeholder-bg: transparent;
+  grid-area: 1 / 1;
   width: 100%;
   height: 100%;
+}
+
+.openingVideoFrame {
+  grid-area: 1 / 1;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
 }
 
 .caption {
