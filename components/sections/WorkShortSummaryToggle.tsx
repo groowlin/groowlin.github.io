@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { createContext, useContext, useState, useSyncExternalStore, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { motion, useAnimationControls, useReducedMotion } from "framer-motion";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { GalleryLightbox } from "@/components/media/GalleryLightbox";
 import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
 import { getCurrentPath, trackMetricaGoal } from "@/lib/analytics/yandex-metrica";
@@ -23,7 +23,9 @@ interface WorkShortSummaryButtonProps {
 }
 
 type DisplayMode = "full" | "short";
-const ICON_SIZE = 36;
+const SHELL_COLOR = "#f5f5f5";
+const SHELL_FLASH_COLOR = "#ffffff";
+
 const SHORT_SUMMARY_LABELS = new Set([
   "Проблема",
   "Решение",
@@ -41,6 +43,7 @@ interface WorkShortSummaryContextValue {
   displayMode: DisplayMode;
   hasToggled: boolean;
   shortSummary?: WorkCaseShortSummary;
+  setDisplayMode: (mode: DisplayMode) => void;
   toggleDisplayMode: () => void;
 }
 
@@ -52,14 +55,6 @@ function useWorkShortSummary() {
 
 export function useWorkShortSummaryState() {
   return useWorkShortSummary();
-}
-
-function useIsHydrated() {
-  return useSyncExternalStore(
-    () => () => undefined,
-    () => true,
-    () => false
-  );
 }
 
 function renderLineBreaks(text: string) {
@@ -79,17 +74,18 @@ function getShortSummaryBlocks(paragraph: string) {
 }
 
 export function WorkShortSummaryProvider({ children, shortSummary }: WorkShortSummaryProviderProps) {
-  const [displayMode, setDisplayMode] = useState<DisplayMode>("full");
+  const [displayMode, setDisplayModeState] = useState<DisplayMode>("full");
   const [hasToggled, setHasToggled] = useState(false);
 
-  function toggleDisplayMode() {
+  function updateDisplayMode(nextMode: DisplayMode) {
+    if (nextMode === displayMode) {
+      return;
+    }
+
     setHasToggled(true);
-    setDisplayMode((currentMode) => {
-      const nextMode = currentMode === "full" ? "short" : "full";
-      trackMetricaGoal(nextMode === "short" ? "short_mode_toggle_on" : "short_mode_toggle_off", {
-        page_path: getCurrentPath()
-      });
-      return nextMode;
+    setDisplayModeState(nextMode);
+    trackMetricaGoal(nextMode === "short" ? "short_mode_toggle_on" : "short_mode_toggle_off", {
+      page_path: getCurrentPath()
     });
 
     if (window.matchMedia("(max-width: 768px)").matches) {
@@ -102,8 +98,12 @@ export function WorkShortSummaryProvider({ children, shortSummary }: WorkShortSu
     }
   }
 
+  function toggleDisplayMode() {
+    updateDisplayMode(displayMode === "full" ? "short" : "full");
+  }
+
   return (
-    <WorkShortSummaryContext.Provider value={{ displayMode, hasToggled, shortSummary, toggleDisplayMode }}>
+    <WorkShortSummaryContext.Provider value={{ displayMode, hasToggled, shortSummary, setDisplayMode: updateDisplayMode, toggleDisplayMode }}>
       {children}
     </WorkShortSummaryContext.Provider>
   );
@@ -111,46 +111,126 @@ export function WorkShortSummaryProvider({ children, shortSummary }: WorkShortSu
 
 export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProps) {
   const context = useWorkShortSummary();
-  const isHydrated = useIsHydrated();
+  const prefersReducedMotion = useReducedMotion();
+  const shellControls = useAnimationControls();
+  const thumbControls = useAnimationControls();
+  const isFirstRender = useRef(true);
+  const displayMode = context?.displayMode ?? "full";
+  const toggleDisplayMode = context?.toggleDisplayMode ?? (() => undefined);
+  const isShortMode = displayMode === "short";
+  const options: Array<{ mode: DisplayMode; iconSrc: string }> = [
+    { mode: "full", iconSrc: "/media/system/read-full-compact.svg" },
+    { mode: "short", iconSrc: "/media/system/read-short-compact.svg" }
+  ];
+  const ariaLabel = displayMode === "full" ? "Показать короткую версию кейса" : "Показать полный кейс";
+
+  useEffect(() => {
+    const targetX = isShortMode ? 44 : 0;
+
+    if (prefersReducedMotion) {
+      shellControls.set({ scaleX: 1, scaleY: 1, backgroundColor: SHELL_COLOR });
+      thumbControls.set({ x: targetX, scaleX: 1, scaleY: 1 });
+      isFirstRender.current = false;
+      return;
+    }
+
+    if (isFirstRender.current) {
+      shellControls.set({ scaleX: 1, scaleY: 1, backgroundColor: SHELL_COLOR });
+      thumbControls.set({ x: targetX, scaleX: 1, scaleY: 1 });
+      isFirstRender.current = false;
+      return;
+    }
+
+    void shellControls.start({
+      scaleX: [1, 1.04, 0.985, 1.01, 1],
+      scaleY: [1, 1.12, 1.03, 1],
+      backgroundColor: [SHELL_COLOR, SHELL_FLASH_COLOR, SHELL_COLOR],
+      transition: {
+        scaleX: {
+          duration: 0.4,
+          times: [0, 0.24, 0.6, 0.84, 1],
+          ease: ["easeOut", "easeInOut", "easeOut", "easeInOut"]
+        },
+        scaleY: {
+          duration: 0.36,
+          times: [0, 0.32, 0.72, 1],
+          ease: ["easeOut", "easeInOut", "easeOut"]
+        },
+        backgroundColor: {
+          duration: 0.72,
+          times: [0, 0.18, 1],
+          ease: ["easeOut", "easeOut"]
+        }
+      }
+    });
+
+    void thumbControls.start({
+      x: targetX,
+      scaleX: [1, 1.45, 0.8, 1.12, 1],
+      scaleY: [1, 0.74, 1.12, 0.96, 1],
+      transition: {
+        x: {
+          type: "spring",
+          stiffness: 270,
+          damping: 11,
+          mass: 0.56
+        },
+        scaleX: {
+          duration: 0.56,
+          times: [0, 0.18, 0.46, 0.76, 1],
+          ease: ["easeOut", "easeInOut", "easeOut", "easeInOut"]
+        },
+        scaleY: {
+          duration: 0.56,
+          times: [0, 0.18, 0.46, 0.76, 1],
+          ease: ["easeOut", "easeInOut", "easeOut", "easeInOut"]
+        }
+      }
+    });
+  }, [isShortMode, prefersReducedMotion, shellControls, thumbControls]);
 
   if (!context?.shortSummary) {
     return null;
   }
 
-  const { displayMode, toggleDisplayMode } = context;
-  const iconSrc = displayMode === "full" ? "/media/system/read-fast.svg" : "/media/system/read-detailed.svg";
-  const ariaLabel = displayMode === "full" ? "Показать короткую версию кейса" : "Показать полный кейс";
-
   return (
-    <>
-      <button
-        type="button"
-        className={[styles.toggleButton, styles.inlineButton, className].filter(Boolean).join(" ")}
-        aria-pressed={displayMode === "short"}
-        aria-label={ariaLabel}
-        onClick={toggleDisplayMode}
-      >
-        <span className={styles.buttonContent}>
-          <Image className={styles.icon} src={iconSrc} width={ICON_SIZE} height={ICON_SIZE} alt="" aria-hidden="true" />
-        </span>
-      </button>
-      {isHydrated
-        ? createPortal(
-            <button
-              type="button"
-              className={[styles.toggleButton, styles.mobileFloatingButton].join(" ")}
-              aria-pressed={displayMode === "short"}
-              aria-label={ariaLabel}
-              onClick={toggleDisplayMode}
-            >
-              <span className={styles.buttonContent}>
-                <Image className={styles.icon} src={iconSrc} width={ICON_SIZE} height={ICON_SIZE} alt="" aria-hidden="true" />
-              </span>
-            </button>,
-            document.body
-          )
-        : null}
-    </>
+    <button
+      type="button"
+      className={[styles.segmentedControl, className].filter(Boolean).join(" ")}
+      aria-label={ariaLabel}
+      aria-pressed={displayMode === "short"}
+      onClick={toggleDisplayMode}
+    >
+      <motion.span
+        className={styles.segmentShell}
+        aria-hidden="true"
+        initial={false}
+        style={{ transformOrigin: isShortMode ? "right center" : "left center" }}
+        animate={shellControls}
+      />
+      <motion.span
+        className={styles.segmentThumb}
+        aria-hidden="true"
+        initial={false}
+        style={{ transformOrigin: isShortMode ? "right center" : "left center" }}
+        animate={thumbControls}
+      />
+      {options.map((option) => {
+        const isSelected = displayMode === option.mode;
+
+        return (
+          <span
+            key={option.mode}
+            className={[styles.segmentTab, option.mode === "full" ? styles.segmentTabFull : styles.segmentTabShort, isSelected ? styles.segmentTabSelected : ""]
+              .filter(Boolean)
+              .join(" ")}
+            aria-hidden="true"
+          >
+            <Image className={styles.segmentIcon} src={option.iconSrc} width={20} height={20} alt="" aria-hidden="true" />
+          </span>
+        );
+      })}
+    </button>
   );
 }
 

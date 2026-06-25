@@ -1,41 +1,91 @@
-.toggleButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: calc(var(--home-line-height-tight) * 2);
-  height: calc(var(--home-line-height-tight) * 2);
-  aspect-ratio: 1;
-  padding: var(--space-0);
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  cursor: pointer;
-}
-
-.mobileFloatingButton {
-  display: none;
-}
-
-.buttonContent {
+.segmentedControl {
   position: relative;
+  display: inline-grid;
+  grid-template-columns: repeat(2, 36px);
+  column-gap: 8px;
+  align-items: center;
+  align-content: center;
+  width: max-content;
+  max-width: 100%;
+  height: 40px;
+  overflow: visible;
+  padding: 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0;
+  will-change: transform;
+}
+
+.segmentShell {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--surface-glass-border);
+  border-radius: 14px;
+  background: #f5f5f5;
+  box-shadow: none;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.segmentThumb {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  width: 36px;
+  height: 36px;
+  margin-top: -18px;
+  border-radius: 12px;
+  background: var(--color-black);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.segmentTab {
+  position: relative;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transform: translate3d(0, 0, 0);
-  transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  width: 36px;
+  height: 36px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-primary);
+  pointer-events: none;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .toggleButton:hover .buttonContent,
-  .toggleButton:focus-visible .buttonContent {
-    transform: scale(1.06);
-  }
+.segmentedControl:focus-visible {
+  outline: 2px solid var(--line-hover);
+  outline-offset: -2px;
 }
 
-.icon {
-  width: calc(var(--home-line-height-tight) * 2);
-  height: calc(var(--home-line-height-tight) * 2);
+.segmentIcon {
+  width: 20px;
+  height: 20px;
+  max-width: 20px;
+  max-height: 20px;
   flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.segmentTabFull .segmentIcon {
+  filter: none;
+}
+
+.segmentTabShort .segmentIcon {
+  filter: none;
+}
+
+.segmentTabSelected .segmentIcon {
+  filter: invert(1);
 }
 
 .contentShell {
@@ -54,26 +104,4 @@
 
 .shortLabel {
   font-weight: var(--font-weight-heavy);
-}
-
-@media (max-width: 768px) {
-  .inlineButton {
-    display: none;
-  }
-
-  .mobileFloatingButton {
-    display: inline-flex;
-    position: fixed;
-    right: var(--space-2xl);
-    bottom: var(--space-2xl);
-    width: 36px;
-    height: 36px;
-    z-index: 80;
-    filter: drop-shadow(0 16px 40px var(--black-08));
-  }
-
-  .mobileFloatingButton .icon {
-    width: 36px;
-    height: 36px;
-  }
 }
