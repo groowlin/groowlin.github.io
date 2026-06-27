@@ -24,7 +24,10 @@ interface WorkShortSummaryButtonProps {
 
 type DisplayMode = "full" | "short";
 const SHELL_COLOR = "#f5f5f5";
+const SHELL_HOVER_COLOR = "#f0f3f6";
 const SHELL_FLASH_COLOR = "#ffffff";
+const SHELL_HOVER_ENTER_DURATION = 0.12;
+const SHELL_HOVER_EXIT_DURATION = 0.32;
 
 const SHORT_SUMMARY_LABELS = new Set([
   "Проблема",
@@ -115,7 +118,11 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   const shellControls = useAnimationControls();
   const thumbControls = useAnimationControls();
   const isFirstRender = useRef(true);
+  const isShellAnimating = useRef(false);
   const displayMode = context?.displayMode ?? "full";
+  const previousDisplayMode = useRef<DisplayMode>(displayMode);
+  const isHoveredRef = useRef(false);
+  const [isHovered, setIsHovered] = useState(false);
   const toggleDisplayMode = context?.toggleDisplayMode ?? (() => undefined);
   const isShortMode = displayMode === "short";
   const options: Array<{ mode: DisplayMode; iconSrc: string }> = [
@@ -125,69 +132,116 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   const ariaLabel = displayMode === "full" ? "Показать короткую версию кейса" : "Показать полный кейс";
 
   useEffect(() => {
+    isHoveredRef.current = isHovered;
+  }, [isHovered]);
+
+  useEffect(() => {
     const targetX = isShortMode ? 44 : 0;
+    const targetShellColor = isHoveredRef.current ? SHELL_HOVER_COLOR : SHELL_COLOR;
+    const modeChanged = previousDisplayMode.current !== displayMode;
+    previousDisplayMode.current = displayMode;
 
     if (prefersReducedMotion) {
-      shellControls.set({ scaleX: 1, scaleY: 1, backgroundColor: SHELL_COLOR });
+      shellControls.set({ scaleX: 1, scaleY: 1, backgroundColor: targetShellColor });
       thumbControls.set({ x: targetX, scaleX: 1, scaleY: 1 });
       isFirstRender.current = false;
       return;
     }
 
     if (isFirstRender.current) {
-      shellControls.set({ scaleX: 1, scaleY: 1, backgroundColor: SHELL_COLOR });
+      shellControls.set({ scaleX: 1, scaleY: 1, backgroundColor: targetShellColor });
       thumbControls.set({ x: targetX, scaleX: 1, scaleY: 1 });
       isFirstRender.current = false;
       return;
     }
 
-    void shellControls.start({
-      scaleX: [1, 1.04, 0.985, 1.01, 1],
-      scaleY: [1, 1.12, 1.03, 1],
-      backgroundColor: [SHELL_COLOR, SHELL_FLASH_COLOR, SHELL_COLOR],
-      transition: {
-        scaleX: {
-          duration: 0.4,
-          times: [0, 0.24, 0.6, 0.84, 1],
-          ease: ["easeOut", "easeInOut", "easeOut", "easeInOut"]
-        },
-        scaleY: {
-          duration: 0.36,
-          times: [0, 0.32, 0.72, 1],
-          ease: ["easeOut", "easeInOut", "easeOut"]
-        },
-        backgroundColor: {
-          duration: 0.72,
-          times: [0, 0.18, 1],
-          ease: ["easeOut", "easeOut"]
-        }
-      }
-    });
+    if (!modeChanged) {
+      return;
+    }
 
-    void thumbControls.start({
-      x: targetX,
-      scaleX: [1, 1.45, 0.8, 1.12, 1],
-      scaleY: [1, 0.74, 1.12, 0.96, 1],
-      transition: {
-        x: {
-          type: "spring",
-          stiffness: 270,
-          damping: 11,
-          mass: 0.56
-        },
-        scaleX: {
-          duration: 0.56,
-          times: [0, 0.18, 0.46, 0.76, 1],
-          ease: ["easeOut", "easeInOut", "easeOut", "easeInOut"]
-        },
-        scaleY: {
-          duration: 0.56,
-          times: [0, 0.18, 0.46, 0.76, 1],
-          ease: ["easeOut", "easeInOut", "easeOut", "easeInOut"]
+    isShellAnimating.current = true;
+
+    void (async () => {
+      await Promise.all([
+        shellControls.start({
+          scaleX: [1, 1.04, 0.985, 1.01, 1],
+          scaleY: [1, 1.12, 1.03, 1],
+          backgroundColor: [SHELL_COLOR, SHELL_FLASH_COLOR, targetShellColor],
+          transition: {
+            scaleX: {
+              duration: 0.4,
+              times: [0, 0.24, 0.6, 0.84, 1],
+              ease: ["easeOut", "easeInOut", "easeOut", "easeInOut"]
+            },
+            scaleY: {
+              duration: 0.36,
+              times: [0, 0.32, 0.72, 1],
+              ease: ["easeOut", "easeInOut", "easeOut"]
+            },
+            backgroundColor: {
+              duration: 0.72,
+              times: [0, 0.18, 1],
+              ease: ["easeOut", "easeOut"]
+            }
+          }
+        }),
+        thumbControls.start({
+          x: targetX,
+          scaleX: [1, 1.45, 0.8, 1.12, 1],
+          scaleY: [1, 0.74, 1.12, 0.96, 1],
+          transition: {
+            x: {
+              type: "spring",
+              stiffness: 270,
+              damping: 11,
+              mass: 0.56
+            },
+            scaleX: {
+              duration: 0.56,
+              times: [0, 0.18, 0.46, 0.76, 1],
+              ease: ["easeOut", "easeInOut", "easeOut", "easeInOut"]
+            },
+            scaleY: {
+              duration: 0.56,
+              times: [0, 0.18, 0.46, 0.76, 1],
+              ease: ["easeOut", "easeInOut", "easeOut", "easeInOut"]
+            }
+          }
+        })
+      ]);
+
+      isShellAnimating.current = false;
+
+      void shellControls.start({
+        backgroundColor: isHoveredRef.current ? SHELL_HOVER_COLOR : SHELL_COLOR,
+        transition: {
+          duration: isHoveredRef.current ? SHELL_HOVER_ENTER_DURATION : SHELL_HOVER_EXIT_DURATION,
+          ease: "easeInOut"
         }
+      });
+    })();
+  }, [displayMode, isShortMode, prefersReducedMotion, shellControls, thumbControls]);
+
+  useEffect(() => {
+    if (isFirstRender.current || isShellAnimating.current) {
+      return;
+    }
+
+    const targetShellColor = isHovered ? SHELL_HOVER_COLOR : SHELL_COLOR;
+
+    if (prefersReducedMotion) {
+      shellControls.set({ backgroundColor: targetShellColor });
+      return;
+    }
+
+    void shellControls.start({
+      backgroundColor: targetShellColor,
+      transition: {
+        duration: isHovered ? SHELL_HOVER_ENTER_DURATION : SHELL_HOVER_EXIT_DURATION,
+        ease: "easeInOut"
       }
     });
-  }, [isShortMode, prefersReducedMotion, shellControls, thumbControls]);
+  }, [isHovered, prefersReducedMotion, shellControls]);
 
   if (!context?.shortSummary) {
     return null;
@@ -200,6 +254,12 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
       aria-label={ariaLabel}
       aria-pressed={displayMode === "short"}
       onClick={toggleDisplayMode}
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") {
+          setIsHovered(true);
+        }
+      }}
+      onPointerLeave={() => setIsHovered(false)}
     >
       <motion.span
         className={styles.segmentShell}

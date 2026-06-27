@@ -12,6 +12,7 @@
   transition: background-color 320ms ease-in-out;
 }
 
+/* Shimmer disabled: keep block for quick restore.
 .card::after {
   content: "";
   position: absolute;
@@ -25,6 +26,7 @@
   opacity: 0;
   pointer-events: none;
 }
+*/
 
 .row {
   display: flex;
@@ -133,9 +135,11 @@
   animation-delay: -90ms;
 }
 
+/* Shimmer disabled: keep block for quick restore.
 .card:hover::after {
   animation: topCardShimmer 4200ms cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
 }
+*/
 
 @keyframes topCardIconStepShift {
   0%,
@@ -161,6 +165,7 @@
   }
 }
 
+/* Shimmer disabled: keep keyframes for quick restore.
 @keyframes topCardShimmer {
   0% {
     transform: translateX(-120px) rotate(30deg);
@@ -187,14 +192,15 @@
     opacity: 0;
   }
 }
+*/
 
 @media (prefers-reduced-motion: reduce) {
   .card {
     transition: none;
   }
 
-  .card:hover .icon,
-  .card:hover::after {
+  /* Restore shimmer here too if re-enabled: add ", .card:hover::after" back to the selector. */
+  .card:hover .icon {
     animation: none;
   }
 }
@@ -208,8 +214,8 @@
     background-color: var(--home-top-card-bg);
   }
 
-  .card:hover .icon,
-  .card:hover::after {
+  /* Restore shimmer here too if re-enabled: add ", .card:hover::after" back to the selector. */
+  .card:hover .icon {
     animation: none;
   }
 }
