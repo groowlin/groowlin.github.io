@@ -5,12 +5,13 @@ import { WorkShortSummaryContent } from "@/components/sections/WorkShortSummaryT
 
 interface WorkArticleProps {
   content: React.ReactNode;
+  showOutline?: boolean;
 }
 
-export function WorkArticle({ content }: WorkArticleProps) {
+export function WorkArticle({ content, showOutline = true }: WorkArticleProps) {
   return (
     <article className={styles.article}>
-      <WorkArticleOutline />
+      {showOutline ? <WorkArticleOutline /> : null}
       <WorkShortSummaryContent>
         <div className={styles.mdxRoot} data-work-article-root="">
           {content}

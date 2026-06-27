@@ -25,7 +25,7 @@ export default async function NotFoundPage() {
       topCardVariant="default"
     >
       <div className={styles.stack}>
-        <WorkArticle content={content.content} />
+        <WorkArticle content={content.content} showOutline={false} />
       </div>
     </SiteShell>
   );
