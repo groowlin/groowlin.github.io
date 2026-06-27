@@ -10,6 +10,8 @@ import {
   type KeyboardEvent,
   type PointerEvent
 } from "react";
+import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
+import { useWorkShortSummaryState } from "@/components/sections/WorkShortSummaryToggle";
 import styles from "@/components/sections/work-article-outline.module.css";
 
 interface OutlineHeading {
@@ -178,6 +180,7 @@ function getLineOpacity(distance: number) {
 }
 
 export function WorkArticleOutline() {
+  const shortSummaryState = useWorkShortSummaryState();
   const [headings, setHeadings] = useState<OutlineHeading[]>([]);
   const [activeIds, setActiveIds] = useState<string[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -187,6 +190,7 @@ export function WorkArticleOutline() {
   const triggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const rafRef = useRef<number | null>(null);
   const tooltipId = useId();
+  const revealKey = shortSummaryState?.hasToggled ? shortSummaryState.displayMode : "initial";
 
   const hoveredHeading = useMemo(
     () => headings.find((heading) => heading.id === hoveredId) ?? null,
@@ -354,7 +358,8 @@ export function WorkArticleOutline() {
   }
 
   return (
-    <nav className={styles.nav} aria-label="Содержание кейса">
+    <PageRevealSequence key={revealKey}>
+      <nav className={styles.nav} aria-label="Содержание кейса" data-page-reveal="">
       <div
         ref={railRef}
         className={styles.rail}
@@ -409,12 +414,13 @@ export function WorkArticleOutline() {
         </ol>
       </div>
 
-      {hoveredHeading && previewStyle ? (
-        <div id={tooltipId} className={styles.preview} role="tooltip" style={previewStyle}>
-          <p className={styles.previewTitle}>{hoveredHeading.title}</p>
-          {hoveredHeading.preview ? <p className={styles.previewBody}>{hoveredHeading.preview}</p> : null}
-        </div>
-      ) : null}
-    </nav>
+        {hoveredHeading && previewStyle ? (
+          <div id={tooltipId} className={styles.preview} role="tooltip" style={previewStyle}>
+            <p className={styles.previewTitle}>{hoveredHeading.title}</p>
+            {hoveredHeading.preview ? <p className={styles.previewBody}>{hoveredHeading.preview}</p> : null}
+          </div>
+        ) : null}
+      </nav>
+    </PageRevealSequence>
   );
 }
