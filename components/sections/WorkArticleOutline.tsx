@@ -29,7 +29,8 @@ const ACTIVE_HEADING_OFFSET = 120;
 const FOCUS_LINE_WIDTH = 30;
 const DEFAULT_LINE_WIDTH = 8;
 const WIDTH_DECAY = 0.72;
-const PREVIEW_LEFT = 104;
+const OUTLINE_HIT_LEFT = 40;
+const PREVIEW_GAP = 20;
 const OUTLINE_ROW_HEIGHT = 20;
 const OUTLINE_TOP_PADDING = 40;
 const OUTLINE_BOTTOM_PADDING = 40;
@@ -202,16 +203,24 @@ export function WorkArticleOutline() {
     [headings, hoveredId]
   );
 
+  const hoveredLineWidth = useMemo(() => {
+    if (!hoveredHeading) {
+      return DEFAULT_LINE_WIDTH;
+    }
+
+    return getLineWidth(0);
+  }, [hoveredHeading]);
+
   const previewStyle = useMemo<CSSProperties | undefined>(() => {
     if (!hoveredHeading || previewTop === null) {
       return undefined;
     }
 
     return {
-      left: `${PREVIEW_LEFT}px`,
+      left: `${OUTLINE_HIT_LEFT + hoveredLineWidth + PREVIEW_GAP}px`,
       top: `${previewTop}px`
     };
-  }, [hoveredHeading, previewTop]);
+  }, [hoveredHeading, hoveredLineWidth, previewTop]);
 
   useEffect(() => {
     function updateHeadings() {
