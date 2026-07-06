@@ -1,8 +1,28 @@
 "use client";
 
 import Image from "next/image";
-import { motion, useAnimationControls, useReducedMotion } from "framer-motion";
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  animate,
+  motion,
+  useAnimationControls,
+  useDragControls,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+  type PanInfo
+} from "framer-motion";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode
+} from "react";
+import { createPortal } from "react-dom";
 import { GalleryLightbox } from "@/components/media/GalleryLightbox";
 import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
 import { getCurrentPath, trackMetricaGoal } from "@/lib/analytics/yandex-metrica";
@@ -23,6 +43,20 @@ interface WorkShortSummaryButtonProps {
 }
 
 type DisplayMode = "full" | "short";
+const MOBILE_VIEWPORT_QUERY = "(max-width: 768px)";
+const MOBILE_THUMB_GAP_PX = 8;
+const MOBILE_THUMB_WIDTH_OFFSET_PX = 12;
+const MOBILE_SETTLE_SPRING = {
+  type: "spring",
+  stiffness: 260,
+  damping: 24,
+  mass: 0.85
+} as const;
+const MOBILE_PRESS_TRANSITION = {
+  duration: 0.12,
+  ease: [0.22, 1, 0.36, 1]
+} as const;
+const MOBILE_REVEAL_DELAY = 1;
 const SHELL_COLOR = "#f5f5f5";
 const SHELL_HOVER_COLOR = "#f0f3f6";
 const SHELL_FLASH_COLOR = "#ffffff";
@@ -51,6 +85,25 @@ interface WorkShortSummaryContextValue {
 }
 
 const WorkShortSummaryContext = createContext<WorkShortSummaryContextValue | null>(null);
+
+function subscribeToMobileViewport(callback: () => void) {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const mediaQuery = window.matchMedia(MOBILE_VIEWPORT_QUERY);
+  mediaQuery.addEventListener("change", callback);
+
+  return () => mediaQuery.removeEventListener("change", callback);
+}
+
+function getMobileViewportSnapshot() {
+  return typeof window !== "undefined" && window.matchMedia(MOBILE_VIEWPORT_QUERY).matches;
+}
+
+function getServerMobileViewportSnapshot() {
+  return false;
+}
 
 function useWorkShortSummary() {
   return useContext(WorkShortSummaryContext);
@@ -91,7 +144,7 @@ export function WorkShortSummaryProvider({ children, shortSummary }: WorkShortSu
       page_path: getCurrentPath()
     });
 
-    if (window.matchMedia("(max-width: 768px)").matches) {
+    if (window.matchMedia(MOBILE_VIEWPORT_QUERY).matches) {
       window.requestAnimationFrame(() => {
         window.scrollTo({
           top: 0,
@@ -114,26 +167,99 @@ export function WorkShortSummaryProvider({ children, shortSummary }: WorkShortSu
 
 export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProps) {
   const context = useWorkShortSummary();
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  );
+  const isMobileViewport = useSyncExternalStore(subscribeToMobileViewport, getMobileViewportSnapshot, getServerMobileViewportSnapshot);
   const prefersReducedMotion = useReducedMotion();
   const shellControls = useAnimationControls();
   const thumbControls = useAnimationControls();
   const isFirstRender = useRef(true);
   const isShellAnimating = useRef(false);
+  const mobileControlRef = useRef<HTMLDivElement | null>(null);
+  const mobilePendingTapMode = useRef<DisplayMode | null>(null);
+  const isMobileDraggingRef = useRef(false);
+  const suppressMobileTapUntil = useRef(0);
   const displayMode = context?.displayMode ?? "full";
+  const displayModeRef = useRef<DisplayMode>(displayMode);
+  const hasToggled = context?.hasToggled ?? false;
   const previousDisplayMode = useRef<DisplayMode>(displayMode);
   const isHoveredRef = useRef(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [mobileGeometry, setMobileGeometry] = useState({ controlWidth: 0, maxX: 0, thumbWidth: 0 });
+  const [isMobileDragging, setIsMobileDragging] = useState(false);
+  const mobileDragControls = useDragControls();
+  const mobileShellControls = useAnimationControls();
+  const mobileThumbFeedbackControls = useAnimationControls();
+  const mobileX = useMotionValue(0);
+  const setDisplayMode = context?.setDisplayMode ?? ((_mode: DisplayMode) => undefined);
   const toggleDisplayMode = context?.toggleDisplayMode ?? (() => undefined);
   const isShortMode = displayMode === "short";
-  const options: Array<{ mode: DisplayMode; iconSrc: string }> = [
-    { mode: "full", iconSrc: "/media/system/read-full-compact.svg" },
-    { mode: "short", iconSrc: "/media/system/read-short-compact.svg" }
+  const options: Array<{ mode: DisplayMode; iconSrc: string; mobileLabel: string }> = [
+    { mode: "full", iconSrc: "/media/system/read-full-compact.svg", mobileLabel: "Внимательно" },
+    { mode: "short", iconSrc: "/media/system/read-short-compact.svg", mobileLabel: "Быстро" }
   ];
   const ariaLabel = displayMode === "full" ? "Показать короткую версию кейса" : "Показать полный кейс";
+  const mobileMaskClipPath = useTransform(mobileX, (latestX) => {
+    if (mobileGeometry.controlWidth === 0 || mobileGeometry.thumbWidth === 0) {
+      return "inset(0 50% 0 0 round 12px)";
+    }
+
+    const left = latestX + 2;
+    const right = Math.max(mobileGeometry.controlWidth - left - mobileGeometry.thumbWidth, 0);
+
+    return `inset(0px ${right}px 0px ${left}px round 12px)`;
+  });
+  const mobileControlStyle = {
+    WebkitBackdropFilter: "blur(4px) saturate(180%)",
+    backdropFilter: "blur(4px) saturate(180%)"
+  } as CSSProperties;
 
   useEffect(() => {
     isHoveredRef.current = isHovered;
   }, [isHovered]);
+
+  useEffect(() => {
+    displayModeRef.current = displayMode;
+  }, [displayMode]);
+
+  useEffect(() => {
+    if (!isHydrated || !isMobileViewport) {
+      return undefined;
+    }
+
+    function syncMobileGeometry() {
+      const control = mobileControlRef.current;
+
+      if (!control) {
+        return;
+      }
+
+      const rect = control.getBoundingClientRect();
+      const thumbWidth = (rect.width - MOBILE_THUMB_WIDTH_OFFSET_PX) / 2;
+      const maxX = thumbWidth + MOBILE_THUMB_GAP_PX;
+
+      setMobileGeometry({ controlWidth: rect.width, maxX, thumbWidth });
+      mobileX.set(displayModeRef.current === "short" ? maxX : 0);
+    }
+
+    syncMobileGeometry();
+    window.addEventListener("resize", syncMobileGeometry);
+
+    return () => {
+      window.removeEventListener("resize", syncMobileGeometry);
+    };
+  }, [isHydrated, isMobileViewport, mobileX]);
+
+  useEffect(() => {
+    if (!isHydrated || !isMobileViewport || isMobileDraggingRef.current) {
+      return;
+    }
+
+    animateMobileThumbTo(displayMode);
+  }, [displayMode, isHydrated, isMobileViewport]);
 
   useEffect(() => {
     const targetX = isShortMode ? 44 : 0;
@@ -247,7 +373,151 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
     return null;
   }
 
-  return (
+  function getMobileThumbGeometry() {
+    const control = mobileControlRef.current;
+
+    if (!control) {
+      return mobileGeometry;
+    }
+
+    const rect = control.getBoundingClientRect();
+    const thumbWidth = (rect.width - MOBILE_THUMB_WIDTH_OFFSET_PX) / 2;
+    const maxX = thumbWidth + MOBILE_THUMB_GAP_PX;
+    const nextGeometry = { controlWidth: rect.width, maxX, thumbWidth };
+
+    setMobileGeometry(nextGeometry);
+    return nextGeometry;
+  }
+
+  function getMobileTargetX(mode: DisplayMode) {
+    const geometry = getMobileThumbGeometry();
+    return mode === "short" ? geometry.maxX : 0;
+  }
+
+  function pressMobileShape({ immediate = false } = {}) {
+    const nextShellShape = {
+      scaleX: 0.982,
+      scaleY: 1.09
+    };
+    const nextThumbShape = {
+      scaleX: 0.9,
+      scaleY: 1.14
+    };
+
+    mobileShellControls.stop();
+    mobileThumbFeedbackControls.stop();
+
+    if (immediate) {
+      mobileShellControls.set(nextShellShape);
+      mobileThumbFeedbackControls.set(nextThumbShape);
+      return;
+    }
+
+    void mobileShellControls.start({
+      ...nextShellShape,
+      transition: MOBILE_PRESS_TRANSITION
+    });
+    void mobileThumbFeedbackControls.start({
+      ...nextThumbShape,
+      transition: MOBILE_PRESS_TRANSITION
+    });
+  }
+
+  function settleMobileShape() {
+    mobileShellControls.stop();
+    mobileThumbFeedbackControls.stop();
+
+    void mobileShellControls.start({
+      scaleX: 1,
+      scaleY: 1,
+      transition: MOBILE_SETTLE_SPRING
+    });
+    void mobileThumbFeedbackControls.start({
+      scaleX: 1,
+      scaleY: 1,
+      transition: MOBILE_SETTLE_SPRING
+    });
+  }
+
+  function animateMobileThumbTo(mode: DisplayMode, settleShape = true) {
+    mobileX.stop();
+    void animate(mobileX, getMobileTargetX(mode), MOBILE_SETTLE_SPRING);
+
+    if (settleShape) {
+      settleMobileShape();
+    }
+  }
+
+  function handleMobileTabPointerDown(event: ReactPointerEvent<HTMLButtonElement>, mode: DisplayMode) {
+    getMobileThumbGeometry();
+
+    if (mode === displayMode) {
+      mobilePendingTapMode.current = null;
+      pressMobileShape();
+      mobileDragControls.start(event);
+      return;
+    }
+
+    mobilePendingTapMode.current = mode;
+    pressMobileShape({ immediate: true });
+    animateMobileThumbTo(mode);
+    setDisplayMode(mode);
+  }
+
+  function handleMobileDragStart() {
+    isMobileDraggingRef.current = true;
+    setIsMobileDragging(true);
+    pressMobileShape();
+  }
+
+  function handleMobileDragEnd(_event: MouseEvent | TouchEvent | globalThis.PointerEvent, info: PanInfo) {
+    isMobileDraggingRef.current = false;
+    setIsMobileDragging(false);
+    mobilePendingTapMode.current = null;
+    suppressMobileTapUntil.current = performance.now() + 160;
+
+    const geometry = getMobileThumbGeometry();
+    const projectedX = mobileX.get() + info.velocity.x * 0.08;
+    const nextMode: DisplayMode = projectedX > geometry.maxX / 2 ? "short" : "full";
+
+    animateMobileThumbTo(nextMode);
+    if (nextMode !== displayMode) {
+      setDisplayMode(nextMode);
+    }
+  }
+
+  function handleMobileTabPointerUp(mode: DisplayMode) {
+    const pendingTapMode = mobilePendingTapMode.current;
+    mobilePendingTapMode.current = null;
+
+    if (isMobileDraggingRef.current || performance.now() < suppressMobileTapUntil.current) {
+      return;
+    }
+
+    if (mode === displayMode) {
+      settleMobileShape();
+      return;
+    }
+
+    if (pendingTapMode === mode) {
+      return;
+    }
+
+    pressMobileShape({ immediate: true });
+    animateMobileThumbTo(mode);
+    setDisplayMode(mode);
+  }
+
+  function handleMobileTabPointerCancel() {
+    if (mobilePendingTapMode.current === null) {
+      return;
+    }
+
+    mobilePendingTapMode.current = null;
+    animateMobileThumbTo(displayMode);
+  }
+
+  const renderButton = () => (
     <button
       type="button"
       className={[styles.segmentedControl, className].filter(Boolean).join(" ")}
@@ -291,6 +561,82 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
         );
       })}
     </button>
+  );
+
+  const renderFloatingControl = () => (
+    <motion.div
+      ref={mobileControlRef}
+      className={styles.floatingControl}
+      data-display-mode={displayMode}
+      data-has-toggled={hasToggled}
+      data-is-dragging={isMobileDragging}
+      role="group"
+      aria-label={ariaLabel}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 16, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        opacity: { duration: 0.18, ease: "easeOut", delay: MOBILE_REVEAL_DELAY },
+        y: { type: "spring", stiffness: 360, damping: 28, mass: 0.7, delay: MOBILE_REVEAL_DELAY },
+        scale: { type: "spring", stiffness: 360, damping: 28, mass: 0.7, delay: MOBILE_REVEAL_DELAY }
+      }}
+    >
+      <motion.span className={styles.mobileShellBackdrop} style={mobileControlStyle} animate={mobileShellControls} aria-hidden="true" />
+      <motion.span
+        className={styles.segmentThumb}
+        drag="x"
+        dragControls={mobileDragControls}
+        dragConstraints={{ left: 0, right: mobileGeometry.maxX }}
+        dragElastic={0.04}
+        dragListener={false}
+        dragMomentum={false}
+        style={{ x: mobileX }}
+        onDragStart={handleMobileDragStart}
+        onDragEnd={handleMobileDragEnd}
+        aria-hidden="true"
+      >
+        <motion.span className={styles.segmentThumbSurface} animate={mobileThumbFeedbackControls} />
+      </motion.span>
+      <motion.span className={styles.mobileActiveMask} style={{ clipPath: mobileMaskClipPath }} aria-hidden="true">
+        <span className={styles.mobileActiveTrack}>
+          {options.map((option) => (
+            <span
+              key={option.mode}
+              className={[styles.segmentTab, option.mode === "full" ? styles.segmentTabFull : styles.segmentTabShort].filter(Boolean).join(" ")}
+            >
+              <Image className={styles.segmentIcon} src={option.iconSrc} width={20} height={20} alt="" aria-hidden="true" />
+              <span className={styles.segmentLabel}>{option.mobileLabel}</span>
+            </span>
+          ))}
+        </span>
+      </motion.span>
+      {options.map((option) => {
+        const isSelected = displayMode === option.mode;
+
+        return (
+          <motion.button
+            key={option.mode}
+            type="button"
+            className={[styles.segmentTab, option.mode === "full" ? styles.segmentTabFull : styles.segmentTabShort, isSelected ? styles.segmentTabSelected : ""]
+              .filter(Boolean)
+              .join(" ")}
+            aria-pressed={isSelected}
+            onPointerDown={(event) => handleMobileTabPointerDown(event, option.mode)}
+            onPointerUp={() => handleMobileTabPointerUp(option.mode)}
+            onPointerCancel={handleMobileTabPointerCancel}
+          >
+            <Image className={styles.segmentIcon} src={option.iconSrc} width={20} height={20} alt="" aria-hidden="true" />
+            <span className={styles.segmentLabel}>{option.mobileLabel}</span>
+          </motion.button>
+        );
+      })}
+    </motion.div>
+  );
+
+  return (
+    <>
+      {isHydrated && isMobileViewport ? null : renderButton()}
+      {isHydrated && isMobileViewport ? createPortal(renderFloatingControl(), document.body) : null}
+    </>
   );
 }
 
