@@ -12,7 +12,7 @@ export const homeScrollHapticsScript = `
     return;
   }
 
-  const tickPx = 40;
+  const tickPx = 80;
   const durationMs = 1;
   const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
   const isHomePath = () => window.location.pathname === "/";

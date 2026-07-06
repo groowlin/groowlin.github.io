@@ -32,7 +32,7 @@ const PREVIEW_OFFSET_FALLBACK = 60;
 const ACTIVE_TEXT_SHIFT_SCALE = 0.18;
 const ITEM_HOVER_ZONE_PAD_X = 18;
 const HOME_SCROLL_HAPTIC_REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
-const HOME_SCROLL_HAPTIC_TICK_PX = 40;
+const HOME_SCROLL_HAPTIC_TICK_PX = 80;
 const HOME_SCROLL_HAPTIC_DURATION_MS = 1;
 
 type VibratingNavigator = Navigator & {
