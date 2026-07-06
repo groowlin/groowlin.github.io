@@ -31,10 +31,9 @@ interface IndexedHomeSection {
 const PREVIEW_OFFSET_FALLBACK = 60;
 const ACTIVE_TEXT_SHIFT_SCALE = 0.18;
 const ITEM_HOVER_ZONE_PAD_X = 18;
-const HOME_SCROLL_HAPTIC_QUERY = "(hover: none) and (pointer: coarse)";
 const HOME_SCROLL_HAPTIC_REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
-const HOME_SCROLL_HAPTIC_DURATION_MS = 6;
-const HOME_SCROLL_HAPTIC_MIN_INTERVAL_MS = 100;
+const HOME_SCROLL_HAPTIC_DURATION_MS = 12;
+const HOME_SCROLL_HAPTIC_MIN_INTERVAL_MS = 80;
 const VIEWPORT_CENTER_RATIO = 0.5;
 
 type VibratingNavigator = Navigator & {
@@ -225,10 +224,9 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     const vibrate = getNavigatorVibrate();
     if (!vibrate) return;
 
-    const mobileQuery = window.matchMedia(HOME_SCROLL_HAPTIC_QUERY);
     const reducedMotionQuery = window.matchMedia(HOME_SCROLL_HAPTIC_REDUCED_MOTION_QUERY);
 
-    const isEnabled = () => mobileQuery.matches && !reducedMotionQuery.matches;
+    const isEnabled = () => !reducedMotionQuery.matches;
     const resetScrollHaptics = () => {
       scrollHapticLastIndexRef.current = null;
       hasTouchScrollIntentRef.current = false;
@@ -269,6 +267,10 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
       scrollHapticLastIndexRef.current = getViewportCenterItemIndex();
     };
 
+    const handleTouchMove = () => {
+      triggerScrollHaptic();
+    };
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         resetScrollHaptics();
@@ -276,11 +278,10 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     };
 
     window.addEventListener("touchstart", markTouchScrollIntent, { passive: true });
-    window.addEventListener("touchmove", scheduleScrollHaptic, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
     window.addEventListener("scroll", scheduleScrollHaptic, { passive: true });
     window.addEventListener("resize", resetScrollHaptics);
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    mobileQuery.addEventListener("change", resetScrollHaptics);
     reducedMotionQuery.addEventListener("change", resetScrollHaptics);
 
     return () => {
@@ -290,11 +291,10 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
       }
 
       window.removeEventListener("touchstart", markTouchScrollIntent);
-      window.removeEventListener("touchmove", scheduleScrollHaptic);
+      window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("scroll", scheduleScrollHaptic);
       window.removeEventListener("resize", resetScrollHaptics);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      mobileQuery.removeEventListener("change", resetScrollHaptics);
       reducedMotionQuery.removeEventListener("change", resetScrollHaptics);
     };
   }, [displayEntries.length, getViewportCenterItemIndex]);

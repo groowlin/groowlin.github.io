@@ -746,11 +746,11 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
             height: currentMobileThumbHeight,
             marginTop: currentMobileThumbHeight / -2
           }}
-          transition={{
-            width: MOBILE_SETTLE_SPRING,
-            height: MOBILE_SETTLE_SPRING,
-            marginTop: MOBILE_SETTLE_SPRING
-          }}
+        transition={{
+          width: MOBILE_SHAPE_SETTLE_TRANSITION,
+          height: MOBILE_SHAPE_SETTLE_TRANSITION,
+          marginTop: MOBILE_SHAPE_SETTLE_TRANSITION
+        }}
           style={{ x: mobileX }}
           aria-hidden="true"
         >
