@@ -165,18 +165,28 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     if (typeof window === "undefined") return null;
 
     const centerY = window.innerHeight * VIEWPORT_CENTER_RATIO;
+    let nearestIndex: number | null = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
 
     for (let index = 0; index < itemRefs.current.length; index += 1) {
       const item = itemRefs.current[index];
       if (!item) continue;
 
       const rect = item.getBoundingClientRect();
-      if (rect.top <= centerY && rect.bottom >= centerY) {
-        return index;
+      if (rect.bottom < 0 || rect.top > window.innerHeight) {
+        continue;
+      }
+
+      const itemCenterY = rect.top + rect.height / 2;
+      const distance = Math.abs(centerY - itemCenterY);
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = index;
       }
     }
 
-    return null;
+    return nearestIndex;
   }, []);
 
   useEffect(() => {
@@ -256,6 +266,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
 
     const markTouchScrollIntent = () => {
       hasTouchScrollIntentRef.current = true;
+      scrollHapticLastIndexRef.current = getViewportCenterItemIndex();
     };
 
     const handleVisibilityChange = () => {
@@ -265,6 +276,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     };
 
     window.addEventListener("touchstart", markTouchScrollIntent, { passive: true });
+    window.addEventListener("touchmove", scheduleScrollHaptic, { passive: true });
     window.addEventListener("scroll", scheduleScrollHaptic, { passive: true });
     window.addEventListener("resize", resetScrollHaptics);
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -278,6 +290,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
       }
 
       window.removeEventListener("touchstart", markTouchScrollIntent);
+      window.removeEventListener("touchmove", scheduleScrollHaptic);
       window.removeEventListener("scroll", scheduleScrollHaptic);
       window.removeEventListener("resize", resetScrollHaptics);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
