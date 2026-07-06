@@ -46,6 +46,7 @@ type DisplayMode = "full" | "short";
 const MOBILE_VIEWPORT_QUERY = "(max-width: 768px)";
 const MOBILE_THUMB_GAP_PX = 8;
 const MOBILE_THUMB_WIDTH_OFFSET_PX = 12;
+const MOBILE_DRAG_START_THRESHOLD_PX = 6;
 const MOBILE_SETTLE_SPRING = {
   type: "spring",
   stiffness: 260,
@@ -56,8 +57,17 @@ const MOBILE_PRESS_TRANSITION = {
   duration: 0.12,
   ease: [0.22, 1, 0.36, 1]
 } as const;
+const MOBILE_SHAPE_SETTLE_TRANSITION = {
+  duration: 0.2,
+  ease: [0.22, 1, 0.36, 1]
+} as const;
 const MOBILE_THUMB_PRESS_SCALE_X = 0.96;
+const MOBILE_THUMB_DRAG_SCALE_X = 0.88;
 const MOBILE_THUMB_PRESS_SCALE_Y = 1.06;
+const MOBILE_THUMB_SCALE_X_MIN = 0.88;
+const MOBILE_THUMB_SCALE_X_MAX = 1;
+const MOBILE_THUMB_SCALE_Y_MIN = 1;
+const MOBILE_THUMB_SCALE_Y_MAX = 1.06;
 const MOBILE_REVEAL_DELAY = 1;
 const SHELL_COLOR = "#f5f5f5";
 const SHELL_HOVER_COLOR = "#f0f3f6";
@@ -105,6 +115,10 @@ function getMobileViewportSnapshot() {
 
 function getServerMobileViewportSnapshot() {
   return false;
+}
+
+function clampValue(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
 }
 
 function useWorkShortSummary() {
@@ -183,6 +197,8 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   const mobileControlRef = useRef<HTMLDivElement | null>(null);
   const mobilePendingTapMode = useRef<DisplayMode | null>(null);
   const isMobileDraggingRef = useRef(false);
+  const mobilePointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const hasStartedMobileDragRef = useRef(false);
   const suppressMobileTapUntil = useRef(0);
   const displayMode = context?.displayMode ?? "full";
   const displayModeRef = useRef<DisplayMode>(displayMode);
@@ -197,6 +213,12 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   const mobileX = useMotionValue(0);
   const mobileThumbScaleX = useMotionValue(1);
   const mobileThumbScaleY = useMotionValue(1);
+  const mobileThumbVisualScaleX = useTransform(mobileThumbScaleX, (latestScaleX) =>
+    clampValue(latestScaleX, MOBILE_THUMB_SCALE_X_MIN, MOBILE_THUMB_SCALE_X_MAX)
+  );
+  const mobileThumbVisualScaleY = useTransform(mobileThumbScaleY, (latestScaleY) =>
+    clampValue(latestScaleY, MOBILE_THUMB_SCALE_Y_MIN, MOBILE_THUMB_SCALE_Y_MAX)
+  );
   const setDisplayMode = context?.setDisplayMode ?? ((_mode: DisplayMode) => undefined);
   const toggleDisplayMode = context?.toggleDisplayMode ?? (() => undefined);
   const isShortMode = displayMode === "short";
@@ -205,9 +227,9 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
     { mode: "short", iconSrc: "/media/system/read-short-compact.svg", mobileLabel: "Быстро" }
   ];
   const ariaLabel = displayMode === "full" ? "Показать короткую версию кейса" : "Показать полный кейс";
-  const mobileMaskClipPath = useTransform([mobileX, mobileThumbScaleX], ([latestX, latestScaleX]) => {
+  const mobileMaskClipPath = useTransform([mobileX, mobileThumbVisualScaleX], ([latestX, latestScaleX]) => {
     if (mobileGeometry.controlWidth === 0 || mobileGeometry.thumbWidth === 0) {
-      return "inset(0 50% 0 0 round 12px)";
+      return "inset(0 50% 0 0 round 999px)";
     }
 
     const x = typeof latestX === "number" ? latestX : 0;
@@ -217,7 +239,7 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
     const left = x + 2 + scaleOffset;
     const right = Math.max(mobileGeometry.controlWidth - left - scaledThumbWidth, 0);
 
-    return `inset(0px ${right}px 0px ${left}px round 12px)`;
+    return `inset(0px ${right}px 0px ${left}px round 999px)`;
   });
   const mobileControlStyle = {
     WebkitBackdropFilter: "blur(4px) saturate(180%)",
@@ -401,7 +423,11 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
     return mode === "short" ? geometry.maxX : 0;
   }
 
-  function pressMobileShape({ immediate = false } = {}) {
+  function getMobileModeFromX(x: number, maxX: number): DisplayMode {
+    return x > maxX / 2 ? "short" : "full";
+  }
+
+  function pressMobileShape({ immediate = false, scaleX = MOBILE_THUMB_PRESS_SCALE_X } = {}) {
     const nextShellShape = {
       scaleX: 0.99,
       scaleY: 1.045
@@ -413,7 +439,7 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
 
     if (immediate) {
       mobileShellControls.set(nextShellShape);
-      mobileThumbScaleX.set(MOBILE_THUMB_PRESS_SCALE_X);
+      mobileThumbScaleX.set(scaleX);
       mobileThumbScaleY.set(MOBILE_THUMB_PRESS_SCALE_Y);
       return;
     }
@@ -422,7 +448,7 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
       ...nextShellShape,
       transition: MOBILE_PRESS_TRANSITION
     });
-    void animate(mobileThumbScaleX, MOBILE_THUMB_PRESS_SCALE_X, MOBILE_PRESS_TRANSITION);
+    void animate(mobileThumbScaleX, scaleX, MOBILE_PRESS_TRANSITION);
     void animate(mobileThumbScaleY, MOBILE_THUMB_PRESS_SCALE_Y, MOBILE_PRESS_TRANSITION);
   }
 
@@ -434,10 +460,10 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
     void mobileShellControls.start({
       scaleX: 1,
       scaleY: 1,
-      transition: MOBILE_SETTLE_SPRING
+      transition: MOBILE_SHAPE_SETTLE_TRANSITION
     });
-    void animate(mobileThumbScaleX, 1, MOBILE_SETTLE_SPRING);
-    void animate(mobileThumbScaleY, 1, MOBILE_SETTLE_SPRING);
+    void animate(mobileThumbScaleX, 1, MOBILE_SHAPE_SETTLE_TRANSITION);
+    void animate(mobileThumbScaleY, 1, MOBILE_SHAPE_SETTLE_TRANSITION);
   }
 
   function animateMobileThumbTo(mode: DisplayMode, settleShape = true) {
@@ -452,34 +478,48 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   function handleMobileTabPointerDown(event: ReactPointerEvent<HTMLButtonElement>, mode: DisplayMode) {
     getMobileThumbGeometry();
 
-    if (mode === displayMode) {
-      mobilePendingTapMode.current = null;
-      pressMobileShape();
-      mobileDragControls.start(event);
+    mobilePendingTapMode.current = mode;
+    mobilePointerStartRef.current = { x: event.clientX, y: event.clientY };
+    hasStartedMobileDragRef.current = false;
+    pressMobileShape();
+  }
+
+  function handleMobileTabPointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
+    const pointerStart = mobilePointerStartRef.current;
+
+    if (!pointerStart || hasStartedMobileDragRef.current) {
       return;
     }
 
-    mobilePendingTapMode.current = mode;
-    pressMobileShape({ immediate: true });
-    animateMobileThumbTo(mode);
-    setDisplayMode(mode);
+    const deltaX = event.clientX - pointerStart.x;
+    const deltaY = event.clientY - pointerStart.y;
+    const distance = Math.hypot(deltaX, deltaY);
+
+    if (distance < MOBILE_DRAG_START_THRESHOLD_PX) {
+      return;
+    }
+
+    hasStartedMobileDragRef.current = true;
+    mobileDragControls.start(event);
   }
 
   function handleMobileDragStart() {
     isMobileDraggingRef.current = true;
     setIsMobileDragging(true);
-    pressMobileShape();
+    pressMobileShape({ scaleX: MOBILE_THUMB_DRAG_SCALE_X });
   }
 
   function handleMobileDragEnd(_event: MouseEvent | TouchEvent | globalThis.PointerEvent, info: PanInfo) {
     isMobileDraggingRef.current = false;
     setIsMobileDragging(false);
+    mobilePointerStartRef.current = null;
+    hasStartedMobileDragRef.current = false;
     mobilePendingTapMode.current = null;
     suppressMobileTapUntil.current = performance.now() + 160;
 
     const geometry = getMobileThumbGeometry();
     const projectedX = mobileX.get() + info.velocity.x * 0.08;
-    const nextMode: DisplayMode = projectedX > geometry.maxX / 2 ? "short" : "full";
+    const nextMode = getMobileModeFromX(projectedX, geometry.maxX);
 
     animateMobileThumbTo(nextMode);
     if (nextMode !== displayMode) {
@@ -490,6 +530,8 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   function handleMobileTabPointerUp(mode: DisplayMode) {
     const pendingTapMode = mobilePendingTapMode.current;
     mobilePendingTapMode.current = null;
+    mobilePointerStartRef.current = null;
+    hasStartedMobileDragRef.current = false;
 
     if (isMobileDraggingRef.current || performance.now() < suppressMobileTapUntil.current) {
       return;
@@ -501,6 +543,8 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
     }
 
     if (pendingTapMode === mode) {
+      animateMobileThumbTo(mode);
+      setDisplayMode(mode);
       return;
     }
 
@@ -510,6 +554,9 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   }
 
   function handleMobileTabPointerCancel() {
+    mobilePointerStartRef.current = null;
+    hasStartedMobileDragRef.current = false;
+
     if (mobilePendingTapMode.current === null) {
       return;
     }
@@ -595,7 +642,7 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
         onDragEnd={handleMobileDragEnd}
         aria-hidden="true"
       >
-        <motion.span className={styles.segmentThumbSurface} style={{ scaleX: mobileThumbScaleX, scaleY: mobileThumbScaleY }} />
+        <motion.span className={styles.segmentThumbSurface} style={{ scaleX: mobileThumbVisualScaleX, scaleY: mobileThumbVisualScaleY }} />
       </motion.span>
       <motion.span className={styles.mobileActiveMask} style={{ clipPath: mobileMaskClipPath }} aria-hidden="true">
         <span className={styles.mobileActiveTrack}>
@@ -622,6 +669,7 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
               .join(" ")}
             aria-pressed={isSelected}
             onPointerDown={(event) => handleMobileTabPointerDown(event, option.mode)}
+            onPointerMove={handleMobileTabPointerMove}
             onPointerUp={() => handleMobileTabPointerUp(option.mode)}
             onPointerCancel={handleMobileTabPointerCancel}
           >

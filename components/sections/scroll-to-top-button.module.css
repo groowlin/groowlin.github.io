@@ -143,6 +143,7 @@
 
 @media (hover: none), (pointer: coarse) {
   .button {
+    display: none;
     width: 36px;
     height: 36px;
   }
