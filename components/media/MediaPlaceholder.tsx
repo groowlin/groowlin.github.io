@@ -539,6 +539,7 @@ export function MediaPlaceholderView({
                 muted
                 loop
                 playsInline
+                draggable={false}
                 preload={hasProgressiveVideo ? "auto" : "metadata"}
                 data-video-active={hasProgressiveVideo && fullVideoReady && revealFullVideo ? undefined : "true"}
                 ref={(node) => {
@@ -605,6 +606,7 @@ export function MediaPlaceholderView({
                   preload="auto"
                   aria-hidden="true"
                   data-video-active={fullVideoReady && revealFullVideo ? "true" : undefined}
+                  draggable={false}
                   ref={(node) => {
                     fullVideoRef.current = node;
                     if (!node) {
@@ -653,6 +655,7 @@ export function MediaPlaceholderView({
               loading={isModal ? "eager" : "lazy"}
               fetchPriority={isModal ? "high" : undefined}
               decoding={isModal ? "sync" : "async"}
+              draggable={false}
               ref={(node) => {
                 if (!isCurrentAssetReady && node && node.complete && node.naturalWidth > 0) {
                   applyImageIntrinsicSize(node);

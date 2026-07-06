@@ -98,12 +98,6 @@ interface WorkShortSummaryContextValue {
 
 const WorkShortSummaryContext = createContext<WorkShortSummaryContextValue | null>(null);
 
-function triggerMobileHapticFeedback() {
-  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-    navigator.vibrate(10);
-  }
-}
-
 function subscribeToMobileViewport(callback: () => void) {
   if (typeof window === "undefined") {
     return () => undefined;
@@ -208,7 +202,6 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   const mobilePointerMovedAwayRef = useRef(false);
   const mobilePointerIdRef = useRef<number | null>(null);
   const mobileLongPressTimerRef = useRef<number | null>(null);
-  const mobileHasTriggeredHapticRef = useRef(false);
   const displayMode = context?.displayMode ?? "full";
   const displayModeRef = useRef<DisplayMode>(displayMode);
   const hasToggled = context?.hasToggled ?? false;
@@ -468,7 +461,6 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
     mobilePointerStartRef.current = null;
     mobilePointerMovedAwayRef.current = false;
     mobilePointerIdRef.current = null;
-    mobileHasTriggeredHapticRef.current = false;
     clearMobileLongPressTimer();
   }
 
@@ -488,10 +480,6 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
     mobileX.stop();
     settleMobileShape(true);
     void animate(mobileX, getMobileXFromPointer(pointerStart.x, MOBILE_DRAG_BUBBLE_SIZE_PX), MOBILE_SETTLE_SPRING);
-    if (!mobileHasTriggeredHapticRef.current) {
-      mobileHasTriggeredHapticRef.current = true;
-      triggerMobileHapticFeedback();
-    }
   }
 
   function pressMobileShape({ immediate = false, scaleX = MOBILE_THUMB_PRESS_SCALE_X } = {}) {

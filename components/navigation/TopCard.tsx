@@ -22,7 +22,7 @@ export function TopCard({ card, className }: TopCardProps) {
     >
       <span className={styles.row}>
         <span className={styles.photoWrap}>
-          <Image className={styles.photo} src={card.photo} alt={card.title} width={64} height={64} />
+          <Image className={styles.photo} src={card.photo} alt={card.title} width={64} height={64} draggable={false} />
         </span>
 
         <span className={styles.text}>
@@ -34,7 +34,7 @@ export function TopCard({ card, className }: TopCardProps) {
             {card.icons.length > 0 ? (
               <span className={styles.icons} aria-hidden="true">
                 {card.icons.map((iconPath, index) => (
-                  <Image key={`${iconPath}-${index}`} className={styles.icon} src={iconPath} alt="" width={18} height={18} />
+                  <Image key={`${iconPath}-${index}`} className={styles.icon} src={iconPath} alt="" width={18} height={18} draggable={false} />
                 ))}
               </span>
             ) : null}
