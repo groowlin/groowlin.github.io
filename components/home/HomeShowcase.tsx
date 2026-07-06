@@ -31,6 +31,15 @@ interface IndexedHomeSection {
 const PREVIEW_OFFSET_FALLBACK = 60;
 const ACTIVE_TEXT_SHIFT_SCALE = 0.18;
 const ITEM_HOVER_ZONE_PAD_X = 18;
+const HOME_SCROLL_HAPTIC_QUERY = "(hover: none) and (pointer: coarse)";
+const HOME_SCROLL_HAPTIC_REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+const HOME_SCROLL_HAPTIC_DURATION_MS = 6;
+const HOME_SCROLL_HAPTIC_MIN_INTERVAL_MS = 100;
+const VIEWPORT_CENTER_RATIO = 0.5;
+
+type VibratingNavigator = Navigator & {
+  vibrate?: (pattern: number | number[]) => boolean;
+};
 
 function getExternalLinkProps(href: string) {
   return /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(href) ? { target: "_blank", rel: "noopener noreferrer" } : {};
@@ -46,6 +55,12 @@ function getRootCssNumberVar(name: string, fallback: number) {
 function getSoftShift(value: number, power: number) {
   const normalized = Math.max(-1, Math.min(1, value));
   return Math.sign(normalized) * (1 - (1 - Math.abs(normalized)) ** (1 / Math.max(1, power)));
+}
+
+function getNavigatorVibrate() {
+  if (typeof navigator === "undefined") return null;
+  const vibrate = (navigator as VibratingNavigator).vibrate;
+  return typeof vibrate === "function" ? vibrate.bind(navigator) : null;
 }
 
 interface HomeShowcaseProps {
@@ -65,6 +80,10 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasTrackedPreviewOpen = useRef(false);
+  const scrollHapticFrameRef = useRef<number | null>(null);
+  const scrollHapticLastIndexRef = useRef<number | null>(null);
+  const scrollHapticLastTimeRef = useRef(0);
+  const hasTouchScrollIntentRef = useRef(false);
 
   const shiftXRaw = useMotionValue(0);
   const shiftYRaw = useMotionValue(0);
@@ -142,6 +161,24 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     setPreviewLeft(rect.right + offset);
   }, []);
 
+  const getViewportCenterItemIndex = useCallback(() => {
+    if (typeof window === "undefined") return null;
+
+    const centerY = window.innerHeight * VIEWPORT_CENTER_RATIO;
+
+    for (let index = 0; index < itemRefs.current.length; index += 1) {
+      const item = itemRefs.current[index];
+      if (!item) continue;
+
+      const rect = item.getBoundingClientRect();
+      if (rect.top <= centerY && rect.bottom >= centerY) {
+        return index;
+      }
+    }
+
+    return null;
+  }, []);
+
   useEffect(() => {
     if (activeIndex === null) return;
 
@@ -171,6 +208,83 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
       window.removeEventListener("scroll", onLayoutChange, true);
     };
   }, [canHover, syncPreviewPosition]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || displayEntries.length === 0) return;
+
+    const vibrate = getNavigatorVibrate();
+    if (!vibrate) return;
+
+    const mobileQuery = window.matchMedia(HOME_SCROLL_HAPTIC_QUERY);
+    const reducedMotionQuery = window.matchMedia(HOME_SCROLL_HAPTIC_REDUCED_MOTION_QUERY);
+
+    const isEnabled = () => mobileQuery.matches && !reducedMotionQuery.matches;
+    const resetScrollHaptics = () => {
+      scrollHapticLastIndexRef.current = null;
+      hasTouchScrollIntentRef.current = false;
+    };
+
+    const triggerScrollHaptic = () => {
+      if (!isEnabled() || !hasTouchScrollIntentRef.current) return;
+
+      const nextIndex = getViewportCenterItemIndex();
+      if (nextIndex === null) return;
+
+      if (scrollHapticLastIndexRef.current === null) {
+        scrollHapticLastIndexRef.current = nextIndex;
+        return;
+      }
+
+      if (scrollHapticLastIndexRef.current === nextIndex) return;
+      scrollHapticLastIndexRef.current = nextIndex;
+
+      const now = performance.now();
+      if (now - scrollHapticLastTimeRef.current < HOME_SCROLL_HAPTIC_MIN_INTERVAL_MS) return;
+
+      scrollHapticLastTimeRef.current = now;
+      vibrate(HOME_SCROLL_HAPTIC_DURATION_MS);
+    };
+
+    const scheduleScrollHaptic = () => {
+      if (scrollHapticFrameRef.current !== null) return;
+
+      scrollHapticFrameRef.current = window.requestAnimationFrame(() => {
+        scrollHapticFrameRef.current = null;
+        triggerScrollHaptic();
+      });
+    };
+
+    const markTouchScrollIntent = () => {
+      hasTouchScrollIntentRef.current = true;
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        resetScrollHaptics();
+      }
+    };
+
+    window.addEventListener("touchstart", markTouchScrollIntent, { passive: true });
+    window.addEventListener("scroll", scheduleScrollHaptic, { passive: true });
+    window.addEventListener("resize", resetScrollHaptics);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    mobileQuery.addEventListener("change", resetScrollHaptics);
+    reducedMotionQuery.addEventListener("change", resetScrollHaptics);
+
+    return () => {
+      if (scrollHapticFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollHapticFrameRef.current);
+        scrollHapticFrameRef.current = null;
+      }
+
+      window.removeEventListener("touchstart", markTouchScrollIntent);
+      window.removeEventListener("scroll", scheduleScrollHaptic);
+      window.removeEventListener("resize", resetScrollHaptics);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      mobileQuery.removeEventListener("change", resetScrollHaptics);
+      reducedMotionQuery.removeEventListener("change", resetScrollHaptics);
+    };
+  }, [displayEntries.length, getViewportCenterItemIndex]);
 
   useEffect(
     () => () => {
