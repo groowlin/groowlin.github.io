@@ -208,6 +208,7 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   const mobilePointerMovedAwayRef = useRef(false);
   const mobilePointerIdRef = useRef<number | null>(null);
   const mobileLongPressTimerRef = useRef<number | null>(null);
+  const mobileHasTriggeredHapticRef = useRef(false);
   const displayMode = context?.displayMode ?? "full";
   const displayModeRef = useRef<DisplayMode>(displayMode);
   const hasToggled = context?.hasToggled ?? false;
@@ -467,16 +468,18 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
     mobilePointerStartRef.current = null;
     mobilePointerMovedAwayRef.current = false;
     mobilePointerIdRef.current = null;
+    mobileHasTriggeredHapticRef.current = false;
     clearMobileLongPressTimer();
   }
 
   function enterMobileDragMode() {
     const pointerStart = mobilePointerStartRef.current;
 
-    if (!pointerStart || mobilePressedModeRef.current !== displayMode) {
+    if (!pointerStart || mobilePressedModeRef.current !== displayMode || isMobileDraggingRef.current) {
       return;
     }
 
+    clearMobileLongPressTimer();
     isMobileDraggingRef.current = true;
     setIsMobileDragging(true);
     setIsMobileDragExpanded(true);
@@ -485,7 +488,10 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
     mobileX.stop();
     settleMobileShape(true);
     void animate(mobileX, getMobileXFromPointer(pointerStart.x, MOBILE_DRAG_BUBBLE_SIZE_PX), MOBILE_SETTLE_SPRING);
-    triggerMobileHapticFeedback();
+    if (!mobileHasTriggeredHapticRef.current) {
+      mobileHasTriggeredHapticRef.current = true;
+      triggerMobileHapticFeedback();
+    }
   }
 
   function pressMobileShape({ immediate = false, scaleX = MOBILE_THUMB_PRESS_SCALE_X } = {}) {
@@ -713,76 +719,79 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   );
 
   const renderFloatingControl = () => (
-    <motion.div
-      ref={mobileControlRef}
-      className={styles.floatingControl}
-      data-display-mode={displayMode}
-      data-has-toggled={hasToggled}
-      data-is-dragging={isMobileDragging}
-      role="group"
-      aria-label={ariaLabel}
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 16, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        opacity: { duration: 0.18, ease: "easeOut", delay: MOBILE_REVEAL_DELAY },
-        y: { type: "spring", stiffness: 360, damping: 28, mass: 0.7, delay: MOBILE_REVEAL_DELAY },
-        scale: { type: "spring", stiffness: 360, damping: 28, mass: 0.7, delay: MOBILE_REVEAL_DELAY }
-      }}
-    >
-      <motion.span className={styles.mobileShellBackdrop} style={mobileControlStyle} animate={mobileShellControls} aria-hidden="true" />
-      <motion.span
-        className={styles.segmentThumb}
-        initial={false}
-        animate={{
-          width: currentMobileThumbWidth,
-          height: currentMobileThumbHeight,
-          marginTop: currentMobileThumbHeight / -2
-        }}
+    <>
+      <span className={styles.mobileBottomBlend} aria-hidden="true" />
+      <motion.div
+        ref={mobileControlRef}
+        className={styles.floatingControl}
+        data-display-mode={displayMode}
+        data-has-toggled={hasToggled}
+        data-is-dragging={isMobileDragging}
+        role="group"
+        aria-label={ariaLabel}
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 16, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{
-          width: MOBILE_SETTLE_SPRING,
-          height: MOBILE_SETTLE_SPRING,
-          marginTop: MOBILE_SETTLE_SPRING
+          opacity: { duration: 0.18, ease: "easeOut", delay: MOBILE_REVEAL_DELAY },
+          y: { type: "spring", stiffness: 360, damping: 28, mass: 0.7, delay: MOBILE_REVEAL_DELAY },
+          scale: { type: "spring", stiffness: 360, damping: 28, mass: 0.7, delay: MOBILE_REVEAL_DELAY }
         }}
-        style={{ x: mobileX }}
-        aria-hidden="true"
       >
-        <motion.span className={styles.segmentThumbSurface} style={{ scaleX: mobileThumbVisualScaleX, scaleY: mobileThumbVisualScaleY }} />
-      </motion.span>
-      <motion.span className={styles.mobileActiveMask} style={{ clipPath: mobileMaskClipPath }} aria-hidden="true">
-        <span className={styles.mobileActiveTrack}>
-          {options.map((option) => (
-            <span
+        <motion.span className={styles.mobileShellBackdrop} style={mobileControlStyle} animate={mobileShellControls} aria-hidden="true" />
+        <motion.span
+          className={styles.segmentThumb}
+          initial={false}
+          animate={{
+            width: currentMobileThumbWidth,
+            height: currentMobileThumbHeight,
+            marginTop: currentMobileThumbHeight / -2
+          }}
+          transition={{
+            width: MOBILE_SETTLE_SPRING,
+            height: MOBILE_SETTLE_SPRING,
+            marginTop: MOBILE_SETTLE_SPRING
+          }}
+          style={{ x: mobileX }}
+          aria-hidden="true"
+        >
+          <motion.span className={styles.segmentThumbSurface} style={{ scaleX: mobileThumbVisualScaleX, scaleY: mobileThumbVisualScaleY }} />
+        </motion.span>
+        <motion.span className={styles.mobileActiveMask} style={{ clipPath: mobileMaskClipPath }} aria-hidden="true">
+          <span className={styles.mobileActiveTrack}>
+            {options.map((option) => (
+              <span
+                key={option.mode}
+                className={[styles.segmentTab, option.mode === "full" ? styles.segmentTabFull : styles.segmentTabShort].filter(Boolean).join(" ")}
+              >
+                <Image className={styles.segmentIcon} src={option.iconSrc} width={20} height={20} alt="" aria-hidden="true" />
+                <span className={styles.segmentLabel}>{option.mobileLabel}</span>
+              </span>
+            ))}
+          </span>
+        </motion.span>
+        {options.map((option) => {
+          const isSelected = displayMode === option.mode;
+
+          return (
+            <motion.button
               key={option.mode}
-              className={[styles.segmentTab, option.mode === "full" ? styles.segmentTabFull : styles.segmentTabShort].filter(Boolean).join(" ")}
+              type="button"
+              className={[styles.segmentTab, option.mode === "full" ? styles.segmentTabFull : styles.segmentTabShort, isSelected ? styles.segmentTabSelected : ""]
+                .filter(Boolean)
+                .join(" ")}
+              aria-pressed={isSelected}
+              onPointerDown={(event) => handleMobileTabPointerDown(event, option.mode)}
+              onPointerMove={handleMobileTabPointerMove}
+              onPointerUp={(event) => handleMobileTabPointerUp(event, option.mode)}
+              onPointerCancel={handleMobileTabPointerCancel}
             >
               <Image className={styles.segmentIcon} src={option.iconSrc} width={20} height={20} alt="" aria-hidden="true" />
               <span className={styles.segmentLabel}>{option.mobileLabel}</span>
-            </span>
-          ))}
-        </span>
-      </motion.span>
-      {options.map((option) => {
-        const isSelected = displayMode === option.mode;
-
-        return (
-          <motion.button
-            key={option.mode}
-            type="button"
-            className={[styles.segmentTab, option.mode === "full" ? styles.segmentTabFull : styles.segmentTabShort, isSelected ? styles.segmentTabSelected : ""]
-              .filter(Boolean)
-              .join(" ")}
-            aria-pressed={isSelected}
-            onPointerDown={(event) => handleMobileTabPointerDown(event, option.mode)}
-            onPointerMove={handleMobileTabPointerMove}
-            onPointerUp={(event) => handleMobileTabPointerUp(event, option.mode)}
-            onPointerCancel={handleMobileTabPointerCancel}
-          >
-            <Image className={styles.segmentIcon} src={option.iconSrc} width={20} height={20} alt="" aria-hidden="true" />
-            <span className={styles.segmentLabel}>{option.mobileLabel}</span>
-          </motion.button>
-        );
-      })}
-    </motion.div>
+            </motion.button>
+          );
+        })}
+      </motion.div>
+    </>
   );
 
   return (
