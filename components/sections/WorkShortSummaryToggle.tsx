@@ -56,6 +56,8 @@ const MOBILE_PRESS_TRANSITION = {
   duration: 0.12,
   ease: [0.22, 1, 0.36, 1]
 } as const;
+const MOBILE_THUMB_PRESS_SCALE_X = 0.96;
+const MOBILE_THUMB_PRESS_SCALE_Y = 1.06;
 const MOBILE_REVEAL_DELAY = 1;
 const SHELL_COLOR = "#f5f5f5";
 const SHELL_HOVER_COLOR = "#f0f3f6";
@@ -192,8 +194,9 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   const [isMobileDragging, setIsMobileDragging] = useState(false);
   const mobileDragControls = useDragControls();
   const mobileShellControls = useAnimationControls();
-  const mobileThumbFeedbackControls = useAnimationControls();
   const mobileX = useMotionValue(0);
+  const mobileThumbScaleX = useMotionValue(1);
+  const mobileThumbScaleY = useMotionValue(1);
   const setDisplayMode = context?.setDisplayMode ?? ((_mode: DisplayMode) => undefined);
   const toggleDisplayMode = context?.toggleDisplayMode ?? (() => undefined);
   const isShortMode = displayMode === "short";
@@ -202,13 +205,17 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
     { mode: "short", iconSrc: "/media/system/read-short-compact.svg", mobileLabel: "Быстро" }
   ];
   const ariaLabel = displayMode === "full" ? "Показать короткую версию кейса" : "Показать полный кейс";
-  const mobileMaskClipPath = useTransform(mobileX, (latestX) => {
+  const mobileMaskClipPath = useTransform([mobileX, mobileThumbScaleX], ([latestX, latestScaleX]) => {
     if (mobileGeometry.controlWidth === 0 || mobileGeometry.thumbWidth === 0) {
       return "inset(0 50% 0 0 round 12px)";
     }
 
-    const left = latestX + 2;
-    const right = Math.max(mobileGeometry.controlWidth - left - mobileGeometry.thumbWidth, 0);
+    const x = typeof latestX === "number" ? latestX : 0;
+    const scaleX = typeof latestScaleX === "number" ? latestScaleX : 1;
+    const scaledThumbWidth = mobileGeometry.thumbWidth * scaleX;
+    const scaleOffset = (mobileGeometry.thumbWidth - scaledThumbWidth) / 2;
+    const left = x + 2 + scaleOffset;
+    const right = Math.max(mobileGeometry.controlWidth - left - scaledThumbWidth, 0);
 
     return `inset(0px ${right}px 0px ${left}px round 12px)`;
   });
@@ -396,20 +403,18 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
 
   function pressMobileShape({ immediate = false } = {}) {
     const nextShellShape = {
-      scaleX: 0.982,
-      scaleY: 1.09
-    };
-    const nextThumbShape = {
-      scaleX: 0.9,
-      scaleY: 1.14
+      scaleX: 0.99,
+      scaleY: 1.045
     };
 
     mobileShellControls.stop();
-    mobileThumbFeedbackControls.stop();
+    mobileThumbScaleX.stop();
+    mobileThumbScaleY.stop();
 
     if (immediate) {
       mobileShellControls.set(nextShellShape);
-      mobileThumbFeedbackControls.set(nextThumbShape);
+      mobileThumbScaleX.set(MOBILE_THUMB_PRESS_SCALE_X);
+      mobileThumbScaleY.set(MOBILE_THUMB_PRESS_SCALE_Y);
       return;
     }
 
@@ -417,26 +422,22 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
       ...nextShellShape,
       transition: MOBILE_PRESS_TRANSITION
     });
-    void mobileThumbFeedbackControls.start({
-      ...nextThumbShape,
-      transition: MOBILE_PRESS_TRANSITION
-    });
+    void animate(mobileThumbScaleX, MOBILE_THUMB_PRESS_SCALE_X, MOBILE_PRESS_TRANSITION);
+    void animate(mobileThumbScaleY, MOBILE_THUMB_PRESS_SCALE_Y, MOBILE_PRESS_TRANSITION);
   }
 
   function settleMobileShape() {
     mobileShellControls.stop();
-    mobileThumbFeedbackControls.stop();
+    mobileThumbScaleX.stop();
+    mobileThumbScaleY.stop();
 
     void mobileShellControls.start({
       scaleX: 1,
       scaleY: 1,
       transition: MOBILE_SETTLE_SPRING
     });
-    void mobileThumbFeedbackControls.start({
-      scaleX: 1,
-      scaleY: 1,
-      transition: MOBILE_SETTLE_SPRING
-    });
+    void animate(mobileThumbScaleX, 1, MOBILE_SETTLE_SPRING);
+    void animate(mobileThumbScaleY, 1, MOBILE_SETTLE_SPRING);
   }
 
   function animateMobileThumbTo(mode: DisplayMode, settleShape = true) {
@@ -594,7 +595,7 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
         onDragEnd={handleMobileDragEnd}
         aria-hidden="true"
       >
-        <motion.span className={styles.segmentThumbSurface} animate={mobileThumbFeedbackControls} />
+        <motion.span className={styles.segmentThumbSurface} style={{ scaleX: mobileThumbScaleX, scaleY: mobileThumbScaleY }} />
       </motion.span>
       <motion.span className={styles.mobileActiveMask} style={{ clipPath: mobileMaskClipPath }} aria-hidden="true">
         <span className={styles.mobileActiveTrack}>
