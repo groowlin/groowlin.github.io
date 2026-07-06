@@ -483,8 +483,8 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
     mobilePendingTapMode.current = null;
     mobilePointerMovedAwayRef.current = false;
     mobileX.stop();
+    settleMobileShape(true);
     void animate(mobileX, getMobileXFromPointer(pointerStart.x, MOBILE_DRAG_BUBBLE_SIZE_PX), MOBILE_SETTLE_SPRING);
-    settleMobileShape();
     triggerMobileHapticFeedback();
   }
 
@@ -513,10 +513,20 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
     void animate(mobileThumbScaleY, MOBILE_THUMB_PRESS_SCALE_Y, MOBILE_PRESS_TRANSITION);
   }
 
-  function settleMobileShape() {
+  function settleMobileShape(immediate = false) {
     mobileShellControls.stop();
     mobileThumbScaleX.stop();
     mobileThumbScaleY.stop();
+
+    if (immediate) {
+      mobileShellControls.set({
+        scaleX: 1,
+        scaleY: 1
+      });
+      mobileThumbScaleX.set(1);
+      mobileThumbScaleY.set(1);
+      return;
+    }
 
     void mobileShellControls.start({
       scaleX: 1,
