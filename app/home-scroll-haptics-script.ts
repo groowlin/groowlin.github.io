@@ -18,13 +18,21 @@ export const homeScrollHapticsScript = `
   const isHomePath = () => window.location.pathname === "/";
   const getTick = () => Math.floor(Math.max(0, window.scrollY) / tickPx);
   let lastTick = getTick();
+  let hasPreparedVibration = false;
 
-  const trigger = () => {
-    if (!isHomePath()) {
+  const canVibrate = () => isHomePath() && !reducedMotionQuery.matches;
+
+  const prepare = () => {
+    if (hasPreparedVibration || !canVibrate()) {
       return;
     }
 
-    if (reducedMotionQuery.matches) {
+    hasPreparedVibration = navigator.vibrate(durationMs);
+    lastTick = getTick();
+  };
+
+  const trigger = () => {
+    if (!canVibrate()) {
       return;
     }
 
@@ -46,9 +54,14 @@ export const homeScrollHapticsScript = `
   };
 
   window.__homeScrollHapticsInstalled = true;
+  window.addEventListener("pointerdown", prepare, { passive: true });
+  window.addEventListener("pointerup", prepare, { passive: true });
   window.addEventListener("touchstart", prime, { passive: true });
+  window.addEventListener("touchend", prepare, { passive: true });
   window.addEventListener("touchmove", trigger, { passive: true });
   window.addEventListener("scroll", trigger, { passive: true });
+  window.addEventListener("click", prepare, { passive: true });
+  window.addEventListener("keydown", prepare);
   window.addEventListener("pageshow", prime);
   window.addEventListener("app:scroll-restored", prime);
 })();

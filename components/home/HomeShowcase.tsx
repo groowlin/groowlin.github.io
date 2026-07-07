@@ -88,6 +88,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasTrackedPreviewOpen = useRef(false);
   const scrollHapticLastTickRef = useRef(0);
+  const hasPreparedScrollHapticRef = useRef(false);
 
   const shiftXRaw = useMotionValue(0);
   const shiftYRaw = useMotionValue(0);
@@ -207,6 +208,12 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     const reducedMotionQuery = window.matchMedia(HOME_SCROLL_HAPTIC_REDUCED_MOTION_QUERY);
 
     const isEnabled = () => !reducedMotionQuery.matches;
+    const prepareScrollHaptics = () => {
+      if (hasPreparedScrollHapticRef.current || !isEnabled()) return;
+
+      hasPreparedScrollHapticRef.current = vibrate(HOME_SCROLL_HAPTIC_DURATION_MS);
+      scrollHapticLastTickRef.current = getHomeScrollHapticTick();
+    };
     const primeScrollHaptics = () => {
       scrollHapticLastTickRef.current = getHomeScrollHapticTick();
     };
@@ -232,9 +239,14 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
 
     homeWindow.__homeScrollHapticsInstalled = true;
     primeScrollHaptics();
+    window.addEventListener("pointerdown", prepareScrollHaptics, { passive: true });
+    window.addEventListener("pointerup", prepareScrollHaptics, { passive: true });
     window.addEventListener("touchstart", primeScrollHaptics, { passive: true });
+    window.addEventListener("touchend", prepareScrollHaptics, { passive: true });
     window.addEventListener("touchmove", triggerScrollHaptic, { passive: true });
     window.addEventListener("scroll", triggerScrollHaptic, { passive: true });
+    window.addEventListener("click", prepareScrollHaptics, { passive: true });
+    window.addEventListener("keydown", prepareScrollHaptics);
     window.addEventListener("resize", primeScrollHaptics);
     window.addEventListener("pageshow", primeScrollHaptics);
     window.addEventListener("app:scroll-restored", primeScrollHaptics);
@@ -243,9 +255,14 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
 
     return () => {
       homeWindow.__homeScrollHapticsInstalled = false;
+      window.removeEventListener("pointerdown", prepareScrollHaptics);
+      window.removeEventListener("pointerup", prepareScrollHaptics);
       window.removeEventListener("touchstart", primeScrollHaptics);
+      window.removeEventListener("touchend", prepareScrollHaptics);
       window.removeEventListener("touchmove", triggerScrollHaptic);
       window.removeEventListener("scroll", triggerScrollHaptic);
+      window.removeEventListener("click", prepareScrollHaptics);
+      window.removeEventListener("keydown", prepareScrollHaptics);
       window.removeEventListener("resize", primeScrollHaptics);
       window.removeEventListener("pageshow", primeScrollHaptics);
       window.removeEventListener("app:scroll-restored", primeScrollHaptics);
