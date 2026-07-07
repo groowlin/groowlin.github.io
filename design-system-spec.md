@@ -8,20 +8,20 @@
 - Base grid: 4px (основной ритм 8px, с поддержкой micro-step для плотных элементов)
 - Content max-width: `--page-max-width = 42rem` (672px)
 - Main side padding: `--layout-main-padding-x = 2rem` (32px)
-- Mobile main top padding: `--layout-mobile-main-padding-top = 40px`
+- Mobile main top padding: `--layout-mobile-main-padding-top = 40px`; mobile override at `max-width: 767px` = `32px`
 - Mobile surface side padding: `--layout-mobile-surface-padding-x = --space-lg` (16px)
 - Mobile content side padding: `--layout-mobile-content-padding-x = --space-3xl` (32px)
 - Mobile content inset inside the surface grid: `--layout-mobile-content-inset = 16px`
 - Main top padding: `--layout-main-padding-top = 6rem` (96px)
 - Main bottom padding: `--layout-main-padding-bottom = 200px`
-- Default vertical section gap: `--layout-content-gap = 2rem` (32px)
-- Global header rhythm: `--rhythm-title-block-top = 60px`, `--rhythm-title-block-bottom = 40px` для блока `title + subtitle` на всех страницах.
-- Global section-heading rhythm: `--rhythm-section-heading-top = 60px`, `--rhythm-section-heading-bottom = 40px` для заголовков секций кейсов.
+- Default vertical section gap: `--layout-content-gap = 2rem` (32px); mobile override at `max-width: 767px` = `24px`
+- Global header rhythm: `--rhythm-title-block-top = 60px`, `--rhythm-title-block-bottom = 40px` для блока `title + subtitle` на всех страницах. Mobile override at `max-width: 767px`: `--rhythm-title-block-top = 32px`, `--rhythm-title-block-bottom = 24px`.
+- Global section-heading rhythm: `--rhythm-section-heading-top = 60px`, `--rhythm-section-heading-bottom = 40px` для заголовков секций кейсов. Mobile override at `max-width: 767px`: `--rhythm-section-heading-top = 40px`, `--rhythm-section-heading-bottom = 24px`.
 - Home preview pane size: `--layout-preview-size = 484px`
 - Home preview offset from list: `--layout-preview-offset-x = 60px`
 - Home left column width: `--home-left-column-width = 360px`
 - Home layout paddings: `--home-layout-pad-left = 120px`, `--home-layout-pad-top = 120px`
-- Home section rhythm: between sections `60px`, section title to first case `40px`, case internal gap `--home-item-gap = 8px`
+- Home section rhythm: between sections `60px`, section title to first case `40px`, case internal gap `--home-item-gap = 8px`. Mobile overrides at `max-width: 767px`: between sections `40px`, section title to first case `24px`, `--home-item-padding-y = 8px`, `--home-meta-gap = 6px`, `--home-micro-gap = 4px`, `--home-contact-gap = 8px`, `--home-top-card-padding = 16px`, `--home-top-card-subtitle-gap = 6px`, `--home-top-card-icon-gap = 8px`.
 - Breakpoints: 680px (masonry/icon grid), 768px (shell layout), 1180px (fixed preview pane)
 
 ## Typography Tokens
@@ -190,7 +190,7 @@
 
 ## Home Top Card Tokens
 - `--home-top-card-width = 360px`
-- `--home-top-card-padding = 20px`
+- `--home-top-card-padding = 20px`; mobile override at `max-width: 767px` = `16px`
 - `--home-top-card-radius = 40px`
 - `--home-top-card-content-gap = 20px`
 - `--home-top-card-subtitle-gap = 6px`
@@ -210,7 +210,7 @@ Structure:
 - arrow trigger (`.topArrowLink`)
 
 Spacing:
-- card padding: `--home-top-card-padding` (20px)
+- card padding: `--home-top-card-padding` (20px); mobile override at `max-width: 767px` = `16px`
 - internal gap: `--home-top-card-gap` (20px)
 - text micro gap: `--home-micro-gap` (4px)
 - contact gap: `--home-contact-gap` (8px)
@@ -230,7 +230,7 @@ Structure:
 - meta (`.itemMeta`)
 
 Spacing:
-- padding: `--space-sm` `--space-lg`
+- padding: `--space-sm` `--space-lg`; mobile item horizontal padding collapses to `0`, mobile item vertical token uses `--home-item-padding-y = 8px`
 - internal gap: `--home-item-gap` (8px)
 - meta inline gap: `--home-meta-gap` (6px)
 

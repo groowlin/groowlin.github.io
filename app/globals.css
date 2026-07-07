@@ -297,6 +297,23 @@ samp {
 }
 
 @media (max-width: 767px) {
+  :root {
+    --layout-content-gap: 24px;
+    --layout-mobile-main-padding-top: 32px;
+    --rhythm-title-block-top: 32px;
+    --rhythm-title-block-bottom: 24px;
+    --rhythm-section-heading-top: 40px;
+    --rhythm-section-heading-bottom: 24px;
+    --home-item-gap: 8px;
+    --home-meta-gap: 6px;
+    --home-micro-gap: 4px;
+    --home-contact-gap: 8px;
+    --home-item-padding-y: 8px;
+    --home-top-card-padding: 16px;
+    --home-top-card-subtitle-gap: 6px;
+    --home-top-card-icon-gap: 8px;
+  }
+
   html {
     scrollbar-gutter: auto;
     scrollbar-width: none;
