@@ -3,7 +3,6 @@ import localFont from "next/font/local";
 import { YandexMetrica } from "@/components/analytics/YandexMetrica";
 import { AssetInteractionGuard } from "@/components/shell/AssetInteractionGuard";
 import { getLinkPreviewMetadataContent, getSiteMetadataSettingsContent } from "@/lib/content/site.server";
-import { homeScrollHapticsScript } from "@/app/home-scroll-haptics-script";
 import { scrollRestorationScript } from "@/app/scroll-restoration-script";
 import "./globals.css";
 
@@ -59,7 +58,6 @@ export default function RootLayout({
   return (
     <html lang="ru" className={inter.variable} suppressHydrationWarning>
       <body>
-        <script dangerouslySetInnerHTML={{ __html: homeScrollHapticsScript }} />
         <script dangerouslySetInnerHTML={{ __html: scrollRestorationScript }} />
         <YandexMetrica />
         <AssetInteractionGuard />
