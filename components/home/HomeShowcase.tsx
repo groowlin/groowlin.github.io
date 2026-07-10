@@ -30,7 +30,6 @@ interface IndexedHomeSection {
 
 const PREVIEW_OFFSET_FALLBACK = 60;
 const ACTIVE_TEXT_SHIFT_SCALE = 0.18;
-const ITEM_HOVER_ZONE_PAD_X = 18;
 
 function getExternalLinkProps(href: string) {
   return /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(href) ? { target: "_blank", rel: "noopener noreferrer" } : {};
@@ -62,7 +61,8 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   const [highlightRect, setHighlightRect] = useState<Rect | null>(null);
 
   const listWrapRef = useRef<HTMLDivElement | null>(null);
-  const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const itemInteractionRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const itemVisualRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasTrackedPreviewOpen = useRef(false);
 
@@ -118,20 +118,32 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     };
   }, []);
 
-  const syncHighlight = useCallback((index: number) => {
+  const getItemVisualRect = useCallback((index: number) => {
     const container = listWrapRef.current;
-    const item = itemRefs.current[index];
-    if (!container || !item) return;
+    const item = itemVisualRefs.current[index];
+    if (!container || !item) return null;
 
     const c = container.getBoundingClientRect();
     const r = item.getBoundingClientRect();
 
-    setHighlightRect({
+    return {
       top: r.top - c.top,
       left: r.left - c.left,
       width: r.width,
       height: r.height
-    });
+    };
+  }, []);
+
+  const syncHighlight = useCallback((index: number) => {
+    const nextRect = getItemVisualRect(index);
+    if (!nextRect) return null;
+
+    setHighlightRect(nextRect);
+    return nextRect;
+  }, [getItemVisualRect]);
+
+  const getItemInteractionRect = useCallback((index: number) => {
+    return itemInteractionRefs.current[index]?.getBoundingClientRect() ?? null;
   }, []);
 
   const syncPreviewPosition = useCallback(() => {
@@ -215,23 +227,22 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
 
   const isCursorInsideItemHoverZone = useCallback(
     (index: number, clientX: number, clientY: number) => {
-      const item = itemRefs.current[index];
-      if (!item) return false;
+      const rect = getItemInteractionRect(index);
+      if (!rect) return false;
 
-      const rect = item.getBoundingClientRect();
       return (
-        clientX >= rect.left - ITEM_HOVER_ZONE_PAD_X &&
-        clientX <= rect.right + ITEM_HOVER_ZONE_PAD_X &&
+        clientX >= rect.left &&
+        clientX <= rect.right &&
         clientY >= rect.top &&
         clientY <= rect.bottom
       );
     },
-    []
+    [getItemInteractionRect]
   );
 
   const findHoveredItemIndex = useCallback(
     (clientX: number, clientY: number) => {
-      for (let index = 0; index < itemRefs.current.length; index += 1) {
+      for (let index = 0; index < itemInteractionRefs.current.length; index += 1) {
         if (isCursorInsideItemHoverZone(index, clientX, clientY)) {
           return index;
         }
@@ -266,8 +277,9 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
 
     setActiveIndex(index);
     setPreviewIndex(index);
-    syncHighlight(index);
+    const nextHighlightRect = syncHighlight(index);
     syncPreviewPosition();
+    return nextHighlightRect;
   }
 
   function closeIndex() {
@@ -280,39 +292,28 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     }, 380);
   }
 
-  function onMouseMove(event: React.MouseEvent<HTMLDivElement>) {
+  function updatePointerMotion(
+    index: number,
+    clientX: number,
+    clientY: number,
+    rect: DOMRect | null = getItemInteractionRect(index)
+  ) {
     if (!canHover) return;
-
-    const wrap = listWrapRef.current;
-    if (!wrap) return;
-
-    const hoveredIndex = findHoveredItemIndex(event.clientX, event.clientY);
-    if (hoveredIndex === null) {
-      closeIndex();
-      return;
-    }
-
-    cancelCloseIndex();
-    if (hoveredIndex !== activeIndex) {
-      openIndex(hoveredIndex);
-    }
-
-    const bounds = wrap.getBoundingClientRect();
 
     let nx = 0;
     let ny = 0;
 
-    if (highlightRect) {
-      const cardX = bounds.left + highlightRect.left;
-      const cardY = bounds.top + highlightRect.top;
-      const tx = Math.max(1, highlightRect.width);
-      const ty = Math.max(1, highlightRect.height);
+    if (rect) {
+      const cardX = rect.left;
+      const cardY = rect.top;
+      const tx = Math.max(1, rect.width);
+      const ty = Math.max(1, rect.height);
 
-      nx = (event.clientX - (cardX + tx / 2)) / (tx / 2);
-      ny = (event.clientY - (cardY + ty / 2)) / (ty / 2);
+      nx = (clientX - (cardX + tx / 2)) / (tx / 2);
+      ny = (clientY - (cardY + ty / 2)) / (ty / 2);
 
-      const ox = Math.max(0, Math.min(1, (event.clientX - cardX) / tx));
-      const oy = Math.max(0, Math.min(1, (event.clientY - cardY) / ty));
+      const ox = Math.max(0, Math.min(1, (clientX - cardX) / tx));
+      const oy = Math.max(0, Math.min(1, (clientY - cardY) / ty));
       originXRaw.set(30 + 40 * ox);
       originYRaw.set(30 + 40 * oy);
     } else {
@@ -327,6 +328,22 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     tiltYRaw.set(nx * 0.85);
     shiftXRaw.set(12 * getSoftShift(nx, 2));
     shiftYRaw.set(8 * getSoftShift(ny, 2));
+  }
+
+  function onMouseMove(event: React.MouseEvent<HTMLDivElement>) {
+    if (!canHover) return;
+
+    const hoveredIndex = findHoveredItemIndex(event.clientX, event.clientY);
+    if (hoveredIndex === null) {
+      closeIndex();
+      return;
+    }
+
+    cancelCloseIndex();
+    if (hoveredIndex !== activeIndex) {
+      openIndex(hoveredIndex);
+    }
+    updatePointerMotion(hoveredIndex, event.clientX, event.clientY);
   }
 
   return (
@@ -432,7 +449,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                             href={entry.href}
                             {...getExternalLinkProps(entry.href)}
                             ref={(node) => {
-                              itemRefs.current[index] = node;
+                              itemInteractionRefs.current[index] = node;
                             }}
                             className={[
                               styles.item,
@@ -440,7 +457,10 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                             ]
                               .filter(Boolean)
                               .join(" ")}
-                            onMouseEnter={() => openIndex(index)}
+                            onMouseEnter={(event) => {
+                              openIndex(index);
+                              updatePointerMotion(index, event.clientX, event.clientY);
+                            }}
                             onFocus={() => openIndex(index)}
                             onBlur={closeIndex}
                             onClick={() => {
@@ -452,10 +472,17 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                               });
                             }}
                           >
-                            <span className={styles.itemContent}>
-                              <span className={styles.itemLabel}>{entry.label}</span>
-                              <span className={styles.itemMeta}>
-                                <span>{entry.subtitle}</span>
+                            <span
+                              ref={(node) => {
+                                itemVisualRefs.current[index] = node;
+                              }}
+                              className={styles.itemVisualBounds}
+                            >
+                              <span className={styles.itemContent}>
+                                <span className={styles.itemLabel}>{entry.label}</span>
+                                <span className={styles.itemMeta}>
+                                  <span>{entry.subtitle}</span>
+                                </span>
                               </span>
                             </span>
                           </Link>
