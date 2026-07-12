@@ -167,8 +167,8 @@
 - `motion-fast-plus = 220ms`; default for quick overlay fade, trigger hover, media handoff, and close-button enter.
 - `motion-base = 280ms`; default for media shell open, button reveal transforms, and standard UI state changes.
 - `motion-base-plus = 320ms`; allowed for asset settle/load completion and top-card background color.
-- `motion-emphasis = 420ms`; reserved for home active-item text shift.
-- `motion-layout = 600ms`; reserved for home glass/highlight positioning and preview enter/swap.
+- `motion-emphasis = 420ms`; used by the home active-item text shift.
+- `motion-layout = 600ms`; used by the home outgoing-text return and preview enter/swap.
 - `motion-page-reveal = 700ms`
 - `motion-spring-soft = 800ms`; used by shared Framer Motion item reveal.
 - `motion-ambient-enter = 1240ms`; reserved for animated top-card content replacement.
@@ -186,7 +186,7 @@
 - `AnimatedTopCard` must render the static `TopCard` without animated crossfade when reduced motion is requested.
 - `GalleryLightbox` must collapse motion transitions to `duration: 0` for open/close/backdrop/close-button choreography when reduced motion is requested.
 - CSS hover/loop/keyframe effects must expose a `prefers-reduced-motion` fallback that disables transition/animation when the effect is not essential.
-- Home hover preview and active-case pointer tilt currently keep their interactive behavior; any future extension of that system must include explicit reduced-motion handling before release.
+- Home active-case glass must switch geometry instantly, disable pointer tilt/shift and active-text transforms, and keep transform origin centered when reduced motion is requested. Home preview must omit blur/scale and use opacity-only motion.
 
 ## Home Top Card Tokens
 - `--home-top-card-width = 360px`
@@ -337,8 +337,12 @@ Typography:
 
 ### Home showcase motion
 - Home uses the shared reveal language for heading/list entry, then adds a dedicated interactive layer for the active case bubble and preview pane.
-- The active glass bubble may animate geometry (`top/left/width/height`) with `Framer Motion` and `motion-layout` timing, plus restrained pointer-reactive `rotateX`, `rotateY`, `x`, and `y`.
-- The right preview pane is a fine-pointer desktop enhancement. It enters/exits with soft blur and opacity and swaps media with the same motion family.
+- The active glass bubble position uses a velocity-preserving physics spring with `mass: 0.9`. Normalized travel distance is passed through the existing `smoothstep` for `stiffness: 320..460` and the post-target tail time-warp `1x..2x`. Raw overshoot amplitude uses a separate normalized exponential ease-out: distance is measured in actual item steps using the mean current/target height, the curve scale is `4.5` steps, and its value is normalized against the maximum available list travel before mapping damping ratio from `0.80` near to `0.62` far. After the first target crossing only, signed residual offsets remain unchanged through `16px`, then use a continuous exponential soft knee toward an asymptotic `28px` cap; this is not a hard clamp and does not affect the approach to the target. The tail time-warp still traverses the same raw spring trajectory, while generator velocity is multiplied by both the time-warp factor and the soft-knee derivative for interruption handoff. Stiffness, damping-distance, and tail-time curves otherwise remain unchanged. Distance is measured between the current untransformed glass layout center and the next target center.
+- Bubble `width/height` morph with a separate physics spring: `stiffness: 220`, `damping: 22`, `mass: 1.0`. Do not add SVG, Canvas, WebGL, motion-blur, or duplicated-layer stretch to this effect.
+- Pointer response targets `x: ±16px`, `y: ±10px` through `stiffness: 300`, `damping: 24`, `mass: 0.75`, using soft-shift power `1.4`. Existing tilt angles and highlight-origin springs remain unchanged.
+- Active text follows `25%` of the pointer shift with `motion-emphasis` (`420ms`) and the expressive easing. On a cross-item switch, outgoing text returns from its computed transform through an explicit WAAPI animation using `motion-layout` (`600ms`) and the standard easing, avoiding shortened CSS reverse-transitions. Re-entering that item hands its current WAAPI transform back to the active CSS transition across two animation frames so motion remains continuous without a jump. The glass container uses `perspective: 1400px`.
+- Glass opacity remains `280ms`; the `380ms` delayed close is preserved to prevent rapid cross-item pointer movement from destabilizing text and preview state.
+- The right preview pane is a fine-pointer desktop enhancement. Its standard blur/opacity/scale transitions use `motion-layout`; under reduced motion it becomes opacity-only with no blur or scale.
 - Hover motion in home must stay informational and tactile, not playful: small tilt, shallow shift, no large scale jumps, no bounce-heavy springs.
 
 ### Top-card motion

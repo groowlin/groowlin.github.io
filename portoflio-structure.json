@@ -28,7 +28,7 @@
         "Primary reveal language is opacity + blur + translateY.",
         "Primary surface-swap language is opacity + blur + scale.",
         "Continuous loops are allowed only for top-card hover feedback.",
-        "Reduced-motion fallback is required for reveal, top-card swap, and lightbox choreography."
+        "Reduced-motion fallback is required for reveal, top-card swap, lightbox choreography, and home glass/preview motion."
       ],
       "easing": {
         "expressive": "cubic-bezier(0.22, 1, 0.36, 1)",
@@ -63,8 +63,9 @@
       "motion": [
         "Top card swaps through AnimatedTopCard.",
         "Home heading and case list use sequenced page reveal.",
-        "Active case uses a glass highlight with spring-driven geometry and restrained pointer-reactive tilt/shift.",
-        "Hover preview is a fine-pointer desktop enhancement and swaps media with blur/opacity/scale transitions."
+        "Active case glass position uses velocity-preserving physics with mass 0.9: smoothstep remains for stiffness 320..460 and post-target tail time-warp 1x..2x, while damping ratio 0.80..0.62 uses a separate normalized exponential ease-out measured in actual item steps with scale 4.5. Only post-target residual offsets use a 16px exponential soft knee toward an asymptotic 28px cap; pre-target motion and all distance curves remain unchanged; size morph uses 220/22/1.0.",
+        "Pointer shift targets ±16px/±10px through a 300/24/0.75 spring with power 1.4; active text follows 25% over 420ms expressive easing, outgoing text returns explicitly over 600ms standard easing, re-entry hands the current transform back to CSS without a jump, the glass uses 1400px perspective, and the shared close delay remains 380ms.",
+        "Hover preview is a fine-pointer desktop enhancement and swaps media with blur/opacity/scale transitions; reduced motion uses opacity only."
       ],
       "sections": [
         {
@@ -104,8 +105,10 @@
           ],
           "motion": [
             "Case items reveal with the shared page-reveal language.",
-            "Active case text shifts subtly inside the glass highlight.",
-            "Glass highlight follows pointer movement with restrained transform depth."
+            "Active case text follows 25% of pointer shift over 420ms expressive easing; outgoing text returns through WAAPI over 600ms standard easing, and re-entry preserves its current visual transform.",
+            "Glass position preserves spring velocity: smoothstep maps distance to stiffness 320..460 and post-target tail time 1x..2x, while damping ratio 0.80..0.62 follows a separate normalized exponential curve with scale 4.5 actual item steps. Post-target residual offsets alone use a continuous 16px soft knee toward an asymptotic 28px cap, and its derivative also scales inherited velocity; size uses a 220/22/1.0 lightweight morph spring.",
+            "Glass follows pointer targets ±16px/±10px with restrained transform depth and 1400px perspective.",
+            "Reduced motion makes geometry instant and disables pointer and text transforms."
           ]
         },
         {
@@ -116,7 +119,7 @@
           ],
           "motion": [
             "Preview pane enters and exits with blur and opacity.",
-            "Preview media swaps with blur, opacity, and light scale settle.",
+            "Preview media swaps with blur, opacity, and light scale settle; reduced motion is opacity-only.",
             "Disabled on non-hover/coarse-pointer layouts."
           ]
         }

@@ -1,8 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion, useMotionTemplate, useMotionValue, useSpring } from "framer-motion";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
+import {
+  AnimatePresence,
+  motion,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+  useSpring
+} from "framer-motion";
+import {
+  calcGeneratorDuration,
+  type GeneratorFactory,
+  type KeyframeGenerator,
+  spring as createSpringGenerator,
+  type ValueAnimationOptions
+} from "framer-motion/dom";
 import { createPortal } from "react-dom";
 import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
@@ -18,6 +40,25 @@ interface Rect {
   height: number;
 }
 
+interface HighlightState {
+  rect: Rect;
+  positionStiffness: number;
+  positionDamping: number;
+  positionTailTimeScale: number;
+}
+
+interface TextReturnAnimationState {
+  animation: Animation;
+  element: HTMLSpanElement;
+}
+
+interface PendingTextHandoff {
+  element: HTMLSpanElement;
+  token: symbol;
+  firstFrameId: number | null;
+  secondFrameId: number | null;
+}
+
 interface SectionEntry {
   entry: HomeWorkEntry;
   index: number;
@@ -29,7 +70,23 @@ interface IndexedHomeSection {
 }
 
 const PREVIEW_OFFSET_FALLBACK = 60;
-const ACTIVE_TEXT_SHIFT_SCALE = 0.18;
+const ACTIVE_TEXT_SHIFT_SCALE = 0.25;
+const HIGHLIGHT_TARGET_TOLERANCE = 0.25;
+const POSITION_STIFFNESS_NEAR = 320;
+const POSITION_STIFFNESS_FAR = 460;
+const POSITION_DAMPING_RATIO_NEAR = 0.8;
+const POSITION_DAMPING_RATIO_FAR = 0.62;
+const POSITION_OVERSHOOT_DISTANCE_SCALE_STEPS = 4.5;
+const POSITION_OVERSHOOT_SOFT_KNEE_PX = 16;
+const POSITION_OVERSHOOT_SOFT_CAP_PX = 28;
+const POSITION_TAIL_TIME_SCALE_NEAR = 1;
+const POSITION_TAIL_TIME_SCALE_FAR = 2;
+const POSITION_MASS = 0.9;
+const SIZE_STIFFNESS = 220;
+const SIZE_DAMPING = 22;
+const SIZE_MASS = 1;
+const OUTGOING_TEXT_DURATION_MS = 600;
+const OUTGOING_TEXT_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
 
 function getExternalLinkProps(href: string) {
   return /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(href) ? { target: "_blank", rel: "noopener noreferrer" } : {};
@@ -47,6 +104,166 @@ function getSoftShift(value: number, power: number) {
   return Math.sign(normalized) * (1 - (1 - Math.abs(normalized)) ** (1 / Math.max(1, power)));
 }
 
+function areRectsEqual(a: Rect, b: Rect) {
+  return (
+    Math.abs(a.top - b.top) <= HIGHLIGHT_TARGET_TOLERANCE &&
+    Math.abs(a.left - b.left) <= HIGHLIGHT_TARGET_TOLERANCE &&
+    Math.abs(a.width - b.width) <= HIGHLIGHT_TARGET_TOLERANCE &&
+    Math.abs(a.height - b.height) <= HIGHLIGHT_TARGET_TOLERANCE
+  );
+}
+
+function findFirstTargetCrossingTime(
+  generator: KeyframeGenerator<number>,
+  origin: number,
+  target: number,
+  duration: number
+) {
+  const initialOffset = origin - target;
+  if (initialOffset === 0 || !Number.isFinite(duration)) return null;
+
+  const searchStep = 1;
+  let previousTime = 0;
+
+  for (let time = searchStep; time <= duration; time += searchStep) {
+    const sampleTime = Math.min(time, duration);
+    const state = generator.next(sampleTime);
+    const offset = state.value - target;
+
+    if (state.done && offset === 0) return null;
+
+    if (initialOffset * offset <= 0) {
+      let lower = previousTime;
+      let upper = sampleTime;
+
+      for (let iteration = 0; iteration < 12; iteration += 1) {
+        const middle = (lower + upper) / 2;
+        const middleOffset = generator.next(middle).value - target;
+        if (initialOffset * middleOffset > 0) {
+          lower = middle;
+        } else {
+          upper = middle;
+        }
+      }
+
+      return upper;
+    }
+
+    previousTime = sampleTime;
+  }
+
+  return null;
+}
+
+function compressPositionOvershootOffset(offset: number) {
+  const magnitude = Math.abs(offset);
+  if (magnitude <= POSITION_OVERSHOOT_SOFT_KNEE_PX) return offset;
+
+  const compressionRange = POSITION_OVERSHOOT_SOFT_CAP_PX - POSITION_OVERSHOOT_SOFT_KNEE_PX;
+  const compressedMagnitude =
+    POSITION_OVERSHOOT_SOFT_KNEE_PX +
+    compressionRange * (1 - Math.exp(-(magnitude - POSITION_OVERSHOOT_SOFT_KNEE_PX) / compressionRange));
+
+  return Math.sign(offset) * compressedMagnitude;
+}
+
+function getPositionOvershootVelocityScale(offset: number) {
+  const magnitude = Math.abs(offset);
+  if (magnitude <= POSITION_OVERSHOOT_SOFT_KNEE_PX) return 1;
+
+  const compressionRange = POSITION_OVERSHOOT_SOFT_CAP_PX - POSITION_OVERSHOOT_SOFT_KNEE_PX;
+  return Math.exp(-(magnitude - POSITION_OVERSHOOT_SOFT_KNEE_PX) / compressionRange);
+}
+
+function createPositionSpringGenerator(tailTimeScale: number): GeneratorFactory {
+  return (options) => {
+    const springOptions = options as ValueAnimationOptions<number>;
+    const baseGenerator = createSpringGenerator(springOptions);
+    const scale = Math.max(1, tailTimeScale);
+    const origin = springOptions.keyframes[0];
+    const target = springOptions.keyframes[springOptions.keyframes.length - 1];
+
+    if (!Number.isFinite(origin) || !Number.isFinite(target)) {
+      return baseGenerator;
+    }
+
+    const baseDuration = baseGenerator.calculatedDuration ?? calcGeneratorDuration(baseGenerator);
+    const crossingTime = findFirstTargetCrossingTime(baseGenerator, origin, target, baseDuration);
+
+    if (crossingTime === null) return baseGenerator;
+
+    const warpedDuration = crossingTime + (baseDuration - crossingTime) * scale;
+    const getBaseTime = (time: number) =>
+      time <= crossingTime ? time : crossingTime + (time - crossingTime) / scale;
+    const state = { done: false, value: origin };
+
+    const generator: KeyframeGenerator<number> = {
+      calculatedDuration: warpedDuration,
+      next: (time) => {
+        const baseState = baseGenerator.next(getBaseTime(time));
+        state.done = baseState.done;
+        state.value =
+          time <= crossingTime
+            ? baseState.value
+            : target + compressPositionOvershootOffset(baseState.value - target);
+        return state;
+      },
+      toString: () => baseGenerator.toString()
+    };
+
+    if (baseGenerator.velocity) {
+      generator.velocity = (time) => {
+        const baseTime = getBaseTime(time);
+        const velocity = baseGenerator.velocity?.(baseTime) ?? 0;
+        if (time <= crossingTime) return velocity;
+
+        const residualOffset = baseGenerator.next(baseTime).value - target;
+        return (velocity / scale) * getPositionOvershootVelocityScale(residualOffset);
+      };
+    }
+
+    return generator;
+  };
+}
+
+function getAdaptivePositionSpring(current: Rect | null, target: Rect, listHeight: number) {
+  let distanceRatio = 0;
+  let dampingProgress = 0;
+
+  if (current) {
+    const currentCenterX = current.left + current.width / 2;
+    const currentCenterY = current.top + current.height / 2;
+    const targetCenterX = target.left + target.width / 2;
+    const targetCenterY = target.top + target.height / 2;
+    const distance = Math.hypot(targetCenterX - currentCenterX, targetCenterY - currentCenterY);
+    const normalizer = Math.max(1, listHeight - Math.min(current.height, target.height));
+    const itemStep = Math.max(1, (current.height + target.height) / 2);
+    const distanceSteps = distance / itemStep;
+    const maxDistanceSteps = normalizer / itemStep;
+    const rawDistanceProgress = 1 - Math.exp(-distanceSteps / POSITION_OVERSHOOT_DISTANCE_SCALE_STEPS);
+    const rawMaxProgress = 1 - Math.exp(-maxDistanceSteps / POSITION_OVERSHOOT_DISTANCE_SCALE_STEPS);
+
+    distanceRatio = Math.max(0, Math.min(1, distance / normalizer));
+    dampingProgress = Math.max(0, Math.min(1, rawDistanceProgress / rawMaxProgress));
+  }
+
+  const smoothedDistanceRatio = distanceRatio * distanceRatio * (3 - 2 * distanceRatio);
+  const positionStiffness =
+    POSITION_STIFFNESS_NEAR + (POSITION_STIFFNESS_FAR - POSITION_STIFFNESS_NEAR) * smoothedDistanceRatio;
+  const baseDampingRatio =
+    POSITION_DAMPING_RATIO_NEAR +
+    (POSITION_DAMPING_RATIO_FAR - POSITION_DAMPING_RATIO_NEAR) * dampingProgress;
+  const positionTailTimeScale =
+    POSITION_TAIL_TIME_SCALE_NEAR +
+    (POSITION_TAIL_TIME_SCALE_FAR - POSITION_TAIL_TIME_SCALE_NEAR) * smoothedDistanceRatio;
+
+  return {
+    positionStiffness,
+    positionDamping: 2 * baseDampingRatio * Math.sqrt(positionStiffness * POSITION_MASS),
+    positionTailTimeScale
+  };
+}
+
 interface HomeShowcaseProps {
   title: string;
   subtitle?: string;
@@ -54,15 +271,26 @@ interface HomeShowcaseProps {
 }
 
 export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
+  const shouldReduceMotion = useReducedMotion();
   const [canHover, setCanHover] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [previewLeft, setPreviewLeft] = useState<number | null>(null);
-  const [highlightRect, setHighlightRect] = useState<Rect | null>(null);
+  const [highlightState, setHighlightState] = useState<HighlightState | null>(null);
+  const positionSpringGenerator = useMemo(
+    () => createPositionSpringGenerator(highlightState?.positionTailTimeScale ?? 1),
+    [highlightState?.positionTailTimeScale]
+  );
 
   const listWrapRef = useRef<HTMLDivElement | null>(null);
+  const glassRef = useRef<HTMLDivElement | null>(null);
+  const highlightTargetRef = useRef<HighlightState | null>(null);
+  const activeIndexRef = useRef<number | null>(null);
   const itemInteractionRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const itemVisualRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const itemContentRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const textReturnAnimationsRef = useRef<Map<number, TextReturnAnimationState>>(new Map());
+  const pendingTextHandoffsRef = useRef<Map<number, PendingTextHandoff>>(new Map());
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasTrackedPreviewOpen = useRef(false);
 
@@ -73,8 +301,8 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   const originXRaw = useMotionValue(50);
   const originYRaw = useMotionValue(50);
 
-  const shiftX = useSpring(shiftXRaw, { stiffness: 420, damping: 34, mass: 0.6 });
-  const shiftY = useSpring(shiftYRaw, { stiffness: 420, damping: 34, mass: 0.6 });
+  const shiftX = useSpring(shiftXRaw, { stiffness: 300, damping: 24, mass: 0.75 });
+  const shiftY = useSpring(shiftYRaw, { stiffness: 300, damping: 24, mass: 0.75 });
   const tiltX = useSpring(tiltXRaw, { stiffness: 360, damping: 30, mass: 0.65 });
   const tiltY = useSpring(tiltYRaw, { stiffness: 360, damping: 30, mass: 0.65 });
   const originX = useSpring(originXRaw, { stiffness: 460, damping: 42, mass: 0.74 });
@@ -84,6 +312,197 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   const listShiftXVar = useMotionTemplate`${shiftX}px`;
   const listShiftYVar = useMotionTemplate`${shiftY}px`;
   const highlightYVar = useMotionTemplate`${originY}%`;
+
+  const resetPointerMotion = useCallback(() => {
+    tiltXRaw.set(0);
+    tiltYRaw.set(0);
+    shiftXRaw.set(0);
+    shiftYRaw.set(0);
+    originXRaw.set(50);
+    originYRaw.set(50);
+  }, [originXRaw, originYRaw, shiftXRaw, shiftYRaw, tiltXRaw, tiltYRaw]);
+
+  const cancelPendingTextHandoff = useCallback((index: number) => {
+    const pending = pendingTextHandoffsRef.current.get(index);
+    if (!pending) return null;
+
+    pendingTextHandoffsRef.current.delete(index);
+    if (pending.firstFrameId !== null) {
+      cancelAnimationFrame(pending.firstFrameId);
+    }
+    if (pending.secondFrameId !== null) {
+      cancelAnimationFrame(pending.secondFrameId);
+    }
+
+    return pending;
+  }, []);
+
+  const cancelAllTextMotion = useCallback(() => {
+    const animationStates = Array.from(textReturnAnimationsRef.current.values());
+    const pendingHandoffs = Array.from(pendingTextHandoffsRef.current.values());
+    textReturnAnimationsRef.current.clear();
+    pendingTextHandoffsRef.current.clear();
+
+    pendingHandoffs.forEach((pending) => {
+      if (pending.firstFrameId !== null) {
+        cancelAnimationFrame(pending.firstFrameId);
+      }
+      if (pending.secondFrameId !== null) {
+        cancelAnimationFrame(pending.secondFrameId);
+      }
+    });
+    animationStates.forEach(({ animation }) => animation.cancel());
+
+    const affectedElements = new Set<HTMLSpanElement>([
+      ...itemContentRefs.current.filter((element): element is HTMLSpanElement => element !== null),
+      ...animationStates.map(({ element }) => element),
+      ...pendingHandoffs.map(({ element }) => element)
+    ]);
+    affectedElements.forEach((element) => {
+      element.style.removeProperty("transform");
+      element.style.removeProperty("transition");
+    });
+  }, []);
+
+  const freezeTextReturnForReentry = useCallback(
+    (index: number) => {
+      const animationState = textReturnAnimationsRef.current.get(index);
+      const element = itemContentRefs.current[index];
+      if (!animationState || !element || animationState.element !== element) return;
+
+      const computedTransform = getComputedStyle(element).transform;
+      const currentTransform = computedTransform === "none" ? "translate3d(0, 0, 0)" : computedTransform;
+
+      element.style.transition = "none";
+      element.style.transform = currentTransform;
+      textReturnAnimationsRef.current.delete(index);
+      animationState.animation.cancel();
+      cancelPendingTextHandoff(index);
+
+      pendingTextHandoffsRef.current.set(index, {
+        element,
+        token: Symbol(`text-handoff-${index}`),
+        firstFrameId: null,
+        secondFrameId: null
+      });
+    },
+    [cancelPendingTextHandoff]
+  );
+
+  const startTextReturnAnimation = useCallback(
+    (index: number) => {
+      const element = itemContentRefs.current[index];
+      const existingAnimationState = textReturnAnimationsRef.current.get(index);
+      if (!element) {
+        cancelPendingTextHandoff(index);
+        if (existingAnimationState) {
+          textReturnAnimationsRef.current.delete(index);
+          existingAnimationState.animation.cancel();
+          existingAnimationState.element.style.removeProperty("transform");
+          existingAnimationState.element.style.removeProperty("transition");
+        }
+        return;
+      }
+
+      const computedTransform = getComputedStyle(element).transform;
+      const currentTransform = computedTransform === "none" ? "translate3d(0, 0, 0)" : computedTransform;
+
+      element.style.transition = "none";
+      element.style.transform = currentTransform;
+      cancelPendingTextHandoff(index);
+
+      if (existingAnimationState) {
+        textReturnAnimationsRef.current.delete(index);
+        existingAnimationState.animation.cancel();
+      }
+
+      if (shouldReduceMotion || typeof element.animate !== "function") {
+        element.style.removeProperty("transform");
+        element.style.removeProperty("transition");
+        return;
+      }
+
+      const animation = element.animate(
+        [
+          { transform: currentTransform },
+          { transform: "translate3d(0, 0, 0)" }
+        ],
+        {
+          duration: OUTGOING_TEXT_DURATION_MS,
+          easing: OUTGOING_TEXT_EASING
+        }
+      );
+
+      textReturnAnimationsRef.current.set(index, { animation, element });
+      element.style.removeProperty("transform");
+      element.style.removeProperty("transition");
+
+      const clearAnimation = () => {
+        if (textReturnAnimationsRef.current.get(index)?.animation === animation) {
+          textReturnAnimationsRef.current.delete(index);
+        }
+      };
+
+      animation.addEventListener("finish", clearAnimation, { once: true });
+      animation.addEventListener("cancel", clearAnimation, { once: true });
+    },
+    [cancelPendingTextHandoff, shouldReduceMotion]
+  );
+
+  useLayoutEffect(() => {
+    if (activeIndex === null) return;
+
+    const index = activeIndex;
+    const pending = pendingTextHandoffsRef.current.get(index);
+    if (!pending) return;
+
+    const { element, token } = pending;
+    pending.firstFrameId = requestAnimationFrame(() => {
+      const current = pendingTextHandoffsRef.current.get(index);
+      if (!current || current.token !== token) return;
+
+      current.firstFrameId = null;
+      if (
+        activeIndexRef.current !== index ||
+        itemContentRefs.current[index] !== element ||
+        !element.isConnected
+      ) {
+        pendingTextHandoffsRef.current.delete(index);
+        element.style.removeProperty("transform");
+        element.style.removeProperty("transition");
+        return;
+      }
+
+      element.style.removeProperty("transition");
+      void getComputedStyle(element).transform;
+
+      current.secondFrameId = requestAnimationFrame(() => {
+        const latest = pendingTextHandoffsRef.current.get(index);
+        if (!latest || latest.token !== token) return;
+
+        latest.secondFrameId = null;
+        if (
+          activeIndexRef.current !== index ||
+          itemContentRefs.current[index] !== element ||
+          !element.isConnected
+        ) {
+          pendingTextHandoffsRef.current.delete(index);
+          element.style.removeProperty("transform");
+          element.style.removeProperty("transition");
+          return;
+        }
+
+        pendingTextHandoffsRef.current.delete(index);
+        element.style.removeProperty("transform");
+      });
+    });
+  }, [activeIndex]);
+
+  useEffect(() => {
+    if (!shouldReduceMotion) return;
+    cancelAllTextMotion();
+    resetPointerMotion();
+  }, [cancelAllTextMotion, resetPointerMotion, shouldReduceMotion]);
 
   const indexedSections = useMemo<IndexedHomeSection[]>(() => {
     let currentIndex = 0;
@@ -138,8 +557,29 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     const nextRect = getItemVisualRect(index);
     if (!nextRect) return null;
 
-    setHighlightRect(nextRect);
-    return nextRect;
+    const currentTarget = highlightTargetRef.current;
+    if (currentTarget && areRectsEqual(currentTarget.rect, nextRect)) {
+      return currentTarget;
+    }
+
+    const list = listWrapRef.current;
+    const glass = glassRef.current;
+    const currentRect = glass
+      ? {
+          top: glass.offsetTop,
+          left: glass.offsetLeft,
+          width: glass.offsetWidth,
+          height: glass.offsetHeight
+        }
+      : null;
+    const nextState = {
+      rect: nextRect,
+      ...getAdaptivePositionSpring(currentRect, nextRect, list?.clientHeight ?? 0)
+    };
+
+    highlightTargetRef.current = nextState;
+    setHighlightState(nextState);
+    return nextState;
   }, [getItemVisualRect]);
 
   const getItemInteractionRect = useCallback((index: number) => {
@@ -160,8 +600,6 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     const onResize = () => syncHighlight(activeIndex);
     window.addEventListener("resize", onResize);
     window.addEventListener("scroll", onResize, true);
-
-    onResize();
 
     return () => {
       window.removeEventListener("resize", onResize);
@@ -189,8 +627,10 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
       if (closeTimerRef.current) {
         clearTimeout(closeTimerRef.current);
       }
+
+      cancelAllTextMotion();
     },
-    []
+    [cancelAllTextMotion]
   );
 
   const previewMedia = useMemo(() => {
@@ -255,6 +695,16 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   function openIndex(index: number) {
     cancelCloseIndex();
 
+    const previousActiveIndex = activeIndexRef.current;
+    freezeTextReturnForReentry(index);
+    if (previousActiveIndex !== null && previousActiveIndex !== index) {
+      startTextReturnAnimation(previousActiveIndex);
+    }
+    activeIndexRef.current = index;
+
+    const nextHighlightState = syncHighlight(index);
+    syncPreviewPosition();
+
     const nextEntry = displayEntries[index];
     if (nextEntry) {
       if (!hasTrackedPreviewOpen.current) {
@@ -264,8 +714,8 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
           case_title: nextEntry.label,
           page_path: getCurrentPath()
         });
-      } else if (activeIndex !== null && activeIndex !== index) {
-        const previousEntry = displayEntries[activeIndex];
+      } else if (previousActiveIndex !== null && previousActiveIndex !== index) {
+        const previousEntry = displayEntries[previousActiveIndex];
         trackMetricaGoal("home_preview_change", {
           case_slug: getCaseSlugFromHref(nextEntry.href),
           previous_case_slug: previousEntry ? getCaseSlugFromHref(previousEntry.href) : null,
@@ -277,17 +727,17 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
 
     setActiveIndex(index);
     setPreviewIndex(index);
-    const nextHighlightRect = syncHighlight(index);
-    syncPreviewPosition();
-    return nextHighlightRect;
+    return nextHighlightState?.rect ?? null;
   }
 
   function closeIndex() {
     if (activeIndex === null && previewIndex === null) return;
     if (closeTimerRef.current) return;
     closeTimerRef.current = setTimeout(() => {
+      activeIndexRef.current = null;
       setActiveIndex(null);
       setPreviewIndex(null);
+      highlightTargetRef.current = null;
       closeTimerRef.current = null;
     }, 380);
   }
@@ -298,7 +748,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     clientY: number,
     rect: DOMRect | null = getItemInteractionRect(index)
   ) {
-    if (!canHover) return;
+    if (!canHover || shouldReduceMotion) return;
 
     let nx = 0;
     let ny = 0;
@@ -326,8 +776,8 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
 
     tiltXRaw.set(-ny * 1.25);
     tiltYRaw.set(nx * 0.85);
-    shiftXRaw.set(12 * getSoftShift(nx, 2));
-    shiftYRaw.set(8 * getSoftShift(ny, 2));
+    shiftXRaw.set(16 * getSoftShift(nx, 1.4));
+    shiftYRaw.set(10 * getSoftShift(ny, 1.4));
   }
 
   function onMouseMove(event: React.MouseEvent<HTMLDivElement>) {
@@ -340,7 +790,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     }
 
     cancelCloseIndex();
-    if (hoveredIndex !== activeIndex) {
+    if (hoveredIndex !== activeIndexRef.current) {
       openIndex(hoveredIndex);
     }
     updatePointerMotion(hoveredIndex, event.clientX, event.clientY);
@@ -377,54 +827,82 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                 } as unknown as CSSProperties
               }
               onMouseLeave={() => {
-                tiltXRaw.set(0);
-                tiltYRaw.set(0);
-                shiftXRaw.set(0);
-                shiftYRaw.set(0);
-                originXRaw.set(50);
-                originYRaw.set(50);
+                resetPointerMotion();
                 closeIndex();
               }}
             >
               <AnimatePresence>
-                {highlightRect && activeIndex !== null && (
+                {highlightState && activeIndex !== null && (
                   <motion.div
+                    ref={glassRef}
                     className={styles.glass}
                     initial={{
                       opacity: 0,
-                      scale: 0.1,
-                      top: highlightRect.top,
-                      left: highlightRect.left,
-                      width: highlightRect.width,
-                      height: highlightRect.height
+                      scale: shouldReduceMotion ? 1 : 0.1,
+                      top: highlightState.rect.top,
+                      left: highlightState.rect.left,
+                      width: highlightState.rect.width,
+                      height: highlightState.rect.height
                     }}
                     animate={{
                       opacity: 1,
                       scale: 1,
-                      top: highlightRect.top,
-                      left: highlightRect.left,
-                      width: highlightRect.width,
-                      height: highlightRect.height
+                      top: highlightState.rect.top,
+                      left: highlightState.rect.left,
+                      width: highlightState.rect.width,
+                      height: highlightState.rect.height
                     }}
                     exit={{ opacity: 0 }}
                     transition={{
-                      top: { type: "spring", duration: 0.6, bounce: 0.15 },
-                      left: { type: "spring", duration: 0.6, bounce: 0.15 },
-                      width: { type: "spring", duration: 0.6, bounce: 0 },
-                      height: { type: "spring", duration: 0.6, bounce: 0 },
+                      top: shouldReduceMotion
+                        ? { duration: 0 }
+                        : {
+                            type: positionSpringGenerator,
+                            stiffness: highlightState.positionStiffness,
+                            damping: highlightState.positionDamping,
+                            mass: POSITION_MASS
+                          },
+                      left: shouldReduceMotion
+                        ? { duration: 0 }
+                        : {
+                            type: positionSpringGenerator,
+                            stiffness: highlightState.positionStiffness,
+                            damping: highlightState.positionDamping,
+                            mass: POSITION_MASS
+                          },
+                      width: shouldReduceMotion
+                        ? { duration: 0 }
+                        : {
+                            type: "spring",
+                            stiffness: SIZE_STIFFNESS,
+                            damping: SIZE_DAMPING,
+                            mass: SIZE_MASS
+                          },
+                      height: shouldReduceMotion
+                        ? { duration: 0 }
+                        : {
+                            type: "spring",
+                            stiffness: SIZE_STIFFNESS,
+                            damping: SIZE_DAMPING,
+                            mass: SIZE_MASS
+                          },
                       opacity: { duration: 0.28 }
                     }}
                     style={{
-                      transformOrigin: highlightTransformOrigin,
-                      rotateX: tiltX,
-                      rotateY: tiltY,
-                      x: shiftX,
-                      y: shiftY
+                      transformOrigin: shouldReduceMotion ? "50% 50%" : highlightTransformOrigin,
+                      rotateX: shouldReduceMotion ? 0 : tiltX,
+                      rotateY: shouldReduceMotion ? 0 : tiltY,
+                      x: shouldReduceMotion ? 0 : shiftX,
+                      y: shouldReduceMotion ? 0 : shiftY
                     }}
                   >
                     <span
                       className={styles.glassHighlight}
-                      style={{ ["--lgy" as string]: highlightYVar } as unknown as CSSProperties}
+                      style={
+                        {
+                          ["--lgy" as string]: shouldReduceMotion ? "50%" : highlightYVar
+                        } as unknown as CSSProperties
+                      }
                     />
                   </motion.div>
                 )}
@@ -478,7 +956,12 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                               }}
                               className={styles.itemVisualBounds}
                             >
-                              <span className={styles.itemContent}>
+                              <span
+                                ref={(node) => {
+                                  itemContentRefs.current[index] = node;
+                                }}
+                                className={styles.itemContent}
+                              >
                                 <span className={styles.itemLabel}>{entry.label}</span>
                                 <span className={styles.itemMeta}>
                                   <span>{entry.subtitle}</span>
@@ -505,21 +988,41 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                 className={styles.previewPane}
                 style={{ left: `${previewLeft}px` }}
                 aria-label="Content area"
-                initial={{ opacity: 0, filter: "blur(10px)" }}
-                animate={{ opacity: 1, filter: "blur(0)" }}
-                exit={{ opacity: 0, filter: "blur(10px)" }}
-                transition={{ type: "spring", duration: 0.6, bounce: 0 }}
+                initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, filter: "blur(10px)" }}
+                animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, filter: "blur(0)" }}
+                exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, filter: "blur(10px)" }}
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0.18 }
+                    : { type: "spring", duration: 0.6, bounce: 0 }
+                }
               >
                 <div className={styles.contentArea}>
                   <div className={styles.previewStage}>
-                    <AnimatePresence mode="popLayout">
+                    <AnimatePresence mode={shouldReduceMotion ? "sync" : "popLayout"}>
                       <motion.div
                         key={previewIndex ?? -1}
                         className={styles.previewMediaFrame}
-                        initial={{ opacity: 0, filter: "blur(10px)", scale: 0.97 }}
-                        animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
-                        exit={{ opacity: 0, filter: "blur(10px)", scale: 0.97 }}
-                        transition={{ type: "spring", duration: 0.6, bounce: 0 }}
+                        initial={
+                          shouldReduceMotion
+                            ? { opacity: 0 }
+                            : { opacity: 0, filter: "blur(10px)", scale: 0.97 }
+                        }
+                        animate={
+                          shouldReduceMotion
+                            ? { opacity: 1 }
+                            : { opacity: 1, filter: "blur(0px)", scale: 1 }
+                        }
+                        exit={
+                          shouldReduceMotion
+                            ? { opacity: 0 }
+                            : { opacity: 0, filter: "blur(10px)", scale: 0.97 }
+                        }
+                        transition={
+                          shouldReduceMotion
+                            ? { duration: 0.18 }
+                            : { type: "spring", duration: 0.6, bounce: 0 }
+                        }
                       >
                         <MediaPlaceholderView
                           media={previewMedia}
