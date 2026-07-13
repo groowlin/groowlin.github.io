@@ -26,6 +26,7 @@ interface AnimatedTopCardProps {
 interface TopCardTarget {
   card: TopCardContent;
   identity: string;
+  pathname: string;
 }
 
 interface TopCardSnapshot extends TopCardTarget {
@@ -36,6 +37,7 @@ interface TopCardSnapshot extends TopCardTarget {
 interface AnimatedTopCardWheelProps extends AnimatedTopCardProps {
   committedCard: TopCardContent;
   committedIdentity: string;
+  committedPathname: string;
   shouldRevealInitially: boolean;
 }
 
@@ -94,6 +96,17 @@ function getCardIdentity(pathname: string, card: TopCardContent) {
   return `${normalizePathname(pathname)}::${getCardKey(card)}`;
 }
 
+function getTrackStep(fromPathname: string, toPathname: string) {
+  const normalizedFromPathname = normalizePathname(fromPathname);
+  const normalizedToPathname = normalizePathname(toPathname);
+
+  if (normalizedFromPathname !== "/" && normalizedToPathname === "/") {
+    return -1;
+  }
+
+  return 1;
+}
+
 function getLayerOpacity(visualPosition: number) {
   if (visualPosition >= 0) {
     return clamp((100 - visualPosition) / OPACITY_TRAVEL_PERCENT, 0, 1);
@@ -131,6 +144,7 @@ function AnimatedTopCardWheel({
   className,
   committedCard,
   committedIdentity,
+  committedPathname,
   shouldRevealInitially,
   topCards,
   workSlugs
@@ -138,6 +152,7 @@ function AnimatedTopCardWheel({
   const initialSnapshot: TopCardSnapshot = {
     card: committedCard,
     identity: committedIdentity,
+    pathname: normalizePathname(committedPathname),
     instance: 0,
     slot: 0
   };
@@ -145,7 +160,6 @@ function AnimatedTopCardWheel({
   const [hasWheelStarted, setHasWheelStarted] = useState(!shouldRevealInitially);
   const snapshotsRef = useRef(snapshots);
   const nextInstanceRef = useRef(1);
-  const nextSlotRef = useRef(1);
   const observedCommittedIdentityRef = useRef(committedIdentity);
   const trackRunIdRef = useRef(0);
   const trackAnimationRef = useRef<StoppableAnimation | null>(null);
@@ -160,15 +174,56 @@ function AnimatedTopCardWheel({
 
   const appendSnapshot = useCallback(
     (target: TopCardTarget) => {
-      const snapshot: TopCardSnapshot = {
-        ...target,
-        instance: nextInstanceRef.current,
-        slot: nextSlotRef.current
-      };
-      nextInstanceRef.current += 1;
-      nextSlotRef.current += 1;
+      const currentSnapshots = snapshotsRef.current;
+      const latestSnapshot = currentSnapshots.at(-1);
 
-      const nextSnapshots = [...snapshotsRef.current, snapshot];
+      if (!latestSnapshot || latestSnapshot.identity === target.identity) {
+        return;
+      }
+
+      const normalizedTarget: TopCardTarget = {
+        ...target,
+        pathname: normalizePathname(target.pathname)
+      };
+      const trackStep = getTrackStep(latestSnapshot.pathname, normalizedTarget.pathname);
+      const reusableSnapshot = currentSnapshots
+        .filter(
+          (snapshot) =>
+            snapshot.identity === normalizedTarget.identity &&
+            (snapshot.slot - latestSnapshot.slot) * trackStep > 0
+        )
+        .sort(
+          (leftSnapshot, rightSnapshot) =>
+            Math.abs(leftSnapshot.slot - latestSnapshot.slot) -
+            Math.abs(rightSnapshot.slot - latestSnapshot.slot)
+        )[0];
+
+      let snapshot: TopCardSnapshot;
+      let nextSnapshots: TopCardSnapshot[];
+
+      if (reusableSnapshot) {
+        snapshot = {
+          ...reusableSnapshot,
+          ...normalizedTarget
+        };
+        nextSnapshots = [
+          ...currentSnapshots.filter((currentSnapshot) => currentSnapshot.instance !== snapshot.instance),
+          snapshot
+        ];
+      } else {
+        const nextSlot = latestSnapshot.slot + trackStep;
+        snapshot = {
+          ...normalizedTarget,
+          instance: nextInstanceRef.current,
+          slot: nextSlot
+        };
+        nextInstanceRef.current += 1;
+        nextSnapshots = [
+          ...currentSnapshots.filter((currentSnapshot) => currentSnapshot.slot !== nextSlot),
+          snapshot
+        ];
+      }
+
       snapshotsRef.current = nextSnapshots;
       setSnapshots(nextSnapshots);
       setHasWheelStarted(true);
@@ -208,17 +263,30 @@ function AnimatedTopCardWheel({
       return;
     }
 
-    observedCommittedIdentityRef.current = committedIdentity;
+    let isCancelled = false;
 
-    if (snapshotsRef.current.some((snapshot) => snapshot.identity === committedIdentity)) {
-      return;
-    }
+    queueMicrotask(() => {
+      if (isCancelled || observedCommittedIdentityRef.current === committedIdentity) {
+        return;
+      }
 
-    appendSnapshot({
-      card: committedCard,
-      identity: committedIdentity
+      observedCommittedIdentityRef.current = committedIdentity;
+
+      if (snapshotsRef.current.some((snapshot) => snapshot.identity === committedIdentity)) {
+        return;
+      }
+
+      appendSnapshot({
+        card: committedCard,
+        identity: committedIdentity,
+        pathname: committedPathname
+      });
     });
-  }, [appendSnapshot, committedCard, committedIdentity]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [appendSnapshot, committedCard, committedIdentity, committedPathname]);
 
   useLayoutEffect(
     () => () => {
@@ -278,7 +346,8 @@ function AnimatedTopCardWheel({
     const targetCard = getTopCardForPathname(targetPathname, topCards, workSlugs);
     appendSnapshot({
       card: targetCard,
-      identity: getCardIdentity(targetPathname, targetCard)
+      identity: getCardIdentity(targetPathname, targetCard),
+      pathname: targetPathname
     });
   }
 
@@ -389,6 +458,7 @@ export function AnimatedTopCard({ className, topCards, workSlugs }: AnimatedTopC
       className={className}
       committedCard={committedCard}
       committedIdentity={committedIdentity}
+      committedPathname={routeKey}
       shouldRevealInitially={classifyPathname(routeKey) === "initial"}
       topCards={topCards}
       workSlugs={workSlugs}
