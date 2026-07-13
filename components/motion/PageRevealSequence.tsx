@@ -58,9 +58,16 @@ export function PageRevealSequence({ children, className, onTargetReady }: PageR
       }
 
       target.dataset.pageRevealState = "ready";
+      onTargetReadyRef.current?.(target);
+    };
+
+    const clearTargetAnimationState = (target: HTMLElement) => {
+      if (disposed || !target.isConnected || target.closest("[data-page-reveal-root]") !== root) {
+        return;
+      }
+
       delete target.dataset.pageRevealActive;
       target.style.removeProperty("--page-reveal-index");
-      onTargetReadyRef.current?.(target);
     };
 
     const markInstantTargetReady = (target: HTMLElement) => {
@@ -107,11 +114,29 @@ export function PageRevealSequence({ children, className, onTargetReady }: PageR
           const animations = target.getAnimations();
           if (animations.length === 0) {
             markTargetReady(target);
+            clearTargetAnimationState(target);
             return;
           }
 
-          void Promise.allSettled(animations.map((animation) => animation.finished)).then(() => {
+          const visibilityAnimations = animations.filter((animation) => {
+            const effect = animation.effect;
+            if (!(effect instanceof KeyframeEffect)) return false;
+
+            return effect
+              .getKeyframes()
+              .some((keyframe) => keyframe.opacity !== undefined || keyframe.filter !== undefined);
+          });
+
+          if (visibilityAnimations.length === 0) {
             markTargetReady(target);
+          } else {
+            void Promise.allSettled(visibilityAnimations.map((animation) => animation.finished)).then(() => {
+              markTargetReady(target);
+            });
+          }
+
+          void Promise.allSettled(animations.map((animation) => animation.finished)).then(() => {
+            clearTargetAnimationState(target);
           });
         });
       });
