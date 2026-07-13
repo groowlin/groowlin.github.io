@@ -64,23 +64,13 @@
         "staticArrowDuringRouteSwap": true,
         "uniqueSnapshotInstances": true,
         "sharedTrackOffset": true,
-        "resolveSlotImmediatelyOnCommittedRoute": true,
-        "resolveSlotImmediatelyOnTopCardClick": true,
+        "appendSlotImmediatelyOnCommittedRoute": true,
+        "appendSlotImmediatelyOnTopCardClick": true,
         "immediateRetargetFromCurrentOffset": true,
         "newClickWaitsForCompletion": false,
-        "visualDirectionByTransition": {
-          "homeToNonHome": "upward",
-          "nonHomeToHome": "downward",
-          "nonHomeToNonHome": "upward",
-          "source": "latest-requested-target"
-        },
+        "visualDirection": "upward-only",
         "existingSnapshotsContinueFromCurrentOffset": true,
-        "trackStepPercentByDirection": {
-          "upward": -100,
-          "downward": 100
-        },
-        "reusesExistingSnapshotInRequestedDirection": true,
-        "prefersNearestReusableSnapshot": true,
+        "trackStepPercent": -100,
         "runIdGuardsCompletion": true,
         "cleanupAfterLatestRunCompletionOnly": true,
         "trackDurationToken": "emphasis",
@@ -94,22 +84,20 @@
           { "phase": "center", "positionPercent": 0, "scale": 1 },
           { "phase": "outgoing", "positionPercent": -100, "scale": 0.6666666667 }
         ],
-        "opacityBelowCenter": {
+        "opacityIncoming": {
           "fromPositionPercent": 100,
           "toPositionPercent": 36,
           "fromOpacity": 0,
           "toOpacity": 1,
           "fadeTravelPercent": 64
         },
-        "opacityAboveCenter": {
+        "opacityOutgoing": {
           "fromPositionPercent": 0,
           "toPositionPercent": -64,
           "fromOpacity": 1,
           "toOpacity": 0,
           "fadeTravelPercent": 64
         },
-        "opacityDerivedFromTrackPosition": true,
-        "opacityContinuousOnDirectionReverse": true,
         "blurPx": 0,
         "visualSnapshotsInteractive": false,
         "stableSemanticLinkOverlay": true,
@@ -181,7 +169,7 @@
             "Hover-only icon wave and shimmer feedback.",
             "Background-color transition on hover.",
             "PersistentSiteFrame owns this top-card section; SiteShell owns only the route PageRevealSequence.",
-            "Inside a clipped viewport, unique route-content snapshots form a bidirectional vertical wheel/tape with one shared offset: leaving / moves upward, returning to / moves downward, and non-home to non-home moves upward. Fast reversals reuse a matching snapshot in the requested direction and retarget from the current offset. The backing and arrow remain static, snapshots are non-interactive, and one stable semantic link overlay uses the latest optimistic click target."
+            "Inside a clipped viewport, unique route-content snapshots form a continuous upward wheel/tape with one shared offset; every committed route or top-card click immediately appends a slot below and retargets by another -100% from the current offset. The backing and arrow remain static, snapshots are non-interactive, and one stable semantic link overlay uses the latest optimistic click target."
           ]
         },
         {
@@ -249,7 +237,7 @@
           "motion": [
             "Hover-only icon wave and shimmer feedback.",
             "PersistentSiteFrame owns this top-card section; SiteShell owns only the route PageRevealSequence.",
-            "Inside a clipped viewport, unique route-content snapshots form a bidirectional vertical wheel/tape with one shared offset: leaving / moves upward, returning to / moves downward, and non-home to non-home moves upward. Fast reversals reuse a matching snapshot in the requested direction and retarget from the current offset. The backing and arrow remain static, snapshots are non-interactive, and one stable semantic link overlay uses the latest optimistic click target."
+            "Inside a clipped viewport, unique route-content snapshots form a continuous upward wheel/tape with one shared offset; every committed route or top-card click immediately appends a slot below and retargets by another -100% from the current offset. The backing and arrow remain static, snapshots are non-interactive, and one stable semantic link overlay uses the latest optimistic click target."
           ]
         },
         {
@@ -299,7 +287,7 @@
           "motion": [
             "Hover-only icon wave and shimmer feedback.",
             "PersistentSiteFrame owns this top-card section; SiteShell owns only the route PageRevealSequence.",
-            "Inside a clipped viewport, unique route-content snapshots form a bidirectional vertical wheel/tape with one shared offset: leaving / moves upward, returning to / moves downward, and non-home to non-home moves upward. Fast reversals reuse a matching snapshot in the requested direction and retarget from the current offset. The backing and arrow remain static, snapshots are non-interactive, and one stable semantic link overlay uses the latest optimistic click target."
+            "Inside a clipped viewport, unique route-content snapshots form a continuous upward wheel/tape with one shared offset; every committed route or top-card click immediately appends a slot below and retargets by another -100% from the current offset. The backing and arrow remain static, snapshots are non-interactive, and one stable semantic link overlay uses the latest optimistic click target."
           ]
         },
         {
@@ -335,7 +323,7 @@
           "motion": [
             "Hover-only icon wave and shimmer feedback.",
             "PersistentSiteFrame owns this top-card section; SiteShell owns only the route PageRevealSequence.",
-            "Inside a clipped viewport, unique route-content snapshots form a bidirectional vertical wheel/tape with one shared offset: leaving / moves upward, returning to / moves downward, and non-home to non-home moves upward. Fast reversals reuse a matching snapshot in the requested direction and retarget from the current offset. The backing and arrow remain static, snapshots are non-interactive, and one stable semantic link overlay uses the latest optimistic click target."
+            "Inside a clipped viewport, unique route-content snapshots form a continuous upward wheel/tape with one shared offset; every committed route or top-card click immediately appends a slot below and retargets by another -100% from the current offset. The backing and arrow remain static, snapshots are non-interactive, and one stable semantic link overlay uses the latest optimistic click target."
           ]
         },
         {
