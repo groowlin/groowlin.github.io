@@ -49,7 +49,6 @@ export default async function WorkPage({ params }: WorkPageProps) {
         headerAction={<WorkShortSummaryButton />}
         subtitleMuted={false}
         subtitleVariant="workMeta"
-        topCardVariant="to-home"
       >
         <div className={styles.stack}>
           <WorkArticle content={entry.content} />

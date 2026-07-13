@@ -140,7 +140,7 @@
 
 ### Motion principles
 - Motion supports orientation, hierarchy, and state change; it must not exist as decoration detached from interaction or layout.
-- Default motion language is soft, blurred, and slightly eased into place: `opacity + blur + translateY` for reveal, `opacity + blur + scale` for surface swaps, and restrained pointer-reactive transforms only where already designed.
+- Default motion language is soft, blurred, and slightly eased into place: `opacity + blur + translateY` for reveal, `opacity + blur + scale` for surface swaps, and restrained pointer-reactive transforms only where already designed. Persistent top-card route swaps are the explicit exception: their content uses `opacity + translateY + scale` without blur.
 - Ambient infinite animation is not allowed by default. Continuous loops are reserved for the home top-card hover state only.
 - Scroll-linked animation patterns (`useScroll`, parallax, while-in-view transforms, progress-based transforms) are not part of the current design system.
 - New motion values should reuse the existing motion tiers below. If a new duration/easing family is needed, it must be added here first.
@@ -167,23 +167,23 @@
 - `motion-fast-plus = 220ms`; default for quick overlay fade, trigger hover, media handoff, and close-button enter.
 - `motion-base = 280ms`; default for media shell open, button reveal transforms, and standard UI state changes.
 - `motion-base-plus = 320ms`; allowed for asset settle/load completion and top-card background color.
-- `motion-emphasis = 420ms`; used by the home active-item text shift.
+- `motion-emphasis = 420ms`; used by the home active-item text shift and each persistent top-card route-swap tape retarget.
 - `motion-layout = 600ms`; used by the home outgoing-text return and preview enter/swap.
 - `motion-page-reveal = 700ms`
 - `motion-spring-soft = 800ms`; used by shared Framer Motion item reveal.
-- `motion-ambient-enter = 1240ms`; reserved for animated top-card content replacement.
+- `motion-ambient-enter = 1240ms`; reserved for the initial top-card document reveal.
 - `motion-loop-icon = 1400ms`; reserved for top-card icon wave on hover.
 - `motion-loop-shimmer = 4200ms`; reserved for top-card shimmer on hover.
 
 #### Reveal primitives
 - Page and MDX reveal uses `opacity + blur(8px) + translateY(12px..16px)`.
 - Sequenced reveal stagger is `80ms` between siblings.
-- Surface swap reveal may add `scale` in the `0.97..1` or `0.985..1` range.
+- Initial top-card surface/content reveal uses `scale(0.985 → 1)`; the route wheel uses the component-specific symmetric `0.667 ↔ 1` scale lifecycle defined below.
 - Media loading/handoff may use blur up to `18px`; this is the upper bound in the current system.
 
 ### Reduced motion policy
 - `PageRevealSequence` must resolve to fully visible static content when `prefers-reduced-motion: reduce` is active.
-- `AnimatedTopCard` must render the static `TopCard` without animated crossfade when reduced motion is requested.
+- `AnimatedTopCard` must render the static `TopCard` without route-swap motion when reduced motion is requested.
 - `GalleryLightbox` must collapse motion transitions to `duration: 0` for open/close/backdrop/close-button choreography when reduced motion is requested.
 - CSS hover/loop/keyframe effects must expose a `prefers-reduced-motion` fallback that disables transition/animation when the effect is not essential.
 - Home active-case glass must switch geometry instantly, disable pointer tilt/shift and active-text transforms, and keep transform origin centered when reduced motion is requested. Home preview must omit blur/scale and use opacity-only motion.
@@ -249,6 +249,9 @@ Structure:
 - text block (`.title`, `.subtitle`)
 - optional icon row (`.icons`)
 - navigation arrow (`.arrow`)
+
+Motion ownership:
+- during client route swaps, the card backing and right navigation arrow are static layers outside the clipped content viewport
 
 Spacing:
 - card padding: `--home-top-card-padding`
@@ -331,13 +334,15 @@ Typography:
 
 ### Shared page reveal
 - `components/motion/PageRevealSequence.tsx` + `components/motion/page-reveal-sequence.module.css` are the canonical sequential reveal system used by `SiteShell`.
+- Reveal readiness is tracked per `data-page-reveal` target from its own Web Animations API records. A target becomes `ready` only after all of its actual CSS animations settle; this includes its own stagger and durations and is not derived from a global sequence timeout. Instant and reduced-motion targets become ready immediately.
 - `components/motion/MdxMotionComponents.tsx` marks MDX headings, paragraphs, list items, blockquotes, sections, and media wrappers with `data-page-reveal`, so case/about content participates in the same reveal contract.
 - `components/motion/MotionPage.tsx` and `components/motion/MotionItem.tsx` mirror the same language in Framer Motion form: `opacity + blur + y`, `staggerChildren: 0.08`, `spring` item settle.
 - New page-level reveal patterns must stay visually aligned with this system: no new reveal direction, no aggressive overshoot, no larger blur than `18px`.
 
 ### Home showcase motion
 - Home uses the shared reveal language for heading/list entry, then adds a dedicated interactive layer for the active case bubble and preview pane.
-- The active glass bubble position uses a velocity-preserving physics spring with `mass: 0.9`. Normalized travel distance is passed through the existing `smoothstep` for `stiffness: 320..460` and the post-target tail time-warp `1x..2x`. Raw overshoot amplitude uses a separate normalized exponential ease-out: distance is measured in actual item steps using the mean current/target height, the curve scale is `4.5` steps, and its value is normalized against the maximum available list travel before mapping damping ratio from `0.80` near to `0.62` far. After the first target crossing only, signed residual offsets remain unchanged through `16px`, then use a continuous exponential soft knee toward an asymptotic `28px` cap; this is not a hard clamp and does not affect the approach to the target. The tail time-warp still traverses the same raw spring trajectory, while generator velocity is multiplied by both the time-warp factor and the soft-knee derivative for interruption handoff. Stiffness, damping-distance, and tail-time curves otherwise remain unchanged. Distance is measured between the current untransformed glass layout center and the next target center.
+- A case item cannot open its glass or preview until that specific reveal target is ready. Hover and focus intent are retained while its reveal runs, so a stationary pointer or focused link opens automatically as soon as that target's own animations settle; navigation itself remains available. This gate is per item, not tied to the end of the complete page sequence.
+- The active glass bubble position uses a velocity-preserving physics spring with `mass: 0.9`. Normalized travel distance still maps through `smoothstep` to `stiffness: 320..460`, and the post-target tail time-warp remains `1x..2x`. A separate normalized exponential reference damping curve uses actual item steps, a `4.5`-step scale, and ratios from approximately `0.80` near to `0.62` far; these are reference values, not the final damping applied to the spring. Its theoretical start-from-rest peak is preserved through `12px`, then mapped by an exponential target-amplitude curve toward an `18px` asymptote. The effective damping ratio is derived from that target peak (approximately `0.7566` at maximum travel), so the spring physically reaches the intended overshoot and reverses naturally with no post-crossing position or velocity compression. The approach is normalized to `1.20x` the reference spring crossing time using damping-aware compensation; the internal flight scale therefore falls below `1` where effective damping is substantially higher, while the distance-aware tail scale takes over unchanged after the first crossing. Initial inherited velocity is pre-compensated by the active flight scale in a copied spring options object for interruption handoff. Distance is measured between the current untransformed glass layout center and the next target center.
 - Bubble `width/height` morph with a separate physics spring: `stiffness: 220`, `damping: 22`, `mass: 1.0`. Do not add SVG, Canvas, WebGL, motion-blur, or duplicated-layer stretch to this effect.
 - Pointer response targets `x: ±16px`, `y: ±10px` through `stiffness: 300`, `damping: 24`, `mass: 0.75`, using soft-shift power `1.4`. Existing tilt angles and highlight-origin springs remain unchanged.
 - Active text follows `25%` of the pointer shift with `motion-emphasis` (`420ms`) and the expressive easing. On a cross-item switch, outgoing text returns from its computed transform through an explicit WAAPI animation using `motion-layout` (`600ms`) and the standard easing, avoiding shortened CSS reverse-transitions. Re-entering that item hands its current WAAPI transform back to the active CSS transition across two animation frames so motion remains continuous without a jump. The glass container uses `perspective: 1400px`.
@@ -345,9 +350,21 @@ Typography:
 - The right preview pane is a fine-pointer desktop enhancement. Its standard blur/opacity/scale transitions use `motion-layout`; under reduced motion it becomes opacity-only with no blur or scale.
 - Hover motion in home must stay informational and tactile, not playful: small tilt, shallow shift, no large scale jumps, no bounce-heavy springs.
 
-### Top-card motion
-- `AnimatedTopCard` is the page-to-page/top-shell card replacement pattern for `/`, `/about`, `/work/[slug]`, and `/404`.
-- The card swap uses `opacity + blur + scale` with `motion-ambient-enter` for enter and a shorter standard exit.
+### Persistent shell and top-card motion
+- `app/layout.tsx` loads the complete top-card content map and published `workSlugs` on the server, passes both to `PersistentSiteFrame`, and renders it inside `NavigationLifecycleProvider`.
+- `components/shell/PersistentSiteFrame.tsx` is the persistent client owner of `main`, `inner`, `pageStack`, `AnimatedTopCard`, route `children`, `contentEnd`, and `BottomPaddingController`. `AnimatedTopCard` therefore remains mounted across client route changes.
+- Top-card route mapping is fixed: `/` uses `to-profile`; `/about` and `/work/[published slug]` use `to-home`; invalid or unknown `/work/*`, all other unknown routes, and `/404` use `default`.
+- `SiteShell` owns only the route header/body wrapped by `PageRevealSequence`. It must not load or select top-card content, render `AnimatedTopCard`, or recreate the outer shell.
+- Initial document reveal remains `opacity + blur(18px) + scale` with `motion-ambient-enter` for the card surface, mutable content, and navigation arrow.
+- Client route swaps keep the card backing and right navigation arrow static. Route-content snapshots form a continuous vertical wheel/tape inside one clipped viewport. Every snapshot is a unique instance on one shared track offset; each committed route and each ordinary fast top-card click immediately appends another slot below the current tape.
+- A new click during motion does not wait for completion and does not reverse or visually restart the upward movement. The track tween retargets immediately from its current rendered offset, extending the shared target by another `-100%`; all existing snapshots continue upward from that offset. Each retarget gets a new `runId`: stale completions are ignored, and snapshot cleanup runs only after the current `runId` completes.
+- Every track retarget uses `motion-emphasis` (`420ms`) with the standard easing (`cubic-bezier(0.4, 0, 0.2, 1)`). Because the duration resets to the same `420ms` while burst clicks extend the remaining target distance, multi-click sequences visibly accelerate the wheel.
+- Snapshot scale is symmetric by track position: `1 / 1.5` (`≈0.667`) at incoming `+100%`, `1` at center `0%`, and `1 / 1.5` at outgoing `-100%`. Scale transform origin is the center of the complete card viewport (`50% 50%`), not the intrinsic bounds of its visible content. Opacity is the corresponding faster inverse fade over `64%` of travel: incoming fades `0 → 1` from `+100% → +36%`; outgoing fades `1 → 0` from `0% → -64%`. Route-swap blur remains `0`.
+- Visual snapshots are non-interactive. One stable semantic link overlay owns interaction, always uses the latest requested target, and updates that target optimistically on click before route commit or network completion.
+- Reduced motion renders the route content and semantic link in their static final state; the wheel/tape, fades, scaling, and press deformation do not animate.
+- Surface deformation is independent of press duration. A completed primary activation (`click`, after mouse/pointer up) starts one fixed `560ms` jelly sequence from the current shape: `scaleX → [0.96, 1.02, 0.995, 1]` and `scaleY → [1.11, 0.985, 1.01, 1]`, with times `[0, 0.18, 0.46, 0.76, 1]`. Repeated clicks restart the bounded sequence from its current value without accumulating momentum.
+- The clipped content viewport shares the backing's visual `scaleX/scaleY`, so its mask follows the deformed surface and cannot leave a static clipping strip. A full-size inner counter-scale preserves the content's size, shape, wheel coordinates, and card-centered scale origin. Layout `width/height` remain static and never participate in the deformation.
+- During surface deformation, the arrow anchor follows the backing's right edge in the same transform space. An inverse `scaleX/scaleY` on the arrow anchor preserves the arrow's original size and shape; only its position changes.
 - `top-card.module.css` may animate hover-only feedback: background-color shift, icon wave, and shimmer sweep.
 - Those hover loops are only allowed while the card is actively hovered. No idle autoplay version should be introduced.
 

@@ -17,7 +17,7 @@ export default async function AboutPage() {
   const content = await getStaticPageContent("about");
 
   return (
-    <SiteShell title={content.meta.title} topCardVariant="to-home">
+    <SiteShell title={content.meta.title}>
       <PageGoalTracker goal="view_about" />
       <div className={styles.stack}>
         <article className={styles.mdxContent}>{content.content}</article>

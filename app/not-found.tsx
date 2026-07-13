@@ -22,7 +22,6 @@ export default async function NotFoundPage() {
       subtitle={content.summary.subtitle}
       subtitleMuted={false}
       subtitleVariant="workMeta"
-      topCardVariant="default"
     >
       <div className={styles.stack}>
         <WorkArticle content={content.content} showOutline={false} />

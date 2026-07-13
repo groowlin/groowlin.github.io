@@ -70,7 +70,7 @@ export default async function HomePage() {
   const sections = buildHomeShowcaseSections(homeConfig.sections, entries);
 
   return (
-    <SiteShell topCardVariant="to-profile">
+    <SiteShell>
       <PageGoalTracker goal="view_home" />
       <HomeShowcase title={homeConfig.title} subtitle={homeConfig.subtitle} sections={sections} />
     </SiteShell>

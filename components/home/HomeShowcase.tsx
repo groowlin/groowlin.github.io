@@ -44,6 +44,7 @@ interface HighlightState {
   rect: Rect;
   positionStiffness: number;
   positionDamping: number;
+  positionFlightTimeScale: number;
   positionTailTimeScale: number;
 }
 
@@ -57,6 +58,11 @@ interface PendingTextHandoff {
   token: symbol;
   firstFrameId: number | null;
   secondFrameId: number | null;
+}
+
+interface PointerPosition {
+  clientX: number;
+  clientY: number;
 }
 
 interface SectionEntry {
@@ -74,11 +80,12 @@ const ACTIVE_TEXT_SHIFT_SCALE = 0.25;
 const HIGHLIGHT_TARGET_TOLERANCE = 0.25;
 const POSITION_STIFFNESS_NEAR = 320;
 const POSITION_STIFFNESS_FAR = 460;
-const POSITION_DAMPING_RATIO_NEAR = 0.8;
-const POSITION_DAMPING_RATIO_FAR = 0.62;
+const POSITION_REFERENCE_DAMPING_RATIO_NEAR = 0.8;
+const POSITION_REFERENCE_DAMPING_RATIO_FAR = 0.62;
 const POSITION_OVERSHOOT_DISTANCE_SCALE_STEPS = 4.5;
-const POSITION_OVERSHOOT_SOFT_KNEE_PX = 16;
-const POSITION_OVERSHOOT_SOFT_CAP_PX = 28;
+const POSITION_OVERSHOOT_TARGET_KNEE_PX = 12;
+const POSITION_OVERSHOOT_TARGET_CAP_PX = 18;
+const POSITION_REFERENCE_FLIGHT_TIME_SCALE = 1.2;
 const POSITION_TAIL_TIME_SCALE_NEAR = 1;
 const POSITION_TAIL_TIME_SCALE_FAR = 2;
 const POSITION_MASS = 0.9;
@@ -155,59 +162,57 @@ function findFirstTargetCrossingTime(
   return null;
 }
 
-function compressPositionOvershootOffset(offset: number) {
-  const magnitude = Math.abs(offset);
-  if (magnitude <= POSITION_OVERSHOOT_SOFT_KNEE_PX) return offset;
-
-  const compressionRange = POSITION_OVERSHOOT_SOFT_CAP_PX - POSITION_OVERSHOOT_SOFT_KNEE_PX;
-  const compressedMagnitude =
-    POSITION_OVERSHOOT_SOFT_KNEE_PX +
-    compressionRange * (1 - Math.exp(-(magnitude - POSITION_OVERSHOOT_SOFT_KNEE_PX) / compressionRange));
-
-  return Math.sign(offset) * compressedMagnitude;
+function getTheoreticalOvershootRatio(dampingRatio: number) {
+  return Math.exp((-dampingRatio * Math.PI) / Math.sqrt(1 - dampingRatio * dampingRatio));
 }
 
-function getPositionOvershootVelocityScale(offset: number) {
-  const magnitude = Math.abs(offset);
-  if (magnitude <= POSITION_OVERSHOOT_SOFT_KNEE_PX) return 1;
-
-  const compressionRange = POSITION_OVERSHOOT_SOFT_CAP_PX - POSITION_OVERSHOOT_SOFT_KNEE_PX;
-  return Math.exp(-(magnitude - POSITION_OVERSHOOT_SOFT_KNEE_PX) / compressionRange);
+function getDampingRatioForOvershootRatio(overshootRatio: number) {
+  const epsilon = Number.EPSILON;
+  const clampedRatio = Math.max(epsilon, Math.min(1 - epsilon, overshootRatio));
+  const logarithm = -Math.log(clampedRatio);
+  return logarithm / Math.sqrt(Math.PI * Math.PI + logarithm * logarithm);
 }
 
-function createPositionSpringGenerator(tailTimeScale: number): GeneratorFactory {
+function getUnderdampedCrossingFactor(dampingRatio: number) {
+  return (Math.PI - Math.acos(dampingRatio)) / Math.sqrt(1 - dampingRatio * dampingRatio);
+}
+
+function createPositionSpringGenerator(flightTimeScale: number, tailTimeScale: number): GeneratorFactory {
   return (options) => {
     const springOptions = options as ValueAnimationOptions<number>;
-    const baseGenerator = createSpringGenerator(springOptions);
-    const scale = Math.max(1, tailTimeScale);
     const origin = springOptions.keyframes[0];
     const target = springOptions.keyframes[springOptions.keyframes.length - 1];
 
-    if (!Number.isFinite(origin) || !Number.isFinite(target)) {
-      return baseGenerator;
+    if (!Number.isFinite(origin) || !Number.isFinite(target) || origin === target) {
+      return createSpringGenerator(springOptions);
     }
 
+    const flightScale = Math.max(Number.EPSILON, flightTimeScale);
+    const inheritedVelocity = springOptions.velocity;
+    const baseSpringOptions: ValueAnimationOptions<number> = {
+      ...springOptions,
+      ...(typeof inheritedVelocity === "number" ? { velocity: inheritedVelocity * flightScale } : {})
+    };
+    const baseGenerator = createSpringGenerator(baseSpringOptions);
+    const tailScale = Math.max(1, tailTimeScale);
     const baseDuration = baseGenerator.calculatedDuration ?? calcGeneratorDuration(baseGenerator);
     const crossingTime = findFirstTargetCrossingTime(baseGenerator, origin, target, baseDuration);
+    const realCrossingTime = crossingTime === null ? null : crossingTime * flightScale;
+    const warpedDuration =
+      crossingTime === null || realCrossingTime === null
+        ? baseDuration * flightScale
+        : realCrossingTime + (baseDuration - crossingTime) * tailScale;
+    const getBaseTime = (time: number) => {
+      if (crossingTime === null || realCrossingTime === null || time <= realCrossingTime) {
+        return time / flightScale;
+      }
 
-    if (crossingTime === null) return baseGenerator;
-
-    const warpedDuration = crossingTime + (baseDuration - crossingTime) * scale;
-    const getBaseTime = (time: number) =>
-      time <= crossingTime ? time : crossingTime + (time - crossingTime) / scale;
-    const state = { done: false, value: origin };
+      return crossingTime + (time - realCrossingTime) / tailScale;
+    };
 
     const generator: KeyframeGenerator<number> = {
       calculatedDuration: warpedDuration,
-      next: (time) => {
-        const baseState = baseGenerator.next(getBaseTime(time));
-        state.done = baseState.done;
-        state.value =
-          time <= crossingTime
-            ? baseState.value
-            : target + compressPositionOvershootOffset(baseState.value - target);
-        return state;
-      },
+      next: (time) => baseGenerator.next(getBaseTime(time)),
       toString: () => baseGenerator.toString()
     };
 
@@ -215,10 +220,8 @@ function createPositionSpringGenerator(tailTimeScale: number): GeneratorFactory 
       generator.velocity = (time) => {
         const baseTime = getBaseTime(time);
         const velocity = baseGenerator.velocity?.(baseTime) ?? 0;
-        if (time <= crossingTime) return velocity;
-
-        const residualOffset = baseGenerator.next(baseTime).value - target;
-        return (velocity / scale) * getPositionOvershootVelocityScale(residualOffset);
+        if (realCrossingTime === null || time <= realCrossingTime) return velocity / flightScale;
+        return velocity / tailScale;
       };
     }
 
@@ -227,6 +230,7 @@ function createPositionSpringGenerator(tailTimeScale: number): GeneratorFactory 
 }
 
 function getAdaptivePositionSpring(current: Rect | null, target: Rect, listHeight: number) {
+  let distance = 0;
   let distanceRatio = 0;
   let dampingProgress = 0;
 
@@ -235,7 +239,7 @@ function getAdaptivePositionSpring(current: Rect | null, target: Rect, listHeigh
     const currentCenterY = current.top + current.height / 2;
     const targetCenterX = target.left + target.width / 2;
     const targetCenterY = target.top + target.height / 2;
-    const distance = Math.hypot(targetCenterX - currentCenterX, targetCenterY - currentCenterY);
+    distance = Math.hypot(targetCenterX - currentCenterX, targetCenterY - currentCenterY);
     const normalizer = Math.max(1, listHeight - Math.min(current.height, target.height));
     const itemStep = Math.max(1, (current.height + target.height) / 2);
     const distanceSteps = distance / itemStep;
@@ -250,16 +254,33 @@ function getAdaptivePositionSpring(current: Rect | null, target: Rect, listHeigh
   const smoothedDistanceRatio = distanceRatio * distanceRatio * (3 - 2 * distanceRatio);
   const positionStiffness =
     POSITION_STIFFNESS_NEAR + (POSITION_STIFFNESS_FAR - POSITION_STIFFNESS_NEAR) * smoothedDistanceRatio;
-  const baseDampingRatio =
-    POSITION_DAMPING_RATIO_NEAR +
-    (POSITION_DAMPING_RATIO_FAR - POSITION_DAMPING_RATIO_NEAR) * dampingProgress;
+  const referenceDampingRatio =
+    POSITION_REFERENCE_DAMPING_RATIO_NEAR +
+    (POSITION_REFERENCE_DAMPING_RATIO_FAR - POSITION_REFERENCE_DAMPING_RATIO_NEAR) * dampingProgress;
+  const rawOvershootPx = distance * getTheoreticalOvershootRatio(referenceDampingRatio);
+  const targetRange = POSITION_OVERSHOOT_TARGET_CAP_PX - POSITION_OVERSHOOT_TARGET_KNEE_PX;
+  const desiredOvershootPx =
+    rawOvershootPx <= POSITION_OVERSHOOT_TARGET_KNEE_PX
+      ? rawOvershootPx
+      : POSITION_OVERSHOOT_TARGET_KNEE_PX +
+        targetRange *
+          (1 - Math.exp(-(rawOvershootPx - POSITION_OVERSHOOT_TARGET_KNEE_PX) / targetRange));
+  const effectiveDampingRatio =
+    distance <= Number.EPSILON
+      ? referenceDampingRatio
+      : getDampingRatioForOvershootRatio(desiredOvershootPx / distance);
+  const positionFlightTimeScale =
+    POSITION_REFERENCE_FLIGHT_TIME_SCALE *
+    (getUnderdampedCrossingFactor(referenceDampingRatio) /
+      getUnderdampedCrossingFactor(effectiveDampingRatio));
   const positionTailTimeScale =
     POSITION_TAIL_TIME_SCALE_NEAR +
     (POSITION_TAIL_TIME_SCALE_FAR - POSITION_TAIL_TIME_SCALE_NEAR) * smoothedDistanceRatio;
 
   return {
     positionStiffness,
-    positionDamping: 2 * baseDampingRatio * Math.sqrt(positionStiffness * POSITION_MASS),
+    positionDamping: 2 * effectiveDampingRatio * Math.sqrt(positionStiffness * POSITION_MASS),
+    positionFlightTimeScale,
     positionTailTimeScale
   };
 }
@@ -278,14 +299,21 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   const [previewLeft, setPreviewLeft] = useState<number | null>(null);
   const [highlightState, setHighlightState] = useState<HighlightState | null>(null);
   const positionSpringGenerator = useMemo(
-    () => createPositionSpringGenerator(highlightState?.positionTailTimeScale ?? 1),
-    [highlightState?.positionTailTimeScale]
+    () =>
+      createPositionSpringGenerator(
+        highlightState?.positionFlightTimeScale ?? 1,
+        highlightState?.positionTailTimeScale ?? 1
+      ),
+    [highlightState?.positionFlightTimeScale, highlightState?.positionTailTimeScale]
   );
 
   const listWrapRef = useRef<HTMLDivElement | null>(null);
   const glassRef = useRef<HTMLDivElement | null>(null);
   const highlightTargetRef = useRef<HighlightState | null>(null);
   const activeIndexRef = useRef<number | null>(null);
+  const hoveredIndexRef = useRef<number | null>(null);
+  const focusedIndexRef = useRef<number | null>(null);
+  const lastPointerPositionRef = useRef<PointerPosition | null>(null);
   const itemInteractionRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const itemVisualRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const itemContentRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -586,6 +614,15 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     return itemInteractionRefs.current[index]?.getBoundingClientRect() ?? null;
   }, []);
 
+  const isItemRevealReady = useCallback((index: number) => {
+    const item = itemInteractionRefs.current[index];
+    const revealTarget = item?.closest<HTMLElement>("[data-page-reveal]");
+    if (!revealTarget) return true;
+
+    const revealState = revealTarget.dataset.pageRevealState;
+    return revealState === "ready" || revealState === "instant";
+  }, []);
+
   const syncPreviewPosition = useCallback(() => {
     const list = listWrapRef.current;
     if (!list) return;
@@ -692,7 +729,17 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     [isCursorInsideItemHoverZone]
   );
 
+  function hideActiveIndexImmediately() {
+    cancelCloseIndex();
+    activeIndexRef.current = null;
+    setActiveIndex(null);
+    setPreviewIndex(null);
+    highlightTargetRef.current = null;
+  }
+
   function openIndex(index: number) {
+    if (!isItemRevealReady(index)) return null;
+
     cancelCloseIndex();
 
     const previousActiveIndex = activeIndexRef.current;
@@ -783,9 +830,20 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   function onMouseMove(event: React.MouseEvent<HTMLDivElement>) {
     if (!canHover) return;
 
+    lastPointerPositionRef.current = {
+      clientX: event.clientX,
+      clientY: event.clientY
+    };
     const hoveredIndex = findHoveredItemIndex(event.clientX, event.clientY);
+    hoveredIndexRef.current = hoveredIndex;
     if (hoveredIndex === null) {
+      lastPointerPositionRef.current = null;
       closeIndex();
+      return;
+    }
+
+    if (!isItemRevealReady(hoveredIndex)) {
+      hideActiveIndexImmediately();
       return;
     }
 
@@ -796,11 +854,79 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     updatePointerMotion(hoveredIndex, event.clientX, event.clientY);
   }
 
+  function onItemMouseEnter(index: number, clientX: number, clientY: number) {
+    hoveredIndexRef.current = index;
+    lastPointerPositionRef.current = { clientX, clientY };
+
+    if (!isItemRevealReady(index)) {
+      hideActiveIndexImmediately();
+      return;
+    }
+
+    openIndex(index);
+    updatePointerMotion(index, clientX, clientY);
+  }
+
+  function onItemFocus(index: number) {
+    focusedIndexRef.current = index;
+    if (!isItemRevealReady(index)) {
+      hideActiveIndexImmediately();
+      return;
+    }
+
+    openIndex(index);
+  }
+
+  function onItemBlur(index: number) {
+    if (focusedIndexRef.current === index) {
+      focusedIndexRef.current = null;
+    }
+
+    const hoveredIndex = hoveredIndexRef.current;
+    const pointerPosition = lastPointerPositionRef.current;
+    if (hoveredIndex !== null && pointerPosition && isItemRevealReady(hoveredIndex)) {
+      openIndex(hoveredIndex);
+      updatePointerMotion(hoveredIndex, pointerPosition.clientX, pointerPosition.clientY);
+      return;
+    }
+
+    closeIndex();
+  }
+
   return (
     <div className={styles.root}>
       <div className={styles.leftColumn}>
         <div className={styles.heroStack}>
-          <PageRevealSequence className={styles.revealStack}>
+          <PageRevealSequence
+            className={styles.revealStack}
+            onTargetReady={(target) => {
+              const rawIndex = target.dataset.homeShowcaseIndex;
+              if (rawIndex === undefined) return;
+
+              const index = Number.parseInt(rawIndex, 10);
+              if (!Number.isInteger(index)) return;
+
+              const pointerPosition = lastPointerPositionRef.current;
+              let isHovered = hoveredIndexRef.current === index;
+              if (
+                isHovered &&
+                (!pointerPosition ||
+                  !isCursorInsideItemHoverZone(index, pointerPosition.clientX, pointerPosition.clientY))
+              ) {
+                hoveredIndexRef.current = null;
+                lastPointerPositionRef.current = null;
+                isHovered = false;
+              }
+
+              const isFocused = focusedIndexRef.current === index;
+              if (!isHovered && !isFocused) return;
+
+              openIndex(index);
+              if (isHovered && pointerPosition) {
+                updatePointerMotion(index, pointerPosition.clientX, pointerPosition.clientY);
+              }
+            }}
+          >
             <header className={[shellStyles.headerBlock, shellStyles.compensated].join(" ")}>
               <h1 className={shellStyles.title} data-page-reveal="">
                 {title}
@@ -827,8 +953,15 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                 } as unknown as CSSProperties
               }
               onMouseLeave={() => {
+                hoveredIndexRef.current = null;
+                lastPointerPositionRef.current = null;
                 resetPointerMotion();
-                closeIndex();
+                const focusedIndex = focusedIndexRef.current;
+                if (focusedIndex !== null && isItemRevealReady(focusedIndex)) {
+                  openIndex(focusedIndex);
+                } else {
+                  closeIndex();
+                }
               }}
             >
               <AnimatePresence>
@@ -922,7 +1055,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                     ) : null}
                     <div className={styles.sectionList}>
                       {section.items.map(({ entry, index }) => (
-                        <span key={entry.href} data-page-reveal="">
+                        <span key={entry.href} data-page-reveal="" data-home-showcase-index={index}>
                           <Link
                             href={entry.href}
                             {...getExternalLinkProps(entry.href)}
@@ -936,11 +1069,10 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                               .filter(Boolean)
                               .join(" ")}
                             onMouseEnter={(event) => {
-                              openIndex(index);
-                              updatePointerMotion(index, event.clientX, event.clientY);
+                              onItemMouseEnter(index, event.clientX, event.clientY);
                             }}
-                            onFocus={() => openIndex(index)}
-                            onBlur={closeIndex}
+                            onFocus={() => onItemFocus(index)}
+                            onBlur={() => onItemBlur(index)}
                             onClick={() => {
                               trackMetricaGoal("click_case_card", {
                                 case_slug: getCaseSlugFromHref(entry.href),

@@ -71,13 +71,105 @@
   min-height: calc(var(--home-avatar-size) + (var(--home-top-card-padding) * 2));
 }
 
-.topCardLayer {
-  width: 100%;
-}
-
-.topCardLayerExit {
+.topCardSurface {
   position: absolute;
   inset: 0;
+  border-radius: var(--home-top-card-radius);
+  background-color: var(--home-top-card-bg);
+  transition: background-color 320ms ease-in-out;
+  pointer-events: none;
+}
+
+.topCardStage:hover .topCardSurface {
+  background-color: #f0f3f6;
+}
+
+.topCardStage .topCard,
+.topCardStage .topCard:hover {
+  background-color: transparent;
+}
+
+.topCardContentViewport {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: calc(var(--home-avatar-size) + (var(--home-top-card-padding) * 2));
+}
+
+.topCardContentViewportRoute {
+  overflow: hidden;
+  border-radius: var(--home-top-card-radius);
+}
+
+.topCardViewportCounterScale {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+}
+
+.topCardTape {
+  position: absolute;
+  inset: 0;
+}
+
+.topCardLayer {
+  position: absolute;
+  inset-inline: 0;
+  height: 100%;
+  transform-origin: 50% 50%;
+  pointer-events: none;
+}
+
+.topCardArrowReveal {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+}
+
+.topCardArrowSurfaceFollower {
+  position: absolute;
+  inset: 0;
+  transform-origin: center;
+}
+
+.topCardArrowCounterScale {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 0;
+  height: 0;
+  transform-origin: center;
+}
+
+.topCardArrowAnchor {
+  position: absolute;
+  top: 0;
+  right: var(--home-top-card-padding);
+  width: var(--home-arrow-size);
+  height: var(--home-arrow-size);
+  transform: translateY(-50%);
+}
+
+.topCardStaticArrow {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.topCardInteractionOverlay {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  border-radius: var(--home-top-card-radius);
+  color: inherit;
+  text-decoration: none;
+}
+
+.topCardInteractionOverlay:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
 }
 
 .compensated {
@@ -140,5 +232,9 @@
   .topCard,
   .topCardStage {
     width: 100%;
+  }
+
+  .topCardStage:hover .topCardSurface {
+    background-color: var(--home-top-card-bg);
   }
 }

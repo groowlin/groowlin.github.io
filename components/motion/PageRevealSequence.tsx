@@ -6,14 +6,20 @@ import styles from "@/components/motion/page-reveal-sequence.module.css";
 interface PageRevealSequenceProps {
   children: React.ReactNode;
   className?: string;
+  onTargetReady?: (target: HTMLElement) => void;
 }
 
 function joinClassNames(...values: Array<string | undefined>) {
   return values.filter(Boolean).join(" ");
 }
 
-export function PageRevealSequence({ children, className }: PageRevealSequenceProps) {
+export function PageRevealSequence({ children, className, onTargetReady }: PageRevealSequenceProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const onTargetReadyRef = useRef(onTargetReady);
+
+  useLayoutEffect(() => {
+    onTargetReadyRef.current = onTargetReady;
+  }, [onTargetReady]);
 
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -28,8 +34,45 @@ export function PageRevealSequence({ children, className }: PageRevealSequencePr
       (target) => !target.querySelector("[data-page-reveal]") && target.closest("[data-page-reveal-root]") === root
     );
 
-    let frameId = 0;
+    const frameIds = new Set<number>();
     let timeoutId = 0;
+    let disposed = false;
+
+    const requestFrame = (callback: FrameRequestCallback) => {
+      const frameId = window.requestAnimationFrame((time) => {
+        frameIds.delete(frameId);
+        callback(time);
+      });
+      frameIds.add(frameId);
+      return frameId;
+    };
+
+    const markTargetReady = (target: HTMLElement) => {
+      if (
+        disposed ||
+        !target.isConnected ||
+        target.closest("[data-page-reveal-root]") !== root ||
+        target.dataset.pageRevealState === "ready"
+      ) {
+        return;
+      }
+
+      target.dataset.pageRevealState = "ready";
+      delete target.dataset.pageRevealActive;
+      target.style.removeProperty("--page-reveal-index");
+      onTargetReadyRef.current?.(target);
+    };
+
+    const markInstantTargetReady = (target: HTMLElement) => {
+      if (disposed || !target.isConnected || target.closest("[data-page-reveal-root]") !== root) {
+        return;
+      }
+
+      target.dataset.pageRevealState = "instant";
+      delete target.dataset.pageRevealActive;
+      target.style.removeProperty("--page-reveal-index");
+      onTargetReadyRef.current?.(target);
+    };
 
     targets.forEach((target) => {
       target.dataset.pageRevealState = "pending";
@@ -45,8 +88,7 @@ export function PageRevealSequence({ children, className }: PageRevealSequencePr
         const isAboveViewport = rect.bottom <= 0;
 
         if (isAboveViewport) {
-          target.dataset.pageRevealState = "instant";
-          target.style.removeProperty("--page-reveal-index");
+          markInstantTargetReady(target);
           return;
         }
 
@@ -57,11 +99,27 @@ export function PageRevealSequence({ children, className }: PageRevealSequencePr
       });
 
       root.dataset.state = "ready";
+
+      requestFrame(() => {
+        targets.forEach((target) => {
+          if (disposed || target.dataset.pageRevealState !== "animate") return;
+
+          const animations = target.getAnimations();
+          if (animations.length === 0) {
+            markTargetReady(target);
+            return;
+          }
+
+          void Promise.allSettled(animations.map((animation) => animation.finished)).then(() => {
+            markTargetReady(target);
+          });
+        });
+      });
     };
 
     const queuePrepareTargets = () => {
-      frameId = window.requestAnimationFrame(() => {
-        frameId = window.requestAnimationFrame(() => {
+      requestFrame(() => {
+        requestFrame(() => {
           prepareTargets();
         });
       });
@@ -77,7 +135,9 @@ export function PageRevealSequence({ children, className }: PageRevealSequencePr
     timeoutId = window.setTimeout(onScrollRestored, 250);
 
     return () => {
-      window.cancelAnimationFrame(frameId);
+      disposed = true;
+      frameIds.forEach((frameId) => window.cancelAnimationFrame(frameId));
+      frameIds.clear();
       window.clearTimeout(timeoutId);
       window.removeEventListener("app:scroll-restored", onScrollRestored);
       delete root.dataset.state;

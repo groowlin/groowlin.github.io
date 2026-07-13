@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { YandexMetrica } from "@/components/analytics/YandexMetrica";
+import { NavigationLifecycleProvider } from "@/components/navigation/NavigationLifecycleProvider";
 import { AssetInteractionGuard } from "@/components/shell/AssetInteractionGuard";
-import { getLinkPreviewMetadataContent, getSiteMetadataSettingsContent } from "@/lib/content/site.server";
+import { PersistentSiteFrame } from "@/components/shell/PersistentSiteFrame";
+import { getLinkPreviewMetadataContent, getSiteMetadataSettingsContent, getTopCardContent } from "@/lib/content/site.server";
+import type { TopCardContent, TopCardVariant } from "@/lib/content/types";
+import { getWorkSlugs } from "@/lib/content/work.server";
 import { scrollRestorationScript } from "@/app/scroll-restoration-script";
 import "./globals.css";
 
@@ -50,18 +54,34 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [defaultTopCard, profileTopCard, homeTopCard, workSlugs] = await Promise.all([
+    getTopCardContent("default"),
+    getTopCardContent("to-profile"),
+    getTopCardContent("to-home"),
+    getWorkSlugs()
+  ]);
+  const topCards = {
+    default: defaultTopCard,
+    "to-profile": profileTopCard,
+    "to-home": homeTopCard
+  } satisfies Record<TopCardVariant, TopCardContent>;
+
   return (
     <html lang="ru" className={inter.variable} suppressHydrationWarning>
       <body>
         <script dangerouslySetInnerHTML={{ __html: scrollRestorationScript }} />
         <YandexMetrica />
         <AssetInteractionGuard />
-        {children}
+        <NavigationLifecycleProvider>
+          <PersistentSiteFrame topCards={topCards} workSlugs={workSlugs}>
+            {children}
+          </PersistentSiteFrame>
+        </NavigationLifecycleProvider>
       </body>
     </html>
   );

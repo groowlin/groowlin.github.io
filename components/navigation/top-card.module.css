@@ -102,10 +102,14 @@
   width: var(--home-arrow-size);
   height: var(--home-arrow-size);
   transform: translateY(-50%);
+}
+
+.arrowGlyph {
+  display: block;
   color: var(--home-top-card-text-primary);
 }
 
-.arrow svg {
+.arrowGlyph svg {
   width: 100%;
   height: 100%;
   display: block;
@@ -119,19 +123,27 @@
   animation: topCardIconStepShift 620ms linear infinite;
 }
 
-.card:hover .icon:nth-child(1) {
+:global([data-top-card-stage]:hover) .visualCard .icon {
+  animation: topCardIconStepShift 620ms linear infinite;
+}
+
+.card:hover .icon:nth-child(1),
+:global([data-top-card-stage]:hover) .visualCard .icon:nth-child(1) {
   animation-delay: -160ms;
 }
 
-.card:hover .icon:nth-child(2) {
+.card:hover .icon:nth-child(2),
+:global([data-top-card-stage]:hover) .visualCard .icon:nth-child(2) {
   animation-delay: -110ms;
 }
 
-.card:hover .icon:nth-child(3) {
+.card:hover .icon:nth-child(3),
+:global([data-top-card-stage]:hover) .visualCard .icon:nth-child(3) {
   animation-delay: -40ms;
 }
 
-.card:hover .icon:nth-child(4) {
+.card:hover .icon:nth-child(4),
+:global([data-top-card-stage]:hover) .visualCard .icon:nth-child(4) {
   animation-delay: -90ms;
 }
 
@@ -200,7 +212,8 @@
   }
 
   /* Restore shimmer here too if re-enabled: add ", .card:hover::after" back to the selector. */
-  .card:hover .icon {
+  .card:hover .icon,
+  :global([data-top-card-stage]:hover) .visualCard .icon {
     animation: none;
   }
 }
@@ -215,7 +228,8 @@
   }
 
   /* Restore shimmer here too if re-enabled: add ", .card:hover::after" back to the selector. */
-  .card:hover .icon {
+  .card:hover .icon,
+  :global([data-top-card-stage]:hover) .visualCard .icon {
     animation: none;
   }
 }
