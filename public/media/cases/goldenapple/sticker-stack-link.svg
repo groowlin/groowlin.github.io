@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1280"
+     height="1280"
+     viewBox="0 0 1280 1280"
+     fill="none"
+     role="img"
+     aria-labelledby="title desc"
+     shape-rendering="geometricPrecision">
+  <title id="title">Stack and link icon</title>
+  <desc id="desc">Black outlined stacked planes and two connected vertical links on a bright lime rounded-square background.</desc>
+
+  <rect width="1280" height="1280" rx="270" fill="#DBFF00"/>
+
+  <g stroke="#000000" stroke-width="11" stroke-linejoin="miter" stroke-linecap="butt">
+    <!-- Upper rear plane -->
+    <path d="M536 375C558 340 589 313 625 292L774 220L976 287L814 373C782 390 756 414 740 442L706 438L536 375Z"
+          fill="#DBFF00"/>
+    <path d="M740 442C757 414 783 390 814 373L976 287V335L791 437L759 480L740 442Z"
+          fill="#000000" stroke="none"/>
+
+    <!-- Top-left plane -->
+    <path d="M304 455L442 379C474 361 505 363 536 375L708 438L506 526L304 455Z"
+          fill="#DBFF00"/>
+    <path d="M304 455L506 526V566L304 497V455Z"
+          fill="#DBFF00"/>
+    <path d="M506 526L708 438V480L506 566V526Z"
+          fill="#000000" stroke="none"/>
+
+    <!-- Top-right plane -->
+    <path d="M758 427L976 493L790 592L712 565L758 427Z"
+          fill="#DBFF00"/>
+    <path d="M790 592L976 493V547L790 646V592Z"
+          fill="#000000" stroke="none"/>
+
+    <!-- Middle-left plane -->
+    <path d="M304 663L493 566L700 641L506 735L304 663Z"
+          fill="#DBFF00"/>
+    <path d="M304 663L506 735V779L304 709V663Z"
+          fill="#DBFF00"/>
+    <path d="M506 735L700 641V687L506 779V735Z"
+          fill="#000000" stroke="none"/>
+
+    <!-- Middle-right plane -->
+    <path d="M761 638L976 706L790 807L713 778L761 638Z"
+          fill="#DBFF00"/>
+    <path d="M790 807L976 706V760L790 861V807Z"
+          fill="#000000" stroke="none"/>
+
+    <!-- Lower-middle left plane -->
+    <path d="M304 744L495 649L696 721L506 819L304 744Z"
+          fill="#DBFF00"/>
+    <path d="M304 744L506 819V861L304 790V744Z"
+          fill="#DBFF00"/>
+    <path d="M506 819L696 721V768L506 861V819Z"
+          fill="#000000" stroke="none"/>
+
+    <!-- Bottom-right plane -->
+    <path d="M761 708L976 784L811 874C784 889 756 884 735 868L702 841L761 708Z"
+          fill="#DBFF00"/>
+    <path d="M811 874L976 784V838L826 919C793 937 757 928 730 905L735 868C756 884 784 889 811 874Z"
+          fill="#000000" stroke="none"/>
+
+    <!-- Bottom-left plane -->
+    <path d="M304 954L480 861C501 850 522 851 544 860L708 920C686 961 648 991 604 1016L506 1028L304 954Z"
+          fill="#DBFF00"/>
+    <path d="M304 954L506 1028V1073L304 1005V954Z"
+          fill="#DBFF00"/>
+    <path d="M506 1028L604 975C650 950 684 923 708 884L751 906C725 960 681 997 630 1025L506 1073V1028Z"
+          fill="#000000" stroke="none"/>
+  </g>
+
+  <!-- Solid connecting bands; each edge is drawn once. -->
+  <g fill="#000000">
+    <path d="M501 522L694 439C716 430 739 431 758 442L739 493C725 486 709 486 692 493L501 575V522Z"/>
+    <path d="M764 589L976 493V547L780 656L746 645L764 589Z"/>
+    <path d="M501 735L691 643L728 681L501 789V735Z"/>
+    <path d="M766 684L976 572V630L780 739L744 727L766 684Z"/>
+    <path d="M501 817L692 720L729 762L501 871V817Z"/>
+    <path d="M765 866L976 751V811L810 905C784 920 756 916 733 901L744 858C751 870 758 871 765 866Z"/>
+  </g>
+
+  <!-- Two clean link shapes with open centres and no contour overlays. -->
+  <path fill="#000000" fill-rule="evenodd"
+        d="M746 425C788 427 814 466 815 527C817 590 792 652 756 690C732 714 701 705 688 674C670 631 679 563 697 505C712 457 728 424 746 425ZM744 491C735 503 728 532 727 568C726 601 730 625 740 639C751 621 757 592 757 557C757 524 753 501 744 491Z"/>
+
+  <path fill="#000000" fill-rule="evenodd"
+        d="M746 635C786 637 812 678 813 739C815 802 790 868 755 905C728 934 696 923 684 889C669 844 678 776 696 718C710 671 728 634 746 635ZM743 704C734 716 728 746 728 779C728 812 732 837 741 849C751 832 756 801 756 767C756 737 752 714 743 704Z"/>
+</svg>

@@ -21,7 +21,7 @@
 - Home preview offset from list: `--layout-preview-offset-x = 60px`
 - Home left column width: `--home-left-column-width = 360px`
 - Home layout paddings: `--home-layout-pad-left = 120px`, `--home-layout-pad-top = 120px`
-- Home section rhythm: between sections `60px`, section title to first case `40px`, case internal gap `--home-item-gap = 8px`. Mobile overrides at `max-width: 767px`: between sections `40px`, section title to first case `24px`, `--home-item-padding-y = 8px`, `--home-meta-gap = 6px`, `--home-micro-gap = 4px`, `--home-contact-gap = 8px`, `--home-top-card-padding = 16px`, `--home-top-card-subtitle-gap = 6px`, `--home-top-card-icon-gap = 8px`.
+- Home section rhythm: between sections `--home-section-gap = 80px`, section title to first case `--home-section-title-gap = 60px`, between adjacent cases `40px` via vertical item padding, case title to subtitle `--home-item-gap = 8px`. Hover glass keeps its previous `74px` height via `--home-item-hover-padding-y = 14px`. Mobile overrides at `max-width: 767px`: `--home-section-gap = 40px`, `--home-section-title-gap = 24px`, `--home-item-padding-y = 8px`, `--home-item-hover-padding-y = 12px`, `--home-meta-gap = 6px`, `--home-micro-gap = 4px`, `--home-contact-gap = 8px`, `--home-top-card-padding = 16px`, `--home-top-card-subtitle-gap = 6px`, `--home-top-card-icon-gap = 8px`.
 - Breakpoints: 680px (masonry/icon grid), 768px (shell layout), 1180px (fixed preview pane)
 
 ## Typography Tokens
@@ -230,7 +230,8 @@ Structure:
 - meta (`.itemMeta`)
 
 Spacing:
-- padding: `--space-sm` `--space-lg`; mobile item horizontal padding collapses to `0`, mobile item vertical token uses `--home-item-padding-y = 8px`
+- row spacing: `40px` via `--home-item-layout-pad-y = 20px` on each side; mobile keeps its previous vertical spacing via `--home-item-padding-y = 8px`
+- hover glass padding: `--home-item-hover-padding-y = 14px` on desktop and `12px` on mobile
 - internal gap: `--home-item-gap` (8px)
 - meta inline gap: `--home-meta-gap` (6px)
 
@@ -329,6 +330,14 @@ Spacing:
 Typography:
 - section title: `font-weight-medium`
 - quote attribution: `font-size-caption`
+
+### Sticker (inline SVG in text)
+Rules:
+- an inline SVG asset rendered via `<img>` is called a `стикер`
+- height: `20px`
+- width: `auto`
+- original aspect ratio is preserved
+- inline alignment: `vertical-align: middle` with optical compensation `translateY(-0.09em)`
 
 ## Motion Patterns By Area
 

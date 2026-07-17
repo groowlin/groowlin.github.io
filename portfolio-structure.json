@@ -4,6 +4,13 @@
   "designSystem": {
     "fontFamily": "Inter",
     "letterSpacing": "0.03em",
+    "sticker": {
+      "assetType": "svg",
+      "placement": "inline-text",
+      "heightPx": 20,
+      "width": "auto",
+      "preserveAspectRatio": true
+    },
     "layout": {
       "mobile": {
         "mainPaddingTop": 40,

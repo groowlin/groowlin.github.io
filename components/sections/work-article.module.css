@@ -31,8 +31,10 @@
 .mdxRoot :global(li img),
 .mdxRoot :global(blockquote img) {
   display: inline-block;
+  width: auto;
+  height: 20px;
   vertical-align: middle;
-  transform: translateY(-0.05em);
+  transform: translateY(-0.09em);
 }
 
 .mdxRoot :global(blockquote) {

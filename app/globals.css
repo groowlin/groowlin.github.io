@@ -76,10 +76,10 @@
   --home-left-column-width: 405px;
   --home-list-padding-block: 22px;
   --home-list-padding-inline: 45px;
-  --home-section-gap: 45px;
-  --home-section-title-gap: 22px;
+  --home-section-gap: 80px;
+  --home-section-title-gap: 60px;
   --home-heading-padding-bottom: 22px;
-  --home-item-gap: 9px;
+  --home-item-gap: 8px;
   --home-meta-gap: 7px;
   --home-micro-gap: 5px;
   --home-contact-gap: 9px;
@@ -94,7 +94,8 @@
   --home-root-gap: 54px;
   --home-list-group-gap: 68px;
   --home-section-internal-gap: 45px;
-  --home-item-padding-y: 9px;
+  --home-item-padding-y: 16px;
+  --home-item-hover-padding-y: 14px;
   --home-item-padding-x: 18px;
   --home-bubble-radius: 18px;
   --size-dot-md: 0.45rem;
@@ -304,11 +305,14 @@ samp {
     --rhythm-title-block-bottom: 24px;
     --rhythm-section-heading-top: 40px;
     --rhythm-section-heading-bottom: 24px;
+    --home-section-gap: 40px;
+    --home-section-title-gap: 24px;
     --home-item-gap: 8px;
     --home-meta-gap: 6px;
     --home-micro-gap: 4px;
     --home-contact-gap: 8px;
     --home-item-padding-y: 8px;
+    --home-item-hover-padding-y: 12px;
     --home-top-card-padding: 16px;
     --home-top-card-subtitle-gap: 6px;
     --home-top-card-icon-gap: 8px;

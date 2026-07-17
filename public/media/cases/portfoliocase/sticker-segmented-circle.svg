@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="400"
+     height="400"
+     viewBox="0 0 400 400"
+     fill="none"
+     role="img"
+     aria-labelledby="title desc"
+     shape-rendering="geometricPrecision">
+  <title id="title">Segmented circle icon</title>
+  <desc id="desc">A circle divided into blue, red, cyan and yellow flat-color regions.</desc>
+
+  <defs>
+    <clipPath id="circle-clip">
+      <circle cx="200" cy="200" r="200"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#circle-clip)">
+    <path d="M0 0H277V122H167C142.147 122 122 142.147 122 167V246H0V0Z"
+          fill="#3F63D9"/>
+
+    <path d="M0 246H122V400H0V246Z"
+          fill="#FF1F46"/>
+
+    <path d="M167 122H277V400H122V167C122 142.147 142.147 122 167 122Z"
+          fill="#0DA8EE"/>
+
+    <path d="M277 0H400V400H277V0Z"
+          fill="#FFD814"/>
+  </g>
+</svg>

@@ -1,0 +1,28 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="478.08137967412131"
+  height="477.30962654696486"
+  viewBox="81 80.443747421658912 478.08137967412131 477.30962654696486"
+  fill="none"
+  role="img"
+  aria-labelledby="title"
+>
+  <title id="title">Codex terminal icon</title>
+  <path
+    fill="#6E88FF"
+    d="M374 118C398 110 423 112 446 119C488 132 519 172 527 216C530 233 528 251 524 267C546 286 558 317 559 348C561 403 526 447 469 468C464 495 450 519 426 535C394 558 349 564 307 551C290 546 276 536 265 523C241 530 213 528 190 519C139 499 108 452 113 397C114 389 116 380 116 373C91 351 81 320 81 284C81 234 116 191 170 172C178 132 210 99 257 85C300 72 342 88 374 118Z"
+  />
+  <path
+    d="M212 257L248 323L212 388"
+    stroke="#FFFFFF"
+    stroke-width="36"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M336 388H427"
+    stroke="#FFFFFF"
+    stroke-width="36"
+    stroke-linecap="round"
+  />
+</svg>
