@@ -1059,6 +1059,14 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                           <Link
                             href={entry.href}
                             {...getExternalLinkProps(entry.href)}
+                            scroll={entry.href.startsWith("/work/") ? false : undefined}
+                            onNavigate={() => {
+                              if (!entry.href.startsWith("/work/")) return;
+                              window.scrollTo({
+                                top: 0,
+                                behavior: shouldReduceMotion ? "auto" : "smooth"
+                              });
+                            }}
                             ref={(node) => {
                               itemInteractionRefs.current[index] = node;
                             }}
