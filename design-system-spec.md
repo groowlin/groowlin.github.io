@@ -1,7 +1,7 @@
 # Portfolio Design System
 
 ## Source of truth
-- Основные токены: `/Users/aleksandrlebed/Spizheno/app/globals.css` (`:root`).
+- Основные токены: `/Users/groowlin/groowlin.github.io/app/globals.css` (`:root`).
 - Применение токенов в UI: CSS-модули в `components/**` и `app/page-content.module.css`.
 
 ## Layout
@@ -402,9 +402,9 @@ Rules:
 
 ## Что было токенизировано
 Хардкод-значения цветов/отступов/радиусов/типографики заменены на `var(--...)` в:
-- `/Users/aleksandrlebed/Spizheno/app/globals.css`
-- `/Users/aleksandrlebed/Spizheno/components/home/home-showcase.module.css`
-- `/Users/aleksandrlebed/Spizheno/components/media/media-placeholder.module.css`
-- `/Users/aleksandrlebed/Spizheno/components/shell/site-shell.module.css`
-- `/Users/aleksandrlebed/Spizheno/components/sections/work-article.module.css`
-- `/Users/aleksandrlebed/Spizheno/app/page-content.module.css`
+- `/Users/groowlin/groowlin.github.io/app/globals.css`
+- `/Users/groowlin/groowlin.github.io/components/home/home-showcase.module.css`
+- `/Users/groowlin/groowlin.github.io/components/media/media-placeholder.module.css`
+- `/Users/groowlin/groowlin.github.io/components/shell/site-shell.module.css`
+- `/Users/groowlin/groowlin.github.io/components/sections/work-article.module.css`
+- `/Users/groowlin/groowlin.github.io/app/page-content.module.css`
