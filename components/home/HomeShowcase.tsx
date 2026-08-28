@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   type CSSProperties,
@@ -16,7 +17,8 @@ import {
   useMotionTemplate,
   useMotionValue,
   useReducedMotion,
-  useSpring
+  useSpring,
+  useTransform
 } from "framer-motion";
 import {
   calcGeneratorDuration,
@@ -75,8 +77,16 @@ interface IndexedHomeSection {
   items: SectionEntry[];
 }
 
+interface StickerFrameSwapProps {
+  stickerSrcs: string[];
+  frameIndex: number;
+  isActive: boolean;
+  shouldReduceMotion: boolean;
+}
+
 const PREVIEW_OFFSET_FALLBACK = 60;
 const ACTIVE_TEXT_SHIFT_SCALE = 0.25;
+const STICKER_PARALLAX_SCALE = 0.5;
 const HIGHLIGHT_TARGET_TOLERANCE = 0.25;
 const POSITION_STIFFNESS_NEAR = 320;
 const POSITION_STIFFNESS_FAR = 460;
@@ -92,8 +102,59 @@ const POSITION_MASS = 0.9;
 const SIZE_STIFFNESS = 220;
 const SIZE_DAMPING = 22;
 const SIZE_MASS = 1;
+const GLASS_OPACITY_DURATION_SECONDS = 0.28;
+const STICKER_APPEARANCE_DURATION_SECONDS = 0.7;
+const STICKER_APPEARANCE_DELAY_SECONDS = GLASS_OPACITY_DURATION_SECONDS;
+const STICKER_BLUR_PX = 4;
+const STICKER_ROTATION_DEGREES = -15;
+const STICKER_FRAME_INTERVAL_MS = 1000 / 5;
+const STICKER_CYCLE_START_DELAY_MS = STICKER_APPEARANCE_DELAY_SECONDS * 1000;
+const PUFFY_STAR_STICKER_SRC =
+  "/media/cases/portfoliocase/sticker-puffy-star-darker-yellow.svg";
+const EXPRESSIVE_EASING = [0.22, 1, 0.36, 1] as const;
 const OUTGOING_TEXT_DURATION_MS = 600;
 const OUTGOING_TEXT_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
+
+interface StickerFrameCycleProps {
+  frameIndex: number;
+  shouldReduceMotion: boolean;
+  stickerSrcs: readonly string[];
+}
+
+function getStickerImageClassName(stickerSrc: string) {
+  return [
+    styles.hoverIconImage,
+    stickerSrc === PUFFY_STAR_STICKER_SRC ? styles.hoverIconImagePuffyStar : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function StickerFrameCycle({ frameIndex, shouldReduceMotion, stickerSrcs }: StickerFrameCycleProps) {
+  const normalizedFrameIndex = shouldReduceMotion ? 0 : frameIndex % stickerSrcs.length;
+
+  return (
+    <span className={styles.hoverIconFrames}>
+      {stickerSrcs.map((stickerSrc, stickerIndex) => (
+        <Image
+          key={`${stickerSrc}-${stickerIndex}`}
+          className={[
+            getStickerImageClassName(stickerSrc),
+            stickerIndex === normalizedFrameIndex ? styles.hoverIconImageActive : ""
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          src={stickerSrc}
+          alt=""
+          width={27}
+          height={27}
+          loading="eager"
+          draggable={false}
+        />
+      ))}
+    </span>
+  );
+}
 
 function getExternalLinkProps(href: string) {
   return /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(href) ? { target: "_blank", rel: "noopener noreferrer" } : {};
@@ -298,6 +359,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [previewLeft, setPreviewLeft] = useState<number | null>(null);
   const [highlightState, setHighlightState] = useState<HighlightState | null>(null);
+  const [stickerFrameIndices, setStickerFrameIndices] = useState<Record<number, number>>({});
   const positionSpringGenerator = useMemo(
     () =>
       createPositionSpringGenerator(
@@ -331,6 +393,10 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
 
   const shiftX = useSpring(shiftXRaw, { stiffness: 300, damping: 24, mass: 0.75 });
   const shiftY = useSpring(shiftYRaw, { stiffness: 300, damping: 24, mass: 0.75 });
+  const iconShiftXTarget = useTransform(shiftXRaw, (value) => value * STICKER_PARALLAX_SCALE);
+  const iconShiftYTarget = useTransform(shiftYRaw, (value) => value * STICKER_PARALLAX_SCALE);
+  const iconShiftX = useSpring(iconShiftXTarget, { stiffness: 300, damping: 24, mass: 0.75 });
+  const iconShiftY = useSpring(iconShiftYTarget, { stiffness: 300, damping: 24, mass: 0.75 });
   const tiltX = useSpring(tiltXRaw, { stiffness: 360, damping: 30, mass: 0.65 });
   const tiltY = useSpring(tiltYRaw, { stiffness: 360, damping: 30, mass: 0.65 });
   const originX = useSpring(originXRaw, { stiffness: 460, damping: 42, mass: 0.74 });
@@ -550,6 +616,45 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     () => indexedSections.flatMap((section) => section.items.map((item) => item.entry)),
     [indexedSections]
   );
+
+  useEffect(() => {
+    if (activeIndex === null) return;
+
+    const stickerSrcs = displayEntries[activeIndex]?.stickerSrcs;
+    if (!stickerSrcs?.length) return;
+
+    const canCycle = !shouldReduceMotion && stickerSrcs.length > 1;
+    setStickerFrameIndices((current) => ({ ...current, [activeIndex]: 0 }));
+
+    if (!canCycle) return;
+
+    let isCancelled = false;
+    const timeoutIds = new Set<ReturnType<typeof setTimeout>>();
+    const schedule = (callback: () => void, delay: number) => {
+      const timeoutId = setTimeout(() => {
+        timeoutIds.delete(timeoutId);
+        if (!isCancelled) callback();
+      }, delay);
+      timeoutIds.add(timeoutId);
+    };
+    const scheduleNextFrame = (): void => {
+      schedule(() => {
+        setStickerFrameIndices((current) => ({
+          ...current,
+          [activeIndex]: ((current[activeIndex] ?? 0) + 1) % stickerSrcs.length
+        }));
+        scheduleNextFrame();
+      }, STICKER_FRAME_INTERVAL_MS);
+    };
+
+    schedule(scheduleNextFrame, STICKER_CYCLE_START_DELAY_MS);
+
+    return () => {
+      isCancelled = true;
+      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
+      timeoutIds.clear();
+    };
+  }, [activeIndex, displayEntries, shouldReduceMotion]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -967,6 +1072,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
               <AnimatePresence>
                 {highlightState && activeIndex !== null && (
                   <motion.div
+                    key="glass"
                     ref={glassRef}
                     className={styles.glass}
                     initial={{
@@ -1019,7 +1125,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                             damping: SIZE_DAMPING,
                             mass: SIZE_MASS
                           },
-                      opacity: { duration: 0.28 }
+                      opacity: { duration: GLASS_OPACITY_DURATION_SECONDS }
                     }}
                     style={{
                       transformOrigin: shouldReduceMotion ? "50% 50%" : highlightTransformOrigin,
@@ -1107,6 +1213,54 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                                   <span>{entry.subtitle}</span>
                                 </span>
                               </span>
+                              {entry.stickerSrcs ? (
+                                <motion.span
+                                  className={styles.hoverIcon}
+                                  aria-hidden="true"
+                                  initial={{
+                                    opacity: 0,
+                                    filter: shouldReduceMotion ? "blur(0px)" : `blur(${STICKER_BLUR_PX}px)`
+                                  }}
+                                  animate={{
+                                    opacity: activeIndex === index ? 1 : 0,
+                                    filter:
+                                      shouldReduceMotion || activeIndex === index
+                                        ? "blur(0px)"
+                                        : `blur(${STICKER_BLUR_PX}px)`
+                                  }}
+                                  transition={{
+                                    opacity: {
+                                      duration:
+                                        activeIndex === index
+                                          ? STICKER_APPEARANCE_DURATION_SECONDS
+                                          : GLASS_OPACITY_DURATION_SECONDS,
+                                      delay:
+                                        activeIndex === index ? STICKER_APPEARANCE_DELAY_SECONDS : 0,
+                                      ease: EXPRESSIVE_EASING
+                                    },
+                                    filter: {
+                                      duration:
+                                        activeIndex === index
+                                          ? STICKER_APPEARANCE_DURATION_SECONDS
+                                          : GLASS_OPACITY_DURATION_SECONDS,
+                                      delay:
+                                        activeIndex === index ? STICKER_APPEARANCE_DELAY_SECONDS : 0,
+                                      ease: EXPRESSIVE_EASING
+                                    }
+                                  }}
+                                  style={{
+                                    x: shouldReduceMotion ? 0 : iconShiftX,
+                                    y: shouldReduceMotion ? 0 : iconShiftY,
+                                    rotate: STICKER_ROTATION_DEGREES
+                                  }}
+                                >
+                                  <StickerFrameCycle
+                                    frameIndex={stickerFrameIndices[index] ?? 0}
+                                    shouldReduceMotion={Boolean(shouldReduceMotion)}
+                                    stickerSrcs={entry.stickerSrcs}
+                                  />
+                                </motion.span>
+                              ) : null}
                             </span>
                           </Link>
                         </span>

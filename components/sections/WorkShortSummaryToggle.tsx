@@ -74,6 +74,9 @@ const SHELL_HOVER_COLOR = "#f0f3f6";
 const SHELL_FLASH_COLOR = "#ffffff";
 const SHELL_HOVER_ENTER_DURATION = 0.12;
 const SHELL_HOVER_EXIT_DURATION = 0.32;
+const DESKTOP_CONTROL_WIDTH_PX = 84;
+const DESKTOP_THUMB_SIZE_PX = 36;
+const DESKTOP_THUMB_INSET_PX = 2;
 
 const SHORT_SUMMARY_LABELS = new Set([
   "Проблема",
@@ -212,6 +215,9 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   const [isMobileDragging, setIsMobileDragging] = useState(false);
   const [isMobileDragExpanded, setIsMobileDragExpanded] = useState(false);
   const mobileShellControls = useAnimationControls();
+  const desktopX = useMotionValue(0);
+  const desktopThumbScaleX = useMotionValue(1);
+  const desktopThumbScaleY = useMotionValue(1);
   const mobileX = useMotionValue(0);
   const mobileThumbScaleX = useMotionValue(1);
   const mobileThumbScaleY = useMotionValue(1);
@@ -231,6 +237,16 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   const ariaLabel = displayMode === "full" ? "Показать короткую версию кейса" : "Показать полный кейс";
   const currentMobileThumbWidth = isMobileDragExpanded ? MOBILE_DRAG_BUBBLE_SIZE_PX : mobileGeometry.thumbWidth;
   const currentMobileThumbHeight = isMobileDragExpanded ? MOBILE_DRAG_BUBBLE_SIZE_PX : MOBILE_THUMB_NORMAL_HEIGHT_PX;
+  const desktopMaskClipPath = useTransform([desktopX, desktopThumbScaleX], ([latestX, latestScaleX]) => {
+    const x = typeof latestX === "number" ? latestX : 0;
+    const scaleX = typeof latestScaleX === "number" ? latestScaleX : 1;
+    const scaledThumbWidth = DESKTOP_THUMB_SIZE_PX * scaleX;
+    const scaleOffset = (DESKTOP_THUMB_SIZE_PX - scaledThumbWidth) / 2;
+    const left = x + DESKTOP_THUMB_INSET_PX + scaleOffset;
+    const right = Math.max(DESKTOP_CONTROL_WIDTH_PX - left - scaledThumbWidth, 0);
+
+    return `inset(${DESKTOP_THUMB_INSET_PX}px ${right}px ${DESKTOP_THUMB_INSET_PX}px ${left}px round 12px)`;
+  });
   const mobileMaskClipPath = useTransform([mobileX, mobileThumbVisualScaleX], ([latestX, latestScaleX]) => {
     if (mobileGeometry.controlWidth === 0 || mobileGeometry.thumbWidth === 0) {
       return "inset(0 50% 0 0 round 999px)";
@@ -685,24 +701,32 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
         className={styles.segmentThumb}
         aria-hidden="true"
         initial={false}
-        style={{ transformOrigin: isShortMode ? "right center" : "left center" }}
+        style={{
+          x: desktopX,
+          scaleX: desktopThumbScaleX,
+          scaleY: desktopThumbScaleY,
+          transformOrigin: isShortMode ? "right center" : "left center"
+        }}
         animate={thumbControls}
       />
-      {options.map((option) => {
-        const isSelected = displayMode === option.mode;
-
-        return (
+      <motion.span className={styles.desktopActiveMask} style={{ clipPath: desktopMaskClipPath }} aria-hidden="true">
+        <span className={styles.desktopActiveTrack}>
+          {options.map((option) => (
+            <span key={option.mode} className={[styles.segmentTab, option.mode === "full" ? styles.segmentTabFull : styles.segmentTabShort].filter(Boolean).join(" ")}>
+              <Image className={styles.segmentIcon} src={option.iconSrc} width={20} height={20} alt="" aria-hidden="true" />
+            </span>
+          ))}
+        </span>
+      </motion.span>
+      {options.map((option) => (
           <span
             key={option.mode}
-            className={[styles.segmentTab, option.mode === "full" ? styles.segmentTabFull : styles.segmentTabShort, isSelected ? styles.segmentTabSelected : ""]
-              .filter(Boolean)
-              .join(" ")}
+            className={[styles.segmentTab, option.mode === "full" ? styles.segmentTabFull : styles.segmentTabShort].filter(Boolean).join(" ")}
             aria-hidden="true"
           >
             <Image className={styles.segmentIcon} src={option.iconSrc} width={20} height={20} alt="" aria-hidden="true" />
           </span>
-        );
-      })}
+      ))}
     </button>
   );
 

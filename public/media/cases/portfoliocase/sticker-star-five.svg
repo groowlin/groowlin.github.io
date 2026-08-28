@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <defs>
+    <linearGradient id="g2" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF9F0A"/>
+      <stop offset="1" stop-color="#FF375F"/>
+    </linearGradient>
+    <filter id="s2" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#FF375F" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <g filter="url(#s2)">
+    <path d="M12 2.7L14.55 7.78C14.76 8.19 15.15 8.47 15.61 8.54L21.27 9.35L17.18 13.28C16.85 13.6 16.7 14.06 16.77 14.51L17.74 20.08L12.68 17.47C12.26 17.26 11.76 17.26 11.34 17.47L6.26 20.08L7.23 14.51C7.3 14.06 7.15 13.6 6.82 13.28L2.73 9.35L8.39 8.54C8.85 8.47 9.24 8.19 9.45 7.78L12 2.7Z" fill="url(#g2)"/>
+    <path d="M12 5.2L13.8 8.82C13.95 9.12 14.24 9.33 14.57 9.38L18.58 9.96L15.68 12.75C15.45 12.97 15.34 13.3 15.39 13.62L16.08 17.58L12.49 15.72C12.19 15.57 11.81 15.57 11.51 15.72L7.92 17.58L8.61 13.62C8.66 13.3 8.55 12.97 8.32 12.75L5.42 9.96L9.43 9.38C9.76 9.33 10.05 9.12 10.2 8.82L12 5.2Z" fill="white" fill-opacity="0.16"/>
+  </g>
+</svg>

@@ -34,7 +34,7 @@
         "Motion supports orientation, hierarchy, and state change.",
         "Primary reveal language is opacity + blur + translateY.",
         "Primary surface-swap language is opacity + blur + scale; persistent top-card route swaps use a continuous snapshot wheel/tape with opacity + vertical translation + scale and no blur.",
-        "Continuous loops are allowed only for top-card hover feedback.",
+        "Continuous loops are allowed only for top-card hover feedback and the active mapped home sticker frame cycle; both stop when inactive.",
         "Reduced-motion fallback is required for reveal, top-card swap, lightbox choreography, and home glass/preview motion."
       ],
       "easing": {
@@ -45,7 +45,9 @@
       },
       "durationsMs": {
         "micro": 180,
-        "fast": 220,
+        "fast": 200,
+        "fastPlus": 220,
+        "stickerCycle": 200,
         "base": 280,
         "basePlus": 320,
         "emphasis": 420,
@@ -153,12 +155,21 @@
       "page": "home",
       "path": "/",
       "legacy": false,
+      "contentConfig": {
+        "itemStickers": {
+          "source": "content/site/home.mdx frontmatter",
+          "required": false,
+          "type": "Record<workSlug, NonEmptyArray<internalSvgPath>>",
+          "keyValidation": "Each key must reference a slug listed in the same home.mdx body.",
+          "workFrontmatterField": false
+        }
+      },
       "motion": [
         "PersistentSiteFrame maps / to the to-profile top card and keeps AnimatedTopCard mounted across route changes.",
         "Home heading and case list use sequenced page reveal.",
         "Case-item glass and preview are gated by per-target reveal readiness: both actual CSS animations of that target must settle, including its own stagger. Hover or focus held on the item opens automatically when it becomes ready; instant and reduced-motion targets are ready immediately. This does not wait for the global reveal sequence or block link navigation.",
         "Active case glass position uses velocity-preserving physics with mass 0.9: smoothstep remains for stiffness 320..460, while a reference damping curve of approximately 0.80..0.62 uses a normalized exponential ease-out measured in actual item steps with scale 4.5. The start-from-rest theoretical peak stays physical and unchanged through 12px, then an exponential target-amplitude curve toward an 18px asymptote is converted into effective damping (approximately 0.7566 at maximum travel). Approach crossing time is normalized to 1.20x the reference spring with damping-aware flight compensation; the post-target distance-aware tail time-warp remains 1x..2x. Initial inherited velocity is pre-compensated for the active flight scale in copied spring options; size morph uses 220/22/1.0.",
-        "Pointer shift targets ±16px/±10px through a 300/24/0.75 spring with power 1.4; active text follows 25% over 420ms expressive easing, outgoing text returns explicitly over 600ms standard easing, re-entry hands the current transform back to CSS without a jump, the glass uses 1400px perspective, and the shared close delay remains 380ms.",
+        "Pointer shift targets ±16px/±10px through a 300/24/0.75 spring with power 1.4; active text follows 25% over 420ms expressive easing, and an optional item-local sticker follows 50% of the same raw target through its own 300/24/0.75 spring, bounded to ±8px/±5px. Sticker activation waits the shared 280ms glass-opacity duration, then fades and deblurs over motion-page-reveal 700ms with expressive easing; deactivation fades out and blurs immediately over 280ms. Outgoing text returns explicitly over 600ms standard easing, re-entry hands the current transform back to CSS without a jump, the glass uses 1400px perspective, and the shared close delay remains 380ms.",
         "Hover preview is a fine-pointer desktop enhancement and swaps media with blur/opacity/scale transitions; reduced motion uses opacity only."
       ],
       "sections": [
@@ -196,7 +207,8 @@
             "case-item",
             "case-item-label",
             "case-item-meta",
-            "glass-highlight-layer"
+            "glass-highlight-layer",
+            "item-local-optional-sticker-layer"
           ],
           "motion": [
             "Case items reveal with the shared page-reveal language.",
@@ -204,7 +216,14 @@
             "Active case text follows 25% of pointer shift over 420ms expressive easing; outgoing text returns through WAAPI over 600ms standard easing, and re-entry preserves its current visual transform.",
             "Glass position preserves spring velocity: smoothstep maps distance to stiffness 320..460, and a separate 4.5-step exponential reference damping curve runs from approximately 0.80 to 0.62. Its theoretical start-from-rest overshoot is unchanged through 12px, then an exponential amplitude target toward 18px is converted into effective spring damping, reaching approximately 0.7566 at maximum travel. There is no visual post-crossing compression: the spring peaks and reverses physically. Damping-aware flight scaling normalizes approach crossing to 1.20x the reference spring, then the existing distance-aware 1x..2x tail scale takes over; copied spring options pre-compensate inherited velocity for the active flight scale; size uses a 220/22/1.0 lightweight morph spring.",
             "Glass follows pointer targets ±16px/±10px with restrained transform depth and 1400px perspective.",
-            "Reduced motion makes geometry instant and disables pointer and text transforms."
+            "A case item renders one sticker layer only when its slug has a non-empty itemStickers frame array in home.mdx. The non-interactive sticker is positioned inside that item's own itemVisualBounds above the glass, so the old sticker fades in place instead of following the glass geometry to another item.",
+            "The sticker uses --home-arrow-size (27px), reserves no bubble width, anchors at right: -50% of its size and top: -1/2 of --home-item-gap, keeps a permanent -15deg counterclockwise orientation, and follows 50% of the raw pointer target with its own spring without inheriting the glass transform. Horizontal glass intersection is 13.5px at rest and 5.5px..21.5px at sticker parallax extremes. Text follows 25% of raw shift, so its maximum relative inward delta is 4px and the existing 18px padding retains an approximately 0.5px minimum gap; only 4px of the sticker extends above the top edge at rest.",
+            "Glass opacity remains motion-base 280ms. Sticker activation reuses that duration as a 280ms delay, then enters over motion-page-reveal 700ms through opacity 0→1 and blur 4px→0px with expressive easing. Deactivation starts immediately and exits over 280ms through opacity 1→0 and blur 0px→4px, cancelling delayed entry cleanly during rapid switches.",
+            "All configured SVG frames are eagerly preloaded as stacked images and switch discretely through visibility with no inner motion, opacity, blur, scale, crossfade, or frame transition. A single-frame array stays static and the outer 700ms opacity/deblur appearance remains unchanged.",
+            "A single-frame array stays static and does not start the cycle. When multiple frames are configured, the visible frame changes every semantic motion-sticker-cycle interval of 200ms (5fps) after the initial 280ms sticker delay.",
+            "Only the active item's recursive timeout chain runs. Activation resets the visible source to frame 0; deactivation cancels all timeouts. Reduced motion shows frame 0 only and does not start the cycle. Portfoliocase currently uses only Puffy Sparkle Darker Violet, while Globus uses the single static Clock Neutral sticker; Codex, GitHub, Metrica, and Puffy Star Darker Yellow remain commented in home.mdx.",
+            "Every frame keeps the shared 27px by 27px DOM/image container. Puffy Sparkle Darker Violet and Clock Neutral normalize their source artwork through viewBox 2.75 2.75 18.5 18.5, filling approximately 26.3–26.9px of the container without CSS scaling. The scale(1.1) mapping for the currently commented Puffy Star Darker Yellow remains available; tool images and the outer motion/rotation/parallax wrapper are not scaled."
+            "Reduced motion preserves sticker opacity sequencing while forcing blur and glass, text, and sticker parallax transforms to zero; mobile hides the sticker with the glass."
           ]
         },
         {

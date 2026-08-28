@@ -19,8 +19,26 @@
 
 ### Frontmatter (optional)
 - `subtitle: string`
+- `itemStickers: Record<workSlug, NonEmptyArray<internalSvgPath>>`
 - `seo.defaultOgImage: string`
 - `seo.faviconUrl: string`
+
+### Item sticker mapping
+- `itemStickers` настраивает sticker только для элементов списка главной; frontmatter кейсов не меняется.
+- Ключ — work slug, который обязательно должен присутствовать среди slug в body этого же `home.mdx`.
+- Значение — непустой массив внутренних путей; каждый путь начинается с `/` и заканчивается на `.svg`.
+- Массив из одного SVG рендерится статично. Несколько SVG циклично сменяются в указанном порядке.
+- Отсутствие ключа означает, что у соответствующего элемента списка sticker не рендерится.
+- Несуществующий в body ключ считается ошибкой контракта и останавливает загрузку.
+
+```yaml
+itemStickers:
+  portfoliocase:
+    - "/media/cases/portfoliocase/sticker-figma.svg"
+    - "/media/cases/portfoliocase/sticker-codex.svg"
+    - "/media/cases/portfoliocase/sticker-github.svg"
+    - "/media/cases/portfoliocase/sticker-segmented-circle.svg"
+```
 
 ## 2.1 Link Preview Settings (`content/site/link-preview.mdx`)
 
@@ -99,6 +117,7 @@
 
 ## 6. Validation and Loading
 - Frontmatter валидируется через Zod в `lib/content/schemas.ts`.
+- `lib/content/site.server.ts` дополнительно fail-fast проверяет, что каждый ключ `itemStickers` присутствует среди slug, реально перечисленных в body `home.mdx`.
 - Загрузка и рендер выполняются через `lib/content/site.server.ts`.
 
 ## 7. Motion and Reveal Contract

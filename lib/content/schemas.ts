@@ -7,6 +7,13 @@ const internalPathSchema = z
   .refine((value) => value.startsWith("/") && !value.startsWith("//"), {
     message: "Expected an internal path that starts with '/'"
   });
+const internalSvgPathSchema = internalPathSchema.refine(
+  (value) => value.toLowerCase().endsWith(".svg"),
+  { message: "Expected an internal SVG path that ends with '.svg'" }
+);
+const workSlugSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+  message: "Expected a lowercase work slug"
+});
 
 export const homePreviewSchema = z.object({
   kind: mediaKindSchema,
@@ -27,6 +34,7 @@ const mediaPlaceholderSchema = z.object({
 export const homeFrontmatterSchema = z.object({
   title: z.string().min(1),
   subtitle: z.string().min(1).optional(),
+  itemStickers: z.record(workSlugSchema, z.array(internalSvgPathSchema).min(1)).optional(),
   seo: z.object({
     siteUrl: z.string().url(),
     siteName: z.string().min(1),

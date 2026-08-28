@@ -15,7 +15,11 @@ function toWorkSlug(href: string): string | null {
   return slug.length > 0 ? slug : null;
 }
 
-function buildHomeShowcaseSections(configSections: HomeSectionConfig[], entries: HomeWorkEntry[]): HomeShowcaseSection[] {
+function buildHomeShowcaseSections(
+  configSections: HomeSectionConfig[],
+  entries: HomeWorkEntry[],
+  itemStickers: Record<string, string[]> = {}
+): HomeShowcaseSection[] {
   const entryBySlug = new Map<string, HomeWorkEntry>();
 
   for (const entry of entries) {
@@ -40,7 +44,11 @@ function buildHomeShowcaseSections(configSections: HomeSectionConfig[], entries:
           return accumulator;
         }
 
-        accumulator.push(entry);
+        const stickerSrcs = itemStickers[slug];
+        accumulator.push({
+          ...entry,
+          ...(stickerSrcs ? { stickerSrcs } : {})
+        });
         usedSlugs.add(slug);
         return accumulator;
       }, []);
@@ -67,7 +75,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   const [homeConfig, entries] = await Promise.all([getHomeShowcaseConfigContent(), getHomeWorkEntries()]);
-  const sections = buildHomeShowcaseSections(homeConfig.sections, entries);
+  const sections = buildHomeShowcaseSections(homeConfig.sections, entries, homeConfig.itemStickers);
 
   return (
     <SiteShell>

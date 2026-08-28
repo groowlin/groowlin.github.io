@@ -90,6 +90,7 @@ export interface HomeWorkEntry {
   subtitle: string;
   href: string;
   preview: HomePreview;
+  stickerSrcs?: string[];
 }
 
 export interface HomeSectionConfig {
@@ -100,6 +101,7 @@ export interface HomeSectionConfig {
 export interface HomeShowcaseConfig {
   title: string;
   subtitle?: string;
+  itemStickers?: Record<string, string[]>;
   sections: HomeSectionConfig[];
 }
 
@@ -148,6 +150,7 @@ export interface StaticPageContent {
 export interface HomeFrontmatter {
   title: string;
   subtitle?: string;
+  itemStickers?: Record<string, string[]>;
   seo: SiteMetadataSettings;
 }
 

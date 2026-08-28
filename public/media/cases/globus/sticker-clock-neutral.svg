@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="2.75 2.75 18.5 18.5" fill="none">
+  <defs>
+    <linearGradient id="clockFill" x1="7" y1="4.5" x2="17.5" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C6CBD2"/>
+      <stop offset="0.55" stop-color="#9EA5AE"/>
+      <stop offset="1" stop-color="#7E858E"/>
+    </linearGradient>
+    <linearGradient id="clockGloss" x1="8" y1="5.5" x2="13.5" y2="12.5" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="handFill" x1="10.5" y1="8" x2="15.5" y2="15" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#ECEFF2"/>
+    </linearGradient>
+    <filter id="clockShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#4F5660" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#clockShadow)">
+    <circle cx="12" cy="12" r="9" fill="url(#clockFill)"/>
+
+    <path d="M7.1 7.9
+             C8.4 6.1 10.2 5.2 12.5 5.2
+             C14.6 5.2 16.4 6.1 17.7 7.4
+             C15.9 7 14.3 6.9 12.8 7.2
+             C10.7 7.5 8.9 8.3 7.4 9.4
+             C6.9 9.1 6.8 8.5 7.1 7.9Z"
+          fill="url(#clockGloss)"/>
+
+    <path d="M12 7.7V12L15.1 14.2"
+          stroke="url(#handFill)"
+          stroke-width="1.65"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+
+    <circle cx="12" cy="12" r="1.05" fill="#F7F8FA"/>
+  </g>
+</svg>

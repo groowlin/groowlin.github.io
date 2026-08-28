@@ -160,11 +160,22 @@ function parseHomeBodySections(body: string): HomeSectionConfig[] {
 
 export async function getHomeShowcaseConfigContent(): Promise<HomeShowcaseConfig> {
   const { frontmatter, body } = await loadHomeSource();
+  const sections = parseHomeBodySections(body);
+  const bodySlugs = new Set(sections.flatMap((section) => section.slugs));
+
+  for (const slug of Object.keys(frontmatter.itemStickers ?? {})) {
+    if (!bodySlugs.has(slug)) {
+      throw new Error(
+        `Home itemStickers references slug "${slug}" that is not listed in content/site/home.mdx body`
+      );
+    }
+  }
 
   return {
     title: frontmatter.title,
     subtitle: frontmatter.subtitle,
-    sections: parseHomeBodySections(body)
+    itemStickers: frontmatter.itemStickers,
+    sections
   };
 }
 

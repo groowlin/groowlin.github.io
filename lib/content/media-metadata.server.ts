@@ -9,6 +9,12 @@ interface MediaDimensions {
   height: number;
 }
 
+interface LocalMediaMetadataCacheEntry {
+  dimensions: MediaDimensions | null;
+  mtimeMs: number;
+  size: number;
+}
+
 interface Mp4TrackMetadata {
   isVideo: boolean;
   dimensions: MediaDimensions | null;
@@ -17,7 +23,7 @@ interface Mp4TrackMetadata {
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 const MP4_CONTAINER_TYPES = new Set(["moov", "trak", "mdia", "minf", "stbl", "edts", "dinf", "udta", "meta"]);
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".avif"]);
-const localMediaMetadataCache = new Map<string, MediaDimensions | null>();
+const localMediaMetadataCache = new Map<string, LocalMediaMetadataCacheEntry>();
 const localMediaExistenceCache = new Map<string, boolean>();
 
 function isInternalMediaPath(src?: string): src is string {
@@ -228,20 +234,22 @@ export function getLocalMediaDimensions(src?: string): MediaDimensions | null {
   }
 
   const normalizedSrc = normalizeMediaPath(src);
-
-  if (localMediaMetadataCache.has(normalizedSrc)) {
-    return localMediaMetadataCache.get(normalizedSrc) ?? null;
-  }
-
   const filePath = getMediaFilePath(normalizedSrc);
 
   if (!fs.existsSync(filePath)) {
-    localMediaMetadataCache.set(normalizedSrc, null);
+    localMediaMetadataCache.delete(normalizedSrc);
     return null;
   }
 
+  const { mtimeMs, size } = fs.statSync(filePath);
+  const cachedMetadata = localMediaMetadataCache.get(normalizedSrc);
+
+  if (cachedMetadata?.mtimeMs === mtimeMs && cachedMetadata.size === size) {
+    return cachedMetadata.dimensions;
+  }
+
   const dimensions = readLocalMediaDimensions(filePath);
-  localMediaMetadataCache.set(normalizedSrc, dimensions);
+  localMediaMetadataCache.set(normalizedSrc, { dimensions, mtimeMs, size });
   return dimensions;
 }
 

@@ -82,6 +82,7 @@
 }
 
 .itemVisualBounds {
+  position: relative;
   display: inline-flex;
   padding: var(--home-item-hover-padding-y) var(--home-item-padding-x);
   margin:
@@ -176,6 +177,45 @@
   opacity: 0.72;
 }
 
+.hoverIcon {
+  position: absolute;
+  top: calc(var(--home-item-gap) / -2);
+  right: calc(var(--home-arrow-size) / -2);
+  width: var(--home-arrow-size);
+  height: var(--home-arrow-size);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.hoverIconImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hoverIconFrames {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hoverIconImageActive {
+  visibility: visible;
+}
+
+.hoverIconImagePuffyStar {
+  transform-origin: center;
+}
+
+.hoverIconImagePuffyStar {
+  transform: scale(1.1);
+}
+
 .previewPane {
   display: none;
 }
@@ -258,7 +298,8 @@
     border-radius: 0;
   }
 
-  .glass {
+  .glass,
+  .hoverIcon {
     display: none;
   }
 
