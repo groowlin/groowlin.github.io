@@ -116,10 +116,6 @@
   font-size: var(--home-font-size-lg);
   line-height: var(--home-line-height-tight);
   font-weight: var(--font-weight-regular);
-  text-decoration-line: underline;
-  text-decoration-color: var(--home-line-default);
-  text-decoration-thickness: 2px;
-  text-underline-offset: var(--space-2xs);
 }
 
 .itemActive .itemLabel {
