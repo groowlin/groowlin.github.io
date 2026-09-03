@@ -183,6 +183,10 @@
   font-weight: var(--font-weight-heavy);
 }
 
+.mobileTitleBreak {
+  display: none;
+}
+
 .subtitle {
   line-height: var(--line-height-reading);
 }
@@ -215,6 +219,10 @@
 }
 
 @media (max-width: 767px) {
+  .mobileTitleBreak {
+    display: initial;
+  }
+
   .main {
     padding-top: var(--layout-mobile-main-padding-top);
     padding-inline: var(--layout-mobile-surface-padding-x);

@@ -4,6 +4,7 @@ import styles from "@/components/shell/site-shell.module.css";
 interface SiteShellProps {
   children: React.ReactNode;
   title?: string;
+  titleMobileBreakAfter?: string;
   subtitle?: string;
   headerAction?: React.ReactNode;
   subtitleMuted?: boolean;
@@ -13,6 +14,7 @@ interface SiteShellProps {
 export function SiteShell({
   children,
   title,
+  titleMobileBreakAfter,
   subtitle,
   headerAction,
   subtitleMuted = true,
@@ -20,6 +22,9 @@ export function SiteShell({
 }: SiteShellProps) {
   const hasHeaderBlock = Boolean(title || subtitle);
   const bodyClassName = hasHeaderBlock ? styles.compensated : undefined;
+  const titleBreakIndex = title && titleMobileBreakAfter ? title.indexOf(titleMobileBreakAfter) : -1;
+  const titleBreakOffset = titleBreakIndex + (titleMobileBreakAfter?.length ?? 0);
+  const titleHasMobileBreak = titleBreakIndex >= 0;
 
   return (
     <PageRevealSequence className={styles.revealStack}>
@@ -28,7 +33,15 @@ export function SiteShell({
           <div className={styles.headerText}>
             {title && (
               <h1 className={styles.title} data-page-reveal="">
-                {title}
+                {titleHasMobileBreak ? (
+                  <>
+                    {title.slice(0, titleBreakOffset)}
+                    <br className={styles.mobileTitleBreak} />
+                    {title.slice(titleBreakOffset).trimStart()}
+                  </>
+                ) : (
+                  title
+                )}
               </h1>
             )}
             {subtitle && (

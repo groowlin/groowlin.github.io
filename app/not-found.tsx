@@ -19,6 +19,7 @@ export default async function NotFoundPage() {
   return (
     <SiteShell
       title={content.summary.title}
+      titleMobileBreakAfter="404.."
       subtitle={content.summary.subtitle}
       subtitleMuted={false}
       subtitleVariant="workMeta"
