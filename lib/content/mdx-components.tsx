@@ -8,6 +8,7 @@ import {
 import Link from "next/link";
 import { GalleryLightbox } from "@/components/media/GalleryLightbox";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
+import { PortfolioMotionDemo } from "@/components/sections/PortfolioMotionDemo";
 import { hydrateMediaPlaceholder } from "@/lib/content/media-metadata.server";
 import {
   MdxBlockquote,
@@ -135,6 +136,7 @@ export function getMdxComponents(variant: "default" | "work" = "default") {
     a: MdxLink,
     Gallery: (props: GalleryProps) => <Gallery {...props} variant={variant} />,
     gallery: (props: GalleryProps) => <Gallery {...props} variant={variant} />,
+    PortfolioMotionDemo,
     Media: ({
       kind = "image",
       src,

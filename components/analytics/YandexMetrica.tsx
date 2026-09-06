@@ -15,17 +15,19 @@ import {
 function RouteHitTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const isFirstRender = useRef(true);
+  const lastTrackedPath = useRef<string | null>(null);
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    const query = searchParams.toString();
+    const path = query ? `${pathname}?${query}` : pathname;
+    if (lastTrackedPath.current === path) {
       return;
     }
 
-    const query = searchParams.toString();
-    const path = query ? `${pathname}?${query}` : pathname;
-    trackMetricaHit(path, document.title, { route_change: true });
+    // defer: true disables Metrica's automatic initial pageview as well.
+    const isRouteChange = lastTrackedPath.current !== null;
+    lastTrackedPath.current = path;
+    trackMetricaHit(path, document.title, { route_change: isRouteChange });
   }, [pathname, searchParams]);
 
   return null;

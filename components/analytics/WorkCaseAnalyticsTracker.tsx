@@ -2,10 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { useWorkShortSummaryState } from "@/components/sections/WorkShortSummaryToggle";
+import { caseMeasurement } from "@/lib/analytics/case-measurement";
 import { getCurrentPath, trackMetricaGoal } from "@/lib/analytics/yandex-metrica";
-
-const LAST_CASE_STORAGE_KEY = "portfolio.analytics.last-case-slug";
-const FULL_CASE_READ_TARGET_MS = 120_000;
 
 interface WorkCaseAnalyticsTrackerProps {
   slug: string;
@@ -14,90 +12,68 @@ interface WorkCaseAnalyticsTrackerProps {
 
 export function WorkCaseAnalyticsTracker({ slug, title }: WorkCaseAnalyticsTrackerProps) {
   const { displayMode } = useWorkShortSummaryState() ?? { displayMode: "full" as const };
-  const hasTrackedScrollDepth = useRef(false);
-  const hasTrackedReadTime = useRef(false);
-  const accumulatedReadTimeMs = useRef(0);
+  const lastEntrySlug = useRef<string | null>(null);
 
   useEffect(() => {
+    // React StrictMode effect replay is not another page entry.
+    if (lastEntrySlug.current === slug) return;
+    lastEntrySlug.current = slug;
     trackMetricaGoal("view_case", {
       case_slug: slug,
       case_title: title,
       page_path: getCurrentPath()
     });
-
-    try {
-      const previousSlug = window.sessionStorage.getItem(LAST_CASE_STORAGE_KEY);
-      if (previousSlug && previousSlug !== slug) {
-        trackMetricaGoal("view_second_case", {
-          case_slug: slug,
-          previous_case_slug: previousSlug,
-          page_path: getCurrentPath()
-        });
-      }
-
-      window.sessionStorage.setItem(LAST_CASE_STORAGE_KEY, slug);
-    } catch {
-      // Ignore unavailable session storage.
+    const previousSlug = caseMeasurement.visitCase(slug);
+    if (previousSlug) {
+      trackMetricaGoal("view_second_case", {
+        case_slug: slug,
+        previous_case_slug: previousSlug,
+        page_path: getCurrentPath()
+      });
     }
   }, [slug, title]);
 
   useEffect(() => {
-    if (displayMode !== "full" || hasTrackedScrollDepth.current) {
-      return;
-    }
+    if (displayMode !== "full") return;
 
+    const params = { case_slug: slug, case_title: title, page_path: getCurrentPath() };
+    let pageActive = true;
+    const isVisible = () => pageActive && document.visibilityState === "visible";
+    const reading = caseMeasurement.readingSegment(slug, isVisible());
+    const sample = (active: boolean) => {
+      if (reading.sample(active)) trackMetricaGoal("case_read_120s", params);
+    };
+    const onVisibility = () => sample(isVisible());
+    const onPageHide = () => {
+      pageActive = false;
+      sample(false);
+    };
+    const onPageShow = () => {
+      pageActive = true;
+      sample(isVisible());
+    };
     const onScroll = () => {
-      const root = document.documentElement;
-      const totalScrollableHeight = Math.max(root.scrollHeight - window.innerHeight, 1);
-      const progress = window.scrollY / totalScrollableHeight;
-
-      if (progress < 0.9) {
-        return;
+      if (!isVisible()) return;
+      const height = document.documentElement.scrollHeight - window.innerHeight;
+      if (height > 0 && window.scrollY / height >= 0.9 && caseMeasurement.recordScroll(slug)) {
+        trackMetricaGoal("case_scroll_90", params);
       }
-
-      hasTrackedScrollDepth.current = true;
-      trackMetricaGoal("case_scroll_90", {
-        case_slug: slug,
-        case_title: title,
-        page_path: getCurrentPath()
-      });
-      window.removeEventListener("scroll", onScroll);
     };
 
+    const interval = window.setInterval(onVisibility, 1_000);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
 
     return () => {
+      sample(false);
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
       window.removeEventListener("scroll", onScroll);
-    };
-  }, [displayMode, slug, title]);
-
-  useEffect(() => {
-    if (displayMode !== "full" || hasTrackedReadTime.current) {
-      return;
-    }
-
-    const interval = window.setInterval(() => {
-      if (document.visibilityState !== "visible") {
-        return;
-      }
-
-      accumulatedReadTimeMs.current += 1_000;
-      if (accumulatedReadTimeMs.current < FULL_CASE_READ_TARGET_MS) {
-        return;
-      }
-
-      hasTrackedReadTime.current = true;
-      trackMetricaGoal("case_read_120s", {
-        case_slug: slug,
-        case_title: title,
-        page_path: getCurrentPath()
-      });
-      window.clearInterval(interval);
-    }, 1_000);
-
-    return () => {
-      window.clearInterval(interval);
     };
   }, [displayMode, slug, title]);
 

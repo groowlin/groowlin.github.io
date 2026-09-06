@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { WorkCaseAnalyticsTracker } from "@/components/analytics/WorkCaseAnalyticsTracker";
 import { notFound } from "next/navigation";
 import { WorkArticle } from "@/components/sections/WorkArticle";
+import { PortfolioMotionDemo } from "@/components/sections/PortfolioMotionDemo";
 import { WorkShortSummaryButton, WorkShortSummaryProvider } from "@/components/sections/WorkShortSummaryToggle";
 import { SiteShell } from "@/components/shell/SiteShell";
 import { getWorkCase, getWorkSlugs } from "@/lib/content/work.server";
@@ -51,7 +52,10 @@ export default async function WorkPage({ params }: WorkPageProps) {
         subtitleVariant="workMeta"
       >
         <div className={styles.stack}>
-          <WorkArticle content={entry.content} />
+          <WorkArticle
+            content={entry.content}
+            shortAfterContent={slug === "portfoliocase" ? <PortfolioMotionDemo /> : undefined}
+          />
         </div>
       </SiteShell>
     </WorkShortSummaryProvider>

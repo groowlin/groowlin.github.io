@@ -1,0 +1,104 @@
+.root {
+  width: 100%;
+  overflow: hidden;
+  border: 0;
+  outline: 0;
+  border-radius: var(--radius-xl);
+  background: var(--color-white);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.root * {
+  pointer-events: none;
+}
+
+.sceneViewport {
+  display: grid;
+  width: 100%;
+  height: calc(var(--layout-preview-size) - var(--space-4xl) - var(--space-2xl));
+  padding: var(--space-2xl);
+  place-items: center;
+}
+
+.scene {
+  grid-area: 1 / 1;
+  display: grid;
+  width: var(--home-top-card-width);
+  height: calc(var(--home-avatar-size) + (var(--home-top-card-padding) * 2));
+  place-items: center;
+  position: relative;
+  top: calc(0px - var(--space-4xl) - var(--space-xl));
+  transform-origin: center;
+}
+
+.root .topCardStage {
+  width: var(--home-top-card-width);
+  min-width: var(--home-top-card-width);
+  max-width: var(--home-top-card-width);
+  pointer-events: none;
+}
+
+.shortModeControl {
+  cursor: default;
+  transform: scale(2);
+  transform-origin: center;
+}
+
+.portfolioCaseScene {
+  display: grid;
+  width: var(--home-top-card-width);
+  place-items: center;
+  perspective: 1400px;
+  transform: scale(1.2);
+  transform-origin: center;
+}
+
+.caseRevealItem {
+  display: block;
+  width: fit-content;
+}
+
+.root .caseVisualBounds {
+  margin:
+    calc(var(--home-item-hover-padding-y) * -1)
+    calc(var(--home-item-padding-x) * -1);
+  padding: var(--home-item-hover-padding-y) var(--home-item-padding-x);
+  border-radius: var(--home-bubble-radius);
+}
+
+.caseGlass {
+  inset: 0;
+  z-index: 0;
+}
+
+.caseSticker {
+  display: block;
+}
+
+.caseContent {
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 767px) {
+  .sceneViewport {
+    padding: var(--space-lg);
+  }
+
+  .caseGlass,
+  .caseSticker {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene,
+  .caseRevealItem,
+  .caseGlass,
+  .caseSticker {
+    animation: none;
+    transition: none;
+  }
+}

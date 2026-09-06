@@ -1,3 +1,5 @@
+import type { AnalyticsEventMap } from "./events";
+
 export const ANALYTICS_DISABLE_STORAGE_KEY = "portfolio.analytics.disabled";
 const ANALYTICS_DISABLE_COOKIE_KEY = "portfolio_analytics_disabled";
 
@@ -120,7 +122,7 @@ export function flushQueuedMetricaCalls() {
   }
 }
 
-export function trackMetricaGoal(goal: string, params?: MetricaGoalParams) {
+export function trackMetricaGoal<Event extends keyof AnalyticsEventMap>(goal: Event, params: AnalyticsEventMap[Event]) {
   const counterId = getYandexMetricaCounterId();
   if (!counterId) {
     return;

@@ -1,20 +1,18 @@
 "use client";
 
 import { useEffect } from "react";
-import { getCurrentPath, trackMetricaGoal, type MetricaGoalParams } from "@/lib/analytics/yandex-metrica";
+import { getCurrentPath, trackMetricaGoal } from "@/lib/analytics/yandex-metrica";
 
 interface PageGoalTrackerProps {
-  goal: string;
-  params?: MetricaGoalParams;
+  goal: "view_home" | "view_about";
 }
 
-export function PageGoalTracker({ goal, params }: PageGoalTrackerProps) {
+export function PageGoalTracker({ goal }: PageGoalTrackerProps) {
   useEffect(() => {
     trackMetricaGoal(goal, {
-      page_path: getCurrentPath(),
-      ...params
+      page_path: getCurrentPath()
     });
-  }, [goal, params]);
+  }, [goal]);
 
   return null;
 }

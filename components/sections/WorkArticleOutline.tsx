@@ -24,7 +24,7 @@ interface OutlineHeading {
 const HEADING_SELECTOR = "[data-work-article-root] :is(h1, h2, h3)";
 const PAGE_TITLE_SELECTOR = "header h1";
 const HEADING_SLUG_SEPARATOR = "-";
-const HEADING_SCROLL_OFFSET = 24;
+const HEADING_VIEWPORT_POSITION = 0.25;
 const ACTIVE_HEADING_OFFSET = 120;
 const FOCUS_LINE_WIDTH = 30;
 const DEFAULT_LINE_WIDTH = 8;
@@ -297,10 +297,14 @@ export function WorkArticleOutline() {
       return;
     }
 
-    const targetTop = window.scrollY + element.getBoundingClientRect().top - HEADING_SCROLL_OFFSET;
+    const targetTop =
+      window.scrollY +
+      element.getBoundingClientRect().top -
+      window.innerHeight * HEADING_VIEWPORT_POSITION;
+    const maxScrollTop = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
 
     window.scrollTo({
-      top: Math.max(targetTop, 0),
+      top: Math.min(Math.max(targetTop, 0), maxScrollTop),
       behavior: "smooth"
     });
   }

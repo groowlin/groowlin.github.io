@@ -34,6 +34,7 @@ interface WorkShortSummaryProviderProps {
 
 interface WorkShortSummaryContentProps {
   children: ReactNode;
+  shortAfterContent?: ReactNode;
 }
 
 interface WorkShortSummaryButtonProps {
@@ -814,7 +815,7 @@ export function WorkShortSummaryButton({ className }: WorkShortSummaryButtonProp
   );
 }
 
-export function WorkShortSummaryContent({ children }: WorkShortSummaryContentProps) {
+export function WorkShortSummaryContent({ children, shortAfterContent }: WorkShortSummaryContentProps) {
   const context = useWorkShortSummary();
 
   if (!context?.shortSummary) {
@@ -847,6 +848,7 @@ export function WorkShortSummaryContent({ children }: WorkShortSummaryContentPro
             <GalleryLightbox items={shortSummary.media} variant="work" />
           </>
         ) : null}
+        {shortAfterContent}
       </section>
     );
 
