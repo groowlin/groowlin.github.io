@@ -225,11 +225,14 @@ a {
   text-decoration-color: var(--line-muted);
   text-decoration-thickness: 2px;
   text-underline-offset: var(--space-2xs);
+  transition:
+    color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    text-decoration-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 a:hover {
-  text-decoration-color: var(--line-hover);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #339CFF;
+  text-decoration-color: rgba(51, 156, 255, 0.2);
 }
 
 a,
