@@ -1,6 +1,109 @@
 {
   "site": "portfolio",
   "contentSource": "mdx",
+  "homeComponents": {
+    "gamesExperience": {
+      "component": "components/games/GamesEntry.tsx",
+      "specification": "docs/specs/games.md",
+      "mount": "app/page.tsx after SiteShell, normal document flow",
+      "routes": [
+        "/"
+      ],
+      "viewport": "desktop only, min-width 768px",
+      "frame": "single wide Dialed-derived card, width min(672px, viewport minus existing page gutters) and height 50svh inside a 100svh panel; horizontal center uses auto margins; final vertical top is calculated in panel-local coordinates as (messageTop - panelTop - frameHeight) / 2; transient opening and closing use fixed positioning at that same numeric viewport top, so native scroll cannot add frame motion and the final fixed-to-absolute switch preserves coordinates; radius uses TopCard --home-top-card-radius (40px); closed content cannot extend document overflow",
+      "visual": "#111111 card, radius40 from TopCard, no white border, outer shadow or glow; active120/radius16 gradient #D3D9FF to #7E91F6, fixed #363636; two214px background squares gap16 on intro/final; five static progressive backdrop blur layers0/5/10/20/40px with no opacity animation on filter elements; source squares alone crossfade; white copy; five30px PNG hearts at top40; seven victory spotlights with rounded tops, 182/176/194/166/188/180/174% heights, common bottom-center origin and independent motion; no automatic victory card bounce; every beam pulses independently between4% and16% opacity over1200ms per direction with phases distributed across the full2400ms cycle; group delay300ms before 600ms fade-in; replay label Далее and icon fade in over600ms before their existing pulse; backdrop squares always clipped independently of drag overflow",
+      "components": [
+        "GameModeShell",
+        "GameFrame",
+        "PixelPerfect",
+        "CharacterPlayground",
+        "MascotMessage"
+      ],
+      "mascot": {
+        "position": "absolute at physical page bottom, horizontally centered; fully visible at closed maximum scroll",
+        "widthPx": 125,
+        "heightPx": 72,
+        "assetPixelRatio": 2,
+        "zIndex": 80,
+        "assets": {
+          "default": "/media/games/games-default.png",
+          "openHover": "/media/games/games-hover.png",
+          "closeHover": "/media/games/games-hover-exit.png"
+        },
+        "semantics": "button with aria-expanded, aria-controls and open/close accessible name"
+      },
+      "sequence": [
+        "pixel-perfect",
+        "characters"
+      ],
+      "state": "sessionStorage portfolio.games.v1: isOpen, currentGameId pixel-perfect or characters, Pixel Perfect attempts/results/completed; character physics is transient; CEO Simulator has a temporary adjacent non-persistent numeric runtime tuning panel with reset and restart actions",
+      "bootstrap": "raw inline before scroll restoration, stable SSR tree and pre-hydration CSS open geometry",
+      "motion": "closed: tail after SiteShell is exactly 80svh so the case list retains 20% viewport visibility at maximum scroll; open: reserves a 72px mascot area plus 100svh panel and scrolls to the exact document bottom while mascot exits and the fixed whole-card frame runs one 700ms raw progress animation from translate 0 100svh and scale .96 with cubic-bezier(0.18, 1.14, 0.32, 1); duration and temporal profile stay unchanged, while translate and scale amplify only raw progress above 1 by a factor of 6 for roughly 3.5-4% spatial overshoot at the same peak and return timing; the second control point at 1 gives the endpoint zero derivative for a smooth deceleration into rest, without an abrupt stop, separate tail or intermediate motion keyframes; opacity derives from raw progress and reaches 1 at exactly half the path; blur and rotation are absent; close reverses the same progress while the page stays stationary; the hidden default mascot appears only after return scroll has fully completed, then the panel collapses after mascot reveal; reduced motion supported",
+      "characters": {
+        "title": "Симулятор руководителя",
+        "component": "components/games/CharacterPlayground.tsx",
+        "controller": "components/games/character-controller.ts",
+        "styles": "components/games/character-playground.module.css",
+        "gameplayModules": "components/games/ceo-simulator/{config,entities,zones,metrics,directives,game-state}.ts",
+        "surface": "gray200 GameFrame; four departments in one row; no task card/number/criteria list; compact60-80px top HUD has three continuous Speed/Quality/Budget bars without numeric thresholds, white underlays, black outlines, gaps or button-like segments; seamless pastel low #d58b8c, normal #e2c66f and high #87b895 zones sit behind a continuous fill whose width and zone color animate300ms; acceptable zones glow/pulse, minimum Normal highlights Normal+High, false-to-true uses one350ms success pulse without persistent arrows/checks; embedded crisis countdown fades; compact tail-less transparent sketch bubble at bottom",
+        "geometry": "screenX=originX+(worldX+depth*0.4)*scaleX; screenY=originY-depth*scaleY; scaleX depends only on available width, scaleY=min(scaleX*0.55, availableHeight/backDepth); horizontal front/back edges; screen-upright characters; ground limited by departments back edge; market is all accessible floor outside departments, original lower FREE_AREA retained for wandering",
+        "population": "6 neutral humans around44px start on the market; exactly2 AI appear together once on task4; lifetime maximum2; original SVG parts and appearance retained",
+        "assignment": "any human entering a department acquires its role regardless of previous profession; outside departments clears assignment; humans and AI transfer directly; human contours remain neutral",
+        "states": [
+          "FREE",
+          "ASSIGNED",
+          "GRABBED",
+          "CARRYING",
+          "FALLING",
+          "RECOVERING"
+        ],
+        "interaction": "44x44 head-centered hit area; no hover pose/tooltips/highlights; continuous preserved pointer offset from first pixel including height0-40; diagonal lift transfers0.70-0.95 to depth until the back edge, then only increases height; manual throw transfers horizontal0.3/vertical0.45/depth0.1 while AI impulse stays independent; rounded top boundary constrains grab but not flight; held-character overlay stays above task/progress UI; stable field pointer capture cleared on cancel or focus loss",
+        "working": "FREE roams in original lower FREE_AREA; ASSIGNED inside department; any accessible non-department point is market; ground cannot pass departments back edge; department entry updates role; depth from projected ground, carried above grounded; scaleX depends only on available width so shorter cards preserve department widths and horizontal gaps while an independently capped scaleY compresses only depth and keeps the back edge in the available vertical area",
+        "metrics": "human Speed/Quality: analytics10/10, design8/25, development28/5, QA7/25; one effective AI per department gives speed+20 with one human or+40 with2+, quality0 and no presence; human cost13/effective AI2; ineffective or duplicate AI free; missing development speed0; missing analytics speed-10 quality-10; missing design or QA quality-20; clamp0-100",
+        "directives": "six tasks: BUILD_CORE, BUILD_MVP, RELEASE_FIRE, AUTOMATE, CUSTOMER_COMPLAINTS, FEATURE_TOMORROW; requirements combine staff counts, metric minimum zones and effective AI counts/zones; three timed crises CUT_COSTS, UNHAPPY_CUSTOMERS, RELEASE_TODAY",
+        "progress": "normal conditions require continuous1s; crisis conditions0.7s within5s; no card choreography states; lightweight success/fail feedback500ms then immediate playable next round; one advance cannot skip multiple rounds; activation guard prevents duplicate AI",
+        "ai": "independent first delay1.9-3.9s and6s base cycles; exclusively reserved active human in same zone;220ms windup/100ms strike/180ms recovery via existing body/leg pose; strike pushes toward market walking region with distance-dependent flight time and ballistic vertical impulse; grab cancels reservation; no permanent AI labels under departments: zone-specific requirements fade/scale only on required zones, count-only task uses one compact HUD count and markers only where AI is placed; each AI has the same fixed neutral placeholder slot in normal/held SVG copies, gray without an active human coworker and faded/scaled with soft glow when a coworker is present, ready for later icon replacement",
+        "physics": "one rAF and bounded1/120s substeps; separate world ground and ballistic height drive existing articulated pose; oval ground shadow grows with height; gray-700 trail canvas below characters samples actual rendered positions including the final point with age-based trail12 points/200ms,120ms fade, opacity0.12 and stroke3.2px; separate landing canvas above characters draws two symmetric16px lines from points20px left and right of impact center, preserving a40px center gap, at45 degrees upward for120ms with opacity0.4 and stroke1.6px; noticeable-flight threshold; whole-card impact shake disabled for reduced motion",
+        "hints": "one compact hand-drawn bubble without tail or white underlay, with normal/think/robot/shout/whisper semantics and red warning markers; opacity plus scale .96-to-1 reveal/hide lasts220ms and text replacement completes old fade-out before new fade-in; scenario copy yields to idle hints for all-free, missing departments, low budget/quality, ineffective AI or unreturned pushed humans and disappears on interaction",
+        "final": "three crisis tasks with independent5s countdown in playable metrics HUD and non-blocking result; verdict by successes:3 company grows,2 business holds,0-1 bankrupt; every path reaches a fade-in report without white underlay; restart control is transparent; FINISHED stops simulation/rAF",
+        "restart": "fresh CeoGame resets6 humans to role=null, seeded market positions, zero AI/assignments/timers/progress/final statistics/hints/effects; returns to Собери команду",
+        "persistence": "CEO gameplay only in memory; existing selected-card ID and Pixel Perfect persistence unchanged",
+        "verification": "automated scenarios cover the required21 population/AI/metrics/hold/transition/crisis/verdict cases plus exhaustive reachability of all six tasks and three crises; visual assessment remains with the user",
+        "future": "endless mode only documented; no burnout/turnover/events/bankruptcy/infinite task UI or mechanics"
+      },
+      "pixelPerfect": {
+        "stages": [
+          "intro",
+          "play",
+          "final-result"
+        ],
+        "transitions": "Actual drag from intro enters play; stage changes parallel crossfade280ms with screen-space blur16px, no geometry morph; ordinary attempt returns active square with original550ms spring bounce0.16; terminal attempt fades/blur at retained measurement zoom while incoming final copy/background appear simultaneously, without zoom-out; final advance is sequence-locked: reset-exit starts the card shake, then after one animation frame mounts CharacterPlayground above the final; its opaque gray surface fades in for300ms while Pixel Perfect stays underneath, without a new opacity ancestor around backdrop filters; completion unmounts Pixel Perfect and persists characters without clearing the result; the frame keeps full opacity and performs two sequential150ms shakes; progressive blur remains static; reduced motion keeps the300ms content crossfade without shake",
+        "objectSizePx": 120,
+        "targetGapPx": 16,
+        "reactions": "pure configurable event engine: campaign active, endless disabled; shared/campaign/endless copy; error ranges, progress comparison, zero and OOB priority, one pair per event, no consecutive repeats; persisted analytics/history/seen IDs in portfolio.games.reactions.v1",
+        "maxAttempts": 5,
+        "measurement": "signed nearest-face gap on greatest orthogonal projection overlap; tie uses final pointer movement",
+        "reset": "Click anywhere on final card, Enter or Space starts the locked exit/reset/entry transition to the next game; opens CharacterPlayground and preserves the Pixel Perfect result; no draggable square on final",
+        "completion": "exact16 or five attempts including penalties; win title Пиксель в пиксель, otherwise best gap px or ???; both show Лучший результат and win icon; Далее opens characters; external Test victory is exclusive to Pixel Perfect and disabled during the transition",
+        "attemptTimelineMs": "zoom and line together0-400; value400-1000 with80ms opacity/blur entry and exit; terminal failure reaction800ms; terminal squares fade/blur280ms without zoom-out; normal miss retains unzoom450ms and active-square spring return550ms; overlap/out-of-bounds spend attempts",
+        "intro": "centered icon109x100, DS space-xl icon gap, title42/44 heavy, description20/22 with12px gap: Передвинь rectangle так then line break чтобы gap был 16 px; rectangle uses active gradient; background214px squares crossfade to fixed120px target on play",
+        "progressiveBlur": {
+          "specification": "design-system-spec.md#progressive-blur",
+          "implementation": [
+            "components/design-system/ProgressiveBlur.tsx",
+            "components/design-system/progressive-blur.module.css"
+          ],
+          "usage": "components/games/PixelPerfect.tsx",
+          "confirmedByUser": true,
+          "radiiPx": [0, 5, 10, 20, 40],
+          "direction": "left-to-right",
+          "declarationOrder": ["-webkit-backdrop-filter", "backdrop-filter"]
+        },
+        "hud": "five30px supplied PNG hearts centered40px from top, gap DS space-md; active/broken state assets; only visible in play; above active square and measurement scene",
+        "zoom": "scale=(axisSize-240)/max(faceSpan,1), axis translation=120-min(axisStart,axisEnd)*scale; measured faces inset120; screen-space1px orange #ff835e measurement overlay with regular white text on solid orange #ff835e result badge right of vertical line or below horizontal line; SVG unit grid: one cell per source pixel; perpendicular dashed4/4 witness lines for displaced dimensions"
+      }
+    }
+  },
   "designSystem": {
     "fontFamily": "Inter",
     "letterSpacing": "0.03em",
@@ -58,14 +161,21 @@
         "loopShimmer": 4200
       },
       "pageReveal": {
-        "translateYPx": [12, 16],
+        "translateYPx": [
+          12,
+          16
+        ],
         "blurPx": 8,
         "staggerMs": 80
       },
       "topCardRouteSwap": {
         "persistentSurface": true,
         "initialRevealPreserved": true,
-        "initialRevealLayers": ["surface", "content", "arrow"],
+        "initialRevealLayers": [
+          "surface",
+          "content",
+          "arrow"
+        ],
         "clippedContentViewport": true,
         "continuousMultiClickTape": true,
         "trackLayout": "continuous-vertical-wheel-tape",
@@ -85,13 +195,30 @@
         "trackDurationToken": "emphasis",
         "trackDurationMs": 420,
         "easingToken": "standard",
-        "easingCubicBezier": [0.4, 0, 0.2, 1],
+        "easingCubicBezier": [
+          0.4,
+          0,
+          0.2,
+          1
+        ],
         "sameDurationBurstAcceleration": true,
         "contentScaleOrigin": "full-card-viewport-center",
         "contentScaleByPosition": [
-          { "phase": "incoming", "positionPercent": 100, "scale": 0.6666666667 },
-          { "phase": "center", "positionPercent": 0, "scale": 1 },
-          { "phase": "outgoing", "positionPercent": -100, "scale": 0.6666666667 }
+          {
+            "phase": "incoming",
+            "positionPercent": 100,
+            "scale": 0.6666666667
+          },
+          {
+            "phase": "center",
+            "positionPercent": 0,
+            "scale": 1
+          },
+          {
+            "phase": "outgoing",
+            "positionPercent": -100,
+            "scale": 0.6666666667
+          }
         ],
         "opacityIncoming": {
           "fromPositionPercent": 100,
@@ -140,10 +267,31 @@
           "dependsOnPressDuration": false,
           "durationMs": 560,
           "startsFromCurrentValue": true,
-          "scaleXAfterCurrent": [0.96, 1.02, 0.995, 1],
-          "scaleYAfterCurrent": [1.11, 0.985, 1.01, 1],
-          "times": [0, 0.18, 0.46, 0.76, 1],
-          "easing": ["easeOut", "easeInOut", "easeOut", "easeInOut"],
+          "scaleXAfterCurrent": [
+            0.96,
+            1.02,
+            0.995,
+            1
+          ],
+          "scaleYAfterCurrent": [
+            1.11,
+            0.985,
+            1.01,
+            1
+          ],
+          "times": [
+            0,
+            0.18,
+            0.46,
+            0.76,
+            1
+          ],
+          "easing": [
+            "easeOut",
+            "easeInOut",
+            "easeOut",
+            "easeInOut"
+          ],
           "restartsOnRepeatClick": true,
           "accumulatesMomentum": false
         }
@@ -281,12 +429,17 @@
           "components": [
             "markdown-blocks",
             "mdx-media",
+            "gallery-lightbox-scope",
             "mdx-cta",
             "portfolio-motion-demo"
           ],
           "motion": [
             "MDX headings, paragraphs, list items, blockquotes, sections, and media wrappers reveal sequentially.",
-            "GalleryLightbox owns fullscreen media open/close motion and reduced-motion fallback.",
+            "Lightbox arrows, thumbnails and context card wait 120ms after opening geometry completes, then fade from opacity 0 to 1 over 400ms. Pointer/focus cannot bypass this once-per-session gate; reduced motion skips the fade and media navigation does not restart the delay.",
+            "After the opening gate, desktop arrow and thumbnail hit areas remain active when their visuals fade. A stationary pointer keeps the close indicator suppressed; clicking an invisible arrow navigates and clicking an invisible thumbnail selects its media. Suppression clears only on actual pointer exit or lightbox close.",
+            "The lower white lightbox gradient declaration is retained as a CSS comment and does not render. Progressive blur extends 60px above the base lower-control region.",
+            "Static 0/8/16px ProgressiveBlur filter layers retain the existing mask positions and fade with the controls over 400ms through animated mask alpha, without animating filter opacity or wrapper opacity; reduced motion makes the fade immediate.",
+            "GalleryLightboxScope combines openable image and video items across full-case Gallery blocks. GalleryLightbox keeps a persistent shell and decoded low-resolution DOM image layers; only current/adjacent full-resolution layers are retained. Selection, context and final geometry change immediately, with no crossfade or re-open animation; context glass, title and body transitions are disabled during media navigation, and remounted context wrappers do not replay initial opacity fade. A cold target leaves an empty image area, without loading labels, placeholders or error messages. Rail centering and active crop expansion share a fixed 200ms duration. On desktop, clicks in the free horizontal track outside the occupied thumbnail region close the lightbox; the occupied thumbnails and their internal gaps remain interactive. The top-layer floating close indicator hides over a semantic flex wrapper containing only real thumbnails and their internal gaps, while outer centering spacers stay outside the hover zone; both full-height navigation zones and the context card suppress it through a Set of active region IDs without pointermove geometry reads. Only the collapsed 92%-white context card with a 12px backdrop blur is hug-sized, with a regular black title, 8px/20.8px token padding and pill radius. Actionable cards spring-expand to 560px on hover/focus with a local 420/36/1.6 spring for width, vertical padding and details height, retaining --space-xl horizontal padding and changing the radius linearly over 400ms from half the measured compact height to the bubble radius in both directions, crossfade the title to heavy over 60ms and reveal body copy (up to three lines) from below the clipped card edge: body text moves only vertically from 80px below its expanded position after 120ms with the title vertical-axis 420/36/1.6 spring and opacity fades from 0 to 1 over 200ms after 160ms; reverse has no delay. A fixed centering wrapper keeps the card centered and its bottom edge fixed. The glass surface is the clipped semantic link; invisible geometry drives its height, while an independently centered fixed-width content layer avoids text scaling, reflow and expanded-title ellipsis during the width spring. Compact width hugs the complete regular title until the viewport cap, and both title weights are anchored to the fixed-width inner content layer and travel independently of glass resize from compact center to expanded upper-left while crossfading; both title positions follow the same oval arc: both directions use the glass spring stiffness and damping with 90% of its mass (default 420/36/1.44), retaining spring overshoot at both endpoints. The compact hover zone is 20px wider than the compact card in total (10px each side); the expanded card holds hover inside that zone until pointer exit, without a re-entry lock. Optional ?lightboxDebug=1 exposes a nonpersistent panel for shared resize/title/text spring stiffness, damping and mass, text travel distance, text-rise delay, opacity delay/duration, title crossfade duration, radius duration and Reset, only while an actionable context card is open. Defaults: glass/body spring 420/36/1.6 and title spring 420/36/1.44, text travel 80px, rise delay 120ms, fade delay 160ms, fade duration 200ms, title crossfade 60ms, radius duration 400ms. On touch, the first card tap expands, the second opens the case; the first outside tap collapses only the card and the next outside tap closes the lightbox. Full cases use the nearest preceding heading (or the case title before the first heading) and the first nonempty paragraph of that section for every media, regardless of caption. Media in the same Gallery share the same title and paragraph. The full card remains one semantic link to the source in the case, without a visible action label. Short cases show only the caption heading in a compact non-expanding card and hide it without a caption. About has no context card. Keyboard-open sessions restore focus on ordinary close, but ArrowLeft navigation to the previous item and ArrowRight navigation to the next item suppress restoration to the source media because the active item changed; keyboard navigation does not reveal hidden controls, and subsequent Tab navigation may enable accessible restoration again. Non-cyclic navigation, responsive controls, source-aware close motion and reduced-motion fallback remain; the short-case render gets an isolated scope.",
             "The portfoliocase MDX can render a non-interactive three-scene PortfolioMotionDemo in a fixed-height white borderless viewport: top card, short mode, and one Portfolio as a Product case. The motion rhythm is slowed by 1.2x: outgoing travels from 0 to 120px over 720ms with cubic-bezier(0.7, 0, 0.84, 0), while incoming reaches the apex at the 1440ms lifecycle boundary with mirrored cubic-bezier(0.16, 1, 0.3, 1). Outgoing opacity stays at 1 and blur at 0px through the first 60px, then changes to 0 and 18px. Incoming starts when outgoing opacity reaches 0.5 at about 683ms and is fully opaque and deblurred after its first 60px at about 760ms. Equal scene visibility peaks at about 24.4/24.4 percent, below the 30/30 limit. Every scene crosses 0deg into the opposite rotation, following either -15deg -> 0deg -> 15deg or 15deg -> 0deg -> -15deg, with starting directions alternating continuously across the loop. The opacity >= 0.8 guard starts the production animations: the top-card to-profile -> to-home switch and the short-mode switch each wait 280ms before starting, all top-card states continuously run the production 620ms icon hover cycle, and short mode remains 2x. Top card keeps --home-top-card-width on every viewport; the single case keeps the production bubble's natural text-sized proportions, is uniformly scaled to 1.2x, and is centered in the scene, proportionally enlarging its text, sticker, radius, shadows, and bubble deformation. The case combines entry and exit into one continuous trajectory without pausing at the apex, and changes opacity and blur only after its first 60px on either leg. Its glass bubble waits 140ms after the case appears, fades over 280ms, and scales from 0.1 to 1 with a spring tail using 220 / 14 / 1 before the sticker frame cycle begins. The viewport is 412px high and shifts the scene center upward by 68.8px, placing the trajectory apex at about 137.2px versus the upper-third target of about 137.3px. The remaining lower area contains the full fall, rotation, blur tail, and case scale without clipping. Every exiting scene calls safeToRemove after 720ms, so a cyclic key cannot reuse an instance with already-mutated motion values. A visibility-aware timeout pauses while the document is hidden and resets one presence session on return, preventing accumulated exit layers. The explicit loop handoff and reduced-motion fallback remain non-interactive.",
             "Scroll-to-top button reveals after scroll and uses compact hover feedback."
           ]
@@ -321,10 +474,13 @@
         {
           "name": "profile-mdx-content",
           "components": [
-            "markdown-blocks"
+            "markdown-blocks",
+            "mdx-media",
+            "gallery-lightbox-scope"
           ],
           "motion": [
-            "MDX content participates in page reveal sequencing."
+            "MDX content participates in page reveal sequencing.",
+            "GalleryLightboxScope combines openable image and video items across About Gallery blocks into one non-cyclic fullscreen gallery."
           ]
         }
       ]
