@@ -832,7 +832,7 @@ export function WorkShortSummaryContent({ children, shortAfterContent }: WorkSho
     displayMode === "full" ? (
       children
     ) : (
-      <section className={styles.shortSummary} aria-label="Короткая версия кейса">
+      <section className={styles.shortSummary} aria-label="Короткая версия кейса" data-work-short-summary="">
         <div className={styles.shortText}>
           {shortSummary.paragraphs.flatMap((paragraph) =>
             getShortSummaryBlocks(paragraph).map((block) => (

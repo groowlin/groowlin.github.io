@@ -300,6 +300,9 @@ export function MediaPlaceholderView({
   function markVideoLoaded(element: HTMLVideoElement) {
     applyVideoIntrinsicSize(element);
     markAssetReady();
+    if (!hasProgressiveVideo && element.readyState >= 2) {
+      onVideoReady?.();
+    }
   }
 
   function syncVideoStartTime(element: HTMLVideoElement, reference?: HTMLVideoElement | null) {
@@ -399,6 +402,7 @@ export function MediaPlaceholderView({
     inlineFrameCheckPendingRef.current = true;
     onNextPresentedVideoFrame(element, (mediaTime) => {
       inlineFrameCheckPendingRef.current = false;
+      if (inlineVideoRef.current !== element || !element.isConnected) return;
       const currentRequestedTime = videoSyncTime?.() ?? videoStartTime;
 
       if (

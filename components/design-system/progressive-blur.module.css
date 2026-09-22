@@ -1,0 +1,16 @@
+.layer {
+  position: absolute;
+  inset: var(--space-0) auto var(--space-0) var(--space-0);
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  opacity: 1;
+  pointer-events: none;
+  animation: none;
+  transition: none;
+  will-change: auto;
+  -webkit-backdrop-filter: blur(var(--progressive-blur));
+  backdrop-filter: blur(var(--progressive-blur));
+  mask-image: linear-gradient(var(--progressive-blur-direction), transparent var(--progressive-blur-mask-start), #000 var(--progressive-blur-mask-end));
+  -webkit-mask-image: linear-gradient(var(--progressive-blur-direction), transparent var(--progressive-blur-mask-start), #000 var(--progressive-blur-mask-end));
+}

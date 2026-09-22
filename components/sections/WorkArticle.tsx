@@ -2,6 +2,7 @@ import styles from "@/components/sections/work-article.module.css";
 import { WorkArticleOutline } from "@/components/sections/WorkArticleOutline";
 import { ScrollToTopButton } from "@/components/sections/ScrollToTopButton";
 import { WorkShortSummaryContent } from "@/components/sections/WorkShortSummaryToggle";
+import { GalleryLightboxScope } from "@/components/media/GalleryLightboxScope";
 
 interface WorkArticleProps {
   content: React.ReactNode;
@@ -13,11 +14,13 @@ export function WorkArticle({ content, shortAfterContent, showOutline = true }: 
   return (
     <article className={styles.article}>
       {showOutline ? <WorkArticleOutline /> : null}
-      <WorkShortSummaryContent shortAfterContent={shortAfterContent}>
-        <div className={styles.mdxRoot} data-work-article-root="">
-          {content}
-        </div>
-      </WorkShortSummaryContent>
+      <GalleryLightboxScope>
+        <WorkShortSummaryContent shortAfterContent={shortAfterContent}>
+          <div className={styles.mdxRoot} data-work-article-root="">
+            {content}
+          </div>
+        </WorkShortSummaryContent>
+      </GalleryLightboxScope>
       <ScrollToTopButton />
     </article>
   );
