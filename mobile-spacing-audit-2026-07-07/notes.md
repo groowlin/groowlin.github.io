@@ -1,5 +1,7 @@
 # Mobile Spacing Audit, 2026-07-07
 
+> Historical source-based audit of the 2026-07-07 state. Its values, verdict and recommendations are not the current UI contract. The current implementation was accepted by the user as the documentation baseline on 2026-10-05; use `design-system-spec.md` and the current component specifications. No new visual inspection or checks were performed for this archival note.
+
 ## Scope
 - Viewport model: 390px wide mobile screen.
 - Routes reviewed from source/layout contracts: `/`, `/about`, `/work/familia`, `/work/globus`, `/work/goldenapple`, `/work/medicine`, `/work/portfoliocase`, `/work/vk`, `/work/zvuk`.

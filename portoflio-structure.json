@@ -5,13 +5,14 @@
     "gamesExperience": {
       "component": "components/games/GamesEntry.tsx",
       "specification": "docs/specs/games.md",
-      "mount": "app/page.tsx after SiteShell, normal document flow",
+      "mount": "app/page.tsx after SiteShell, normal document flow, only when gamesEnabled",
+      "availability": "lib/features.ts: process.env.ENABLE_GAMES === \"true\", default false; GitHub Pages explicitly ENABLE_GAMES=false. Disabled builds omit GamesExperience, mascot, games bootstrap, all gameItems and planned mini-games in the page builder; MDX source/schema validation is unchanged. Other planned items remain. Rebuild required after flag changes; repository sources and public game asset URLs remain accessible.",
       "routes": [
         "/"
       ],
       "viewport": "desktop only, min-width 768px",
       "frame": "single wide Dialed-derived card, width min(672px, viewport minus existing page gutters) and height 50svh inside a 100svh panel; horizontal center uses auto margins; final vertical top is calculated in panel-local coordinates as (messageTop - panelTop - frameHeight) / 2; transient opening and closing use fixed positioning at that same numeric viewport top, so native scroll cannot add frame motion and the final fixed-to-absolute switch preserves coordinates; radius uses TopCard --home-top-card-radius (40px); closed content cannot extend document overflow",
-      "visual": "#111111 card, radius40 from TopCard, no white border, outer shadow or glow; active120/radius16 gradient #D3D9FF to #7E91F6, fixed #363636; two214px background squares gap16 on intro/final; five static progressive backdrop blur layers0/5/10/20/40px with no opacity animation on filter elements; source squares alone crossfade; white copy; five30px PNG hearts at top40; seven victory spotlights with rounded tops, 182/176/194/166/188/180/174% heights, common bottom-center origin and independent motion; no automatic victory card bounce; every beam pulses independently between4% and16% opacity over1200ms per direction with phases distributed across the full2400ms cycle; group delay300ms before 600ms fade-in; replay label Далее and icon fade in over600ms before their existing pulse; backdrop squares always clipped independently of drag overflow",
+      "visual": "#111111 card, radius40 from TopCard, no white border, outer shadow or glow; active120/radius16 gradient #D3D9FF to #7E91F6, fixed #363636; three214px background source squares gap16 on intro/final; five static progressive backdrop blur layers0/5/10/20/40px with no opacity animation on filter elements; source squares alone crossfade; white copy; five30px PNG hearts at top40; seven victory spotlights with rounded tops, 182/176/194/166/188/180/174% heights, common bottom-center origin and independent motion; no automatic victory card bounce; every beam pulses independently between4% and16% opacity over1200ms per direction with phases distributed across the full2400ms cycle; group delay300ms before 600ms fade-in; replay label Далее and icon fade in over600ms before their existing pulse; backdrop squares always clipped independently of drag overflow",
       "components": [
         "GameModeShell",
         "GameFrame",
@@ -37,8 +38,8 @@
         "characters"
       ],
       "state": "sessionStorage portfolio.games.v1: isOpen, currentGameId pixel-perfect or characters, Pixel Perfect attempts/results/completed; character physics is transient; CEO Simulator has a temporary adjacent non-persistent numeric runtime tuning panel with reset and restart actions",
-      "bootstrap": "raw inline before scroll restoration, stable SSR tree and pre-hydration CSS open geometry",
-      "motion": "closed: tail after SiteShell is exactly 80svh so the case list retains 20% viewport visibility at maximum scroll; open: reserves a 72px mascot area plus 100svh panel and scrolls to the exact document bottom while mascot exits and the fixed whole-card frame runs one 700ms raw progress animation from translate 0 100svh and scale .96 with cubic-bezier(0.18, 1.14, 0.32, 1); duration and temporal profile stay unchanged, while translate and scale amplify only raw progress above 1 by a factor of 6 for roughly 3.5-4% spatial overshoot at the same peak and return timing; the second control point at 1 gives the endpoint zero derivative for a smooth deceleration into rest, without an abrupt stop, separate tail or intermediate motion keyframes; opacity derives from raw progress and reaches 1 at exactly half the path; blur and rotation are absent; close reverses the same progress while the page stays stationary; the hidden default mascot appears only after return scroll has fully completed, then the panel collapses after mascot reveal; reduced motion supported",
+      "bootstrap": "only when gamesEnabled: raw inline before scroll restoration, stable SSR tree and pre-hydration CSS open geometry",
+      "motion": "closed: tail after SiteShell has a minimum height of 80svh and expands when the selected list is shorter than the viewport so the case list retains 20% viewport visibility at maximum scroll when the list is tall enough; open: reserves a 72px mascot area plus 100svh panel and scrolls to the exact document bottom while mascot exits and the fixed whole-card frame runs one 700ms raw progress animation from translate 0 100svh and scale .96 with cubic-bezier(0.18, 1.14, 0.32, 1); duration and temporal profile stay unchanged, while translate and scale amplify only raw progress above 1 by a factor of 6 for roughly 3.5-4% spatial overshoot at the same peak and return timing; the second control point at 1 gives the endpoint zero derivative for a smooth deceleration into rest, without an abrupt stop, separate tail or intermediate motion keyframes; opacity derives from raw progress and reaches 1 at exactly half the path; blur and rotation are absent; close reverses the same progress while the page stays stationary; the hidden default mascot appears only after return scroll has fully completed, then the panel collapses after mascot reveal; reduced motion supported",
       "characters": {
         "title": "Симулятор руководителя",
         "component": "components/games/CharacterPlayground.tsx",
@@ -68,16 +69,17 @@
         "final": "three crisis tasks with independent5s countdown in playable metrics HUD and non-blocking result; verdict by successes:3 company grows,2 business holds,0-1 bankrupt; every path reaches a fade-in report without white underlay; restart control is transparent; FINISHED stops simulation/rAF",
         "restart": "fresh CeoGame resets6 humans to role=null, seeded market positions, zero AI/assignments/timers/progress/final statistics/hints/effects; returns to Собери команду",
         "persistence": "CEO gameplay only in memory; existing selected-card ID and Pixel Perfect persistence unchanged",
-        "verification": "automated scenarios cover the required21 population/AI/metrics/hold/transition/crisis/verdict cases plus exhaustive reachability of all six tasks and three crises; visual assessment remains with the user",
+        "verification": "reference coverage only; execution conditional on build impact under AGENTS sections 9–10; automated scenarios cover the required21 population/AI/metrics/hold/transition/crisis/verdict cases plus exhaustive reachability of all six tasks and three crises; visual assessment remains with the user",
         "future": "endless mode only documented; no burnout/turnover/events/bankruptcy/infinite task UI or mechanics"
       },
       "pixelPerfect": {
+        "backgroundSourceCount": 3,
         "stages": [
           "intro",
           "play",
           "final-result"
         ],
-        "transitions": "Actual drag from intro enters play; stage changes parallel crossfade280ms with screen-space blur16px, no geometry morph; ordinary attempt returns active square with original550ms spring bounce0.16; terminal attempt fades/blur at retained measurement zoom while incoming final copy/background appear simultaneously, without zoom-out; final advance is sequence-locked: reset-exit starts the card shake, then after one animation frame mounts CharacterPlayground above the final; its opaque gray surface fades in for300ms while Pixel Perfect stays underneath, without a new opacity ancestor around backdrop filters; completion unmounts Pixel Perfect and persists characters without clearing the result; the frame keeps full opacity and performs two sequential150ms shakes; progressive blur remains static; reduced motion keeps the300ms content crossfade without shake",
+        "transitions": "Actual drag from intro enters play; stage changes parallel crossfade280ms with screen-space blur16px, no geometry morph; ordinary attempt returns active square with original550ms spring bounce0.16; terminal attempt fades/blur at retained measurement zoom while incoming final copy/background appear simultaneously, without zoom-out; final advance is sequence-locked: reset-exit starts the card shake, then after one animation frame mounts CharacterPlayground above the final; its opaque gray surface fades in for300ms while Pixel Perfect stays underneath, without a new opacity ancestor around backdrop filters; completion unmounts Pixel Perfect and persists characters without clearing the result; the frame keeps full opacity and performs two sequential150ms shakes; progressive blur remains static; reduced motion makes ordinary stage crossfades instant, disables zoom/shake/animated blur and keeps the300ms next-game content crossfade without shake",
         "objectSizePx": 120,
         "targetGapPx": 16,
         "reactions": "pure configurable event engine: campaign active, endless disabled; shared/campaign/endless copy; error ranges, progress comparison, zero and OOB priority, one pair per event, no consecutive repeats; persisted analytics/history/seen IDs in portfolio.games.reactions.v1",
@@ -104,9 +106,41 @@
       }
     }
   },
+  "verificationPolicy": "AGENTS.md sections 9–10: checks/tests only for concrete possible build impact; document-only and UI-only changes run no tests, lint, typecheck, build, browser smoke or visual inspection",
+  "metadataContract": "Work/About/404 inherit common layout metadata title; own description/canonical remain. Work canonical is derived from slug; required frontmatter canonical is compatibility data. Home metrics are permitted renderer-owned HOME_METRIC_LABELS rather than role subtitle.",
   "designSystem": {
+    "currentTokens": {
+      "previewRadiusPx": 22,
+      "avatarRadiusPx": 50,
+      "previewOffsetXPx": 68,
+      "leftColumnWidthPx": 405,
+      "topCardWidthPx": 340,
+      "topCardContentGapPx": 12,
+      "topCardSubtitleGapPx": 7,
+      "topCardIconGapPx": 9,
+      "homeIconSizePx": 18,
+      "homeFontLgPx": 18,
+      "homeFontMdPx": 16,
+      "homeMetaGapPx": 7,
+      "homeMicroGapPx": 5,
+      "mobileOverrides": "through767px: meta-gap6px, micro-gap4px, contact-gap8px, top-card-padding16px, subtitle-gap6px, icon-gap8px",
+      "homeBubbleRadiusPx": 18,
+      "headingWeight": 800,
+      "localHoverColor": "#f0f3f6",
+      "topCardFontBindings": "home-font-size-lg/md; home-name/subtitle-size 20/18px are legacy declarations",
+      "legacyDeclarations": "home-layout-pad-left/top135px, home-top-card-gap22px, home-contact-gap9px",
+      "mediaCaption": "top9.6px, left20px desktop /16px through767px; content media radius uses home-top-card-padding20/16px"
+    },
+    "workShortSummaryControl": {
+      "desktop": "icon-only segmented84x40px button;36px segments,8px gap,2px inset; shell radius14px, thumb12px; no visible labels; click toggles",
+      "mobile": "portal segmented44px group,16px side/bottom inset, glass pill backing with local shadows, labeled icon options and42px thumb; pointer-up selection,360ms hold-to-drag120px bubble,260/24/0.85 settle spring and local jelly feedback",
+      "breakpoint": "mobile max-width768px inclusive, also ScrollToTopButton; shell mobile ends767px",
+      "activation": "desktop click; mobile pointer handlers, no click/Enter/Space mode activation currently",
+      "reducedMotion": "desktop final states; mobile skips hidden initial pose but retains ongoing JS springs/deformations; CSS disables only CSS transitions/animations"
+    },
     "fontFamily": "Inter",
     "letterSpacing": "0.03em",
+    "mediaMotion": "MediaPlaceholder handoff220ms expressive opacity/blur18px, loading280ms ease blur18/scale1.02, loaded320ms ease; loading/handoff use media-loading-blur with18px fallback, planned authored home preview overrides0px per design-system-spec.md#home-showcase-motion; Gallery trigger scale1-to1.018420ms with local easing. These remain animated with reduced motion; fullscreen Lightbox has separate reduced-motion paths.",
     "sticker": {
       "assetType": "svg",
       "placement": "inline-text",
@@ -116,7 +150,8 @@
     },
     "layout": {
       "mobile": {
-        "mainPaddingTop": 40,
+        "mainPaddingTop": 32,
+        "mainPaddingTopBase": 40,
         "surfacePaddingX": 16,
         "contentPaddingX": 32,
         "contentInset": 16
@@ -137,19 +172,25 @@
         "Motion supports orientation, hierarchy, and state change.",
         "Primary reveal language is opacity + blur + translateY.",
         "Primary surface-swap language is opacity + blur + scale; persistent top-card route swaps use a continuous snapshot wheel/tape with opacity + vertical translation + scale and no blur.",
-        "Continuous loops are allowed only for top-card hover feedback and the active mapped home sticker frame cycle; both stop when inactive.",
+        "Continuous loops are allowed for active top-card hover and mapped stickers, with explicit local exceptions for games and visibility-gated PortfolioMotionDemo.",
         "Reduced-motion fallback is required for reveal, top-card swap, lightbox choreography, and home glass/preview motion."
       ],
       "easing": {
         "expressive": "cubic-bezier(0.22, 1, 0.36, 1)",
         "standard": "cubic-bezier(0.4, 0, 0.2, 1)",
         "softOut": "easeOut",
-        "basic": "ease"
+        "basic": "ease",
+        "galleryTrigger": "cubic-bezier(0.16, 1, 0.3, 1)"
       },
       "durationsMs": {
         "micro": 180,
         "fast": 200,
         "fastPlus": 220,
+        "lightboxFloatingClose": 440,
+        "lightboxCloseIcon": 360,
+        "lightboxCloseGeometry": 240,
+        "lightboxInterruptedClose": 160,
+        "navigationPress": 120,
         "stickerCycle": 200,
         "base": 280,
         "basePlus": 320,
@@ -157,16 +198,17 @@
         "layout": 600,
         "pageReveal": 700,
         "ambientEnter": 1240,
-        "loopIcon": 1400,
+        "loopIcon": 620,
         "loopShimmer": 4200
       },
       "pageReveal": {
-        "translateYPx": [
-          12,
-          16
-        ],
+        "translateYPx": 28,
         "blurPx": 8,
-        "staggerMs": 80
+        "staggerMs": 80,
+        "visibilityDurationMs": 700,
+        "moveDurationMs": 1120,
+        "moveEasing": "cubic-bezier(0.18, 0.88, 0.28, 1)",
+        "readyGate": "own opacity/filter visibility animations settle; movement can continue; all-animation waiting is cleanup only"
       },
       "topCardRouteSwap": {
         "persistentSurface": true,
@@ -310,14 +352,30 @@
           "type": "Record<workSlug, NonEmptyArray<internalSvgPath>>",
           "keyValidation": "Each key must reference a slug listed in the same home.mdx body.",
           "workFrontmatterField": false
+        },
+        "plannedItems": {
+          "source": "content/site/home.mdx frontmatter",
+          "required": false,
+          "type": "Record<plannedSlug, { label: string, subtitle: string, statusLabel: string }>",
+          "keyValidation": "Each key must be listed in the same home.mdx body and cannot conflict with gameItems or a published work entry.",
+          "behavior": "Non-navigable planned entries without href, detail pages or own preview. The three configured planned authored entries (mini-games displayed only when ENABLE_GAMES=true) share one decorative Globus preview from the existing home work entry; no donor means no preview. A stable planned-globus-preview key/source/video DOM preserves playback across direct switches. Local saturated blue recolor (grayscale luminance, moderate sRGB gamma per the canonical design-system rule, full accent-blue screen; lighter tones with greater tonal separation), shared zero-inset clip at media edges without video resize, white backing and blur-free entry/exit/loading/handoff follow design-system-spec.md#home-showcase-motion; white is preserved before and after reveal. StatusLabel replaces metrics: Подготовка кейса for media-and-gallery and content-automation, В разработке for mini-games; subtitle supplies 2026. Each entry uses only the first frame from itemStickers.globus without cycling or copying asset paths.",
+          "workFrontmatterField": false
+        },
+        "tabs": {
+          "source": "content/site/home.mdx body",
+          "syntax": "Tabs are separated by ---. Each tab starts with ##, nested sections start with ###, and list items contain work slugs.",
+          "currentContent": "One untitled list per tab; former ### section headings are retained as single-line MDX comments. Cases within each tab follow descending year order; ties retain the current author order. The home.mdx body sets the order without automatic sorting. Опыт: globus, goldenapple, zvuk, medicine, familia. VK is temporarily commented out in home.mdx; its case file and route are retained. Авторское: portfoliocase, media-and-gallery, mini-games, content-automation. The three planned authored cases follow portfoliocase in the shared 2026 year group. Games are available through the independent GamesExperience mascot only when ENABLE_GAMES=true; disabled builds omit all gameItems and planned mini-games, preserving the other two planned entries.",
+          "default": "first tab",
+          "workFrontmatterField": false
         }
       },
       "motion": [
         "PersistentSiteFrame maps / to the to-profile top card and keeps AnimatedTopCard mounted across route changes.",
-        "Home heading and case list use sequenced page reveal.",
-        "Case-item glass and preview are gated by per-target reveal readiness: both actual CSS animations of that target must settle, including its own stagger. Hover or focus held on the item opens automatically when it becomes ready; instant and reduced-motion targets are ready immediately. This does not wait for the global reveal sequence or block link navigation.",
+        "Every valid tab activation, including the current tab and rapid returns, immediately clears close timers, pointer/focus intent and active case state before early returns. Pane DOM suppression hides glass/year/stickers and restores unshifted text without transition even in retained outgoing panes. The preview portal unmounts with its AnimatePresence boundary without exit fade. Only a subsequent valid hover/focus opening in the active non-inert pane restores its hover and preview; tab re-entry alone does not. Home tabs stay on one line below the top card, with --home-top-card-to-tabs-gap (80px) from card bottom to tab-label top, --home-tabs-gap (20px) between tab labels, and --home-tabs-to-list-gap (60px) from tab-label bottom to the first list heading or first case title text in an untitled section (compensating item layout padding with a first-section negative margin), and --home-section-title-gap (40px) from section title to its first case, plus --home-section-gap (60px) from the last case subtitle to the next heading; these also apply on mobile. Buttons use half of --space-md vertical and half of --space-xl horizontal padding, reduced to half of --space-md horizontal on mobile; shell/label padding is compensated in layout and adjacent button bounds overlap to keep the requested label gaps; tablist left inset subtracts button padding so the first label aligns with section-heading text on desktop and mobile. The active background is pill-shaped. Active, hover and focus-visible labels use --color-gray-700. One persistent gray35 background moves and resizes with a spring (stiffness 560, damping 40, mass 1.51) and 800ms scaleX [1,0.92,1.08,1,1] / scaleY [1,1.08,0.92,1,1] deformation, including repeated clicks. Active tab title persists in sessionStorage without changing the URL and restores by remounting the pane-presence boundary before paint, without a switch transition or overlapping panes. Incoming and outgoing targets travel 80px in opposite directions with 20ms incoming stagger and a 1129ms complete switch: incoming movement/visibility duration is 929ms minus (N-1)*20ms for N actually animated targets, with elapsed preparation time deducted and stagger capped to the remaining budget; outgoing movement, opacity and 10px blur use 200ms without stagger. The first incoming target starts 200ms after the first outgoing target starts, so the waves overlap. The incoming pane enters normal flow immediately while the outgoing pane remains mounted out of flow until its final row completes. The viewport does not clip content. Reduced motion is instant.",
+        "Home tablist uses page-level reveal. Each keyed tab pane owns a nested wave reveal for section headings and case items; initial entry and sessionStorage restoration wait for scroll restoration and use zero horizontal offset, while click switches prepare the new wave after two animation frames and delay its first target until 200ms after the outgoing wave starts. Rapid re-entry restarts that pane's wave. Each incoming target combines signed 80px horizontal movement and no vertical travel, staggered 20ms per target. The full switch ends at 1129ms from outgoing start; after the 200ms offset, movement/visibility duration is 929ms minus (N-1)*20ms for N actually animated targets. Late preparation subtracts elapsed time and exceptionally long waves cap the stagger to the remaining budget. Outgoing targets move in the mirror direction over 200ms without stagger, starting from their current computed transform if interrupted. Neither pane has whole-panel horizontal travel; each case glass and preview still waits for its own target readiness. Initial page entry retains the shared 80ms row stagger; initialized nested reveal targets are isolated. In scripting-enabled browsers, server-rendered CSS hides uninitialized leaf targets in pending roots before hydration, including the complete tablist and active background; no-JS and reduced-motion content stays visible.",
+        "Case-item glass and preview are gated by per-target reveal readiness: only opacity/filter visibility animations of that target must settle; movement may continue, including its own stagger. Hover or focus held on the item opens automatically when it becomes ready; instant and reduced-motion targets are ready immediately. This does not wait for the global reveal sequence or block link navigation.",
         "Active case glass position uses velocity-preserving physics with mass 0.9: smoothstep remains for stiffness 320..460, while a reference damping curve of approximately 0.80..0.62 uses a normalized exponential ease-out measured in actual item steps with scale 4.5. The start-from-rest theoretical peak stays physical and unchanged through 12px, then an exponential target-amplitude curve toward an 18px asymptote is converted into effective damping (approximately 0.7566 at maximum travel). Approach crossing time is normalized to 1.20x the reference spring with damping-aware flight compensation; the post-target distance-aware tail time-warp remains 1x..2x. Initial inherited velocity is pre-compensated for the active flight scale in copied spring options; size morph uses 220/22/1.0.",
-        "Pointer shift targets ±16px/±10px through a 300/24/0.75 spring with power 1.4; active text follows 25% over 420ms expressive easing, and an optional item-local sticker follows 50% of the same raw target through its own 300/24/0.75 spring, bounded to ±8px/±5px. Sticker activation waits the shared 280ms glass-opacity duration, then fades and deblurs over motion-page-reveal 700ms with expressive easing; deactivation fades out and blurs immediately over 280ms. Outgoing text returns explicitly over 600ms standard easing, re-entry hands the current transform back to CSS without a jump, the glass uses 1400px perspective, and the shared close delay remains 380ms.",
+        "Pointer shift targets ±16px/±10px through a 300/24/0.75 spring with power 1.4; active text follows 25% over 420ms expressive easing. Year bracket and label move together without rotation from independent group-coordinate pointer targets, with amplitude and the 300/24/0.75 springs defined by the year-group contract; reveal-ready hover/focus has no extra delay and fades/deblurs over 1120ms, then exits immediately over 280ms. Outgoing text returns over 600ms standard easing; glass perspective and the 380ms close delay remain unchanged.",
         "Hover preview is a fine-pointer desktop enhancement and swaps media with blur/opacity/scale transitions; reduced motion uses opacity only."
       ],
       "sections": [
@@ -339,13 +397,17 @@
           ]
         },
         {
-          "name": "home-header",
+          "name": "home-tabs",
           "components": [
-            "home-title",
-            "home-subtitle"
+            "tablist",
+            "tab",
+            "shared-active-tab-background",
+            "animated-tab-panel"
           ],
           "motion": [
-            "Participates in page reveal sequencing."
+            "Tablist participates in page reveal sequencing.",
+            "Rightward selection moves each outgoing heading and case item 80px left and reveals each selected target from 80px right; incoming targets use 20ms stagger and outgoing targets have no stagger. Leftward selection mirrors it. Non-adjacent selection does not mount intermediate panels.",
+            "Incoming movement, opacity and blur use 929ms minus (N-1)*20ms for N actually animated targets, so the full switch ends 1129ms after outgoing start. Late preparation subtracts elapsed time and exceptionally long waves cap the stagger. Outgoing movement, opacity and blur(10px) retain 200ms without stagger. Interrupted outgoing targets start from their computed transform. The first incoming target begins 200ms after the first outgoing target, overlapping the two staggered waves. There is no whole-panel horizontal travel. One persistent gray35 pill background moves and resizes with a spring (stiffness 560, damping 40, mass 1.51) and 800ms bounded deformation, including repeated clicks. Tab title persists in sessionStorage and restores by remounting pane presence before paint, without entrance animation or overlapping panes. The incoming pane determines page height immediately; the outgoing pane remains mounted out of flow through its final row's exit. The viewport does not clip content. Keyed list and item refs survive during exit; exiting panes ignore pointer and focus events and cannot close active glass. Exit pointer blocking is DOM-state CSS/inert only, never an inline Framer Motion pointer-events value; rapid re-entry clears stale inert, aria-hidden and inline pointer-events on the active pane. Reduced motion is instant."
           ]
         },
         {
@@ -356,22 +418,19 @@
             "case-item-label",
             "case-item-meta",
             "glass-highlight-layer",
-            "item-local-optional-sticker-layer"
+            "pane-local-year-group-bracket"
           ],
           "motion": [
             "Case items reveal with the shared page-reveal language.",
-            "Each case item's glass and preview wait for that item's own reveal animations to settle, then auto-open for a stationary pointer or retained focus; instant and reduced-motion items are ready immediately.",
+            "Temporary Globus exception: title uses home-text-secondary (gray500), including hover, per design-system-spec.md#home-showcase-motion. The item retains hover, preview and stickers, uses the default arrow cursor (cursor: default), and has no link semantics or click navigation. The /work/globus link remains in a code comment for restoration; the detailed route remains directly accessible.",
+            "Planned authored cases reuse the non-navigable Globus span branch and secondary title color per design-system-spec.md#home-showcase-motion. The three entries are media-and-gallery (Медиа и галерея), mini-games (Мини игры), content-automation (Автоматизация контента); statusLabel is Подготовка кейса for media/gallery and content automation, В разработке for mini-games. They keep hover, glass and only the first Globus sticker without frame cycling, but no href, link role, keyboard link target, detail route, own preview or preview analytics. They share one decorative Globus preview with a stable planned-globus-preview key, source and video DOM across direct switches; absent donor means no preview. Recolor uses grayscale luminance and moderate sRGB gamma per the canonical design-system rule plus full accent-blue screen for lighter tones with greater tonal separation, without dark mix or contrast clipping. Media and overlay share a zero-inset clip at the media edges without resizing the video; outer backing stays white. Persistent zero-size SVG definitions sit outside the keyed preview with an expanded filter region. Recolor, white backing and blur-free aside/frame enter/exit and asset loading/handoff follow design-system-spec.md#home-showcase-motion. Separate planned pane identity preserves its blur-free exit when switching to work; the modifier remains inside the keyed subtree. Globus and other previews retain original colors and motion. The configured entries follow portfoliocase under 2026; mini-games is omitted when ENABLE_GAMES is disabled with labels/status authored in home.mdx plannedItems.",
+            "Each case item's glass and preview wait for that item's own opacity/filter visibility animations to settle, then auto-open while movement may continue for a stationary pointer or retained focus; instant and reduced-motion items are ready immediately.",
             "Active case text follows 25% of pointer shift over 420ms expressive easing; outgoing text returns through WAAPI over 600ms standard easing, and re-entry preserves its current visual transform.",
             "Glass position preserves spring velocity: smoothstep maps distance to stiffness 320..460, and a separate 4.5-step exponential reference damping curve runs from approximately 0.80 to 0.62. Its theoretical start-from-rest overshoot is unchanged through 12px, then an exponential amplitude target toward 18px is converted into effective spring damping, reaching approximately 0.7566 at maximum travel. There is no visual post-crossing compression: the spring peaks and reverses physically. Damping-aware flight scaling normalizes approach crossing to 1.20x the reference spring, then the existing distance-aware 1x..2x tail scale takes over; copied spring options pre-compensate inherited velocity for the active flight scale; size uses a 220/22/1.0 lightweight morph spring.",
             "Glass follows pointer targets ±16px/±10px with restrained transform depth and 1400px perspective.",
-            "A case item renders one sticker layer only when its slug has a non-empty itemStickers frame array in home.mdx. The non-interactive sticker is positioned inside that item's own itemVisualBounds above the glass, so the old sticker fades in place instead of following the glass geometry to another item.",
-            "The sticker uses --home-arrow-size (27px), reserves no bubble width, anchors at right: -50% of its size and top: -1/2 of --home-item-gap, keeps a permanent -15deg counterclockwise orientation, and follows 50% of the raw pointer target with its own spring without inheriting the glass transform. Horizontal glass intersection is 13.5px at rest and 5.5px..21.5px at sticker parallax extremes. Text follows 25% of raw shift, so its maximum relative inward delta is 4px and the existing 18px padding retains an approximately 0.5px minimum gap; only 4px of the sticker extends above the top edge at rest.",
-            "Glass opacity remains motion-base 280ms. Sticker activation reuses that duration as a 280ms delay, then enters over motion-page-reveal 700ms through opacity 0→1 and blur 4px→0px with expressive easing. Deactivation starts immediately and exits over 280ms through opacity 1→0 and blur 0px→4px, cancelling delayed entry cleanly during rapid switches.",
-            "All configured SVG frames are eagerly preloaded as stacked images and switch discretely through visibility with no inner motion, opacity, blur, scale, crossfade, or frame transition. A single-frame array stays static and the outer 700ms opacity/deblur appearance remains unchanged.",
-            "A single-frame array stays static and does not start the cycle. When multiple frames are configured, the visible frame changes every semantic motion-sticker-cycle interval of 200ms (5fps) after the initial 280ms sticker delay.",
-            "Only the active item's recursive timeout chain runs. Activation resets the visible source to frame 0; deactivation cancels all timeouts. Reduced motion shows frame 0 only and does not start the cycle. Portfoliocase currently uses only Puffy Sparkle Darker Violet, while Globus uses the single static Clock Neutral sticker; Codex, GitHub, Metrica, and Puffy Star Darker Yellow remain commented in home.mdx.",
-            "Every frame keeps the shared 27px by 27px DOM/image container. Puffy Sparkle Darker Violet and Clock Neutral normalize their source artwork through viewBox 2.75 2.75 18.5 18.5, filling approximately 26.3–26.9px of the container without CSS scaling. The scale(1.1) mapping for the currently commented Puffy Star Darker Yellow remains available; tool images and the outer motion/rotation/parallax wrapper are not scaled.",
-            "Reduced motion preserves sticker opacity sequencing while forcing blur and glass, text, and sticker parallax transforms to zero; mobile hides the sticker with the glass."
+            "Each pane renders one bracket per work year group, independent of itemStickers. Pane-local layout offsets and ResizeObserver measure first title through last metadata bottom, excluding padding and transforms. The right-open bracket has a 2px color-gray-40 (#f4f4f5) border and radius-md ends, right:100%, home-item-gap margin and home-item-padding-x width. Secondary gray year text interrupts the midpoint using bg-page and space-2xs block padding, without underline or rotation. The bracket and year move together through independent raw-pointer targets and 300/24/0.75 springs, using full listWrap width and measured year-group top/height rather than the active item. Targets are at 0.5 / 1.5 / 4 of main pointer shift limits (six times weaker than stickers), with soft-shift power 1.4. Moving within the group preserves targets; leaving listWrap resets them. Only the active pane tracks pointer movement. The common bracket/year motion layer uses translate3d with fractional x/y values and will-change: transform; this requests compositing without changing motion targets or child geometry. Games have no bracket.",
+            "Work itemMeta displays HOME_METRIC_LABELS joined by · as ordinary text without chips, icons, years, arrows or percentages. Metric names in full/short text and home labels use established abbreviations with meanings in the canonical contract and variable counts; first-use definitions are allowed in full prose, actions without established abbreviations stay scenario prose; RR always includes D7 or D30 for Return On the exact day, with canonical window definitions and rationale in the case contract; Globus restores author-provided CR · RR D30 · NPS labels without new case content or measurements; Portfolio retains ER · FA · CD and uses the shared semantic dl/dt/dd overview with four separate label/body paragraphs and exact ordered labels Продуктовая задача, Решения, Аналитика и развитие, Автоматизация и AI; the standard exact ordered set Контекст, Метрики, Мой вклад, Ограничение remains supported, each body must be nonempty, and other short formats retain fallback; typography and tokens are canonical in design-system-spec.md#semantic-text-usage; authorized editing condenses short copy to a 15-second reading target and explains existing metric groups in the current full analytics section; other narrative, media and motion remain; canonical Portfolio definitions: docs/specs/portfolio-analytics-metrics-spec.md#80-отображаемые-обозначения-portfolio; canonical sets and evidence: docs/specs/portfolio-case-json-structure.md#shortsummary-rules. Year activation retains reveal-ready hover/focus gating but has no additional delay and uses existing 1120ms page-reveal movement duration with expressive opacity/deblur; exit stays immediate over 280ms. Switching cases within a year preserves the bracket. Measurements stay pane-local; reduced motion removes blur and sets bracket/year pointer shift to zero; mobile hides the year.",
+            "The preserved itemStickers contract renders alongside the year bracket: original top-right 27px layer, right:-half home-arrow-size and top:-half home-item-gap, rotation -15deg and 50% raw-pointer parallax with 300/24/0.75 spring. Stickers retain reveal-ready hover/focus, 280ms delay, 700ms expressive opacity/deblur, 4px blur, immediate 280ms exit and discrete 200ms SVG frame cycle. Activation resets frame zero, deactivation cancels the timer; reduced motion removes blur/parallax and keeps frame zero; mobile hides stickers. Globus uses only the static Clock Neutral sticker; portfoliocase cycles through Codex, Puffy Sparkle Darker Violet, GitHub, Segmented Circle (Metrica), and Puffy Star Darker Yellow in that order. Puffy Star keeps scale1.1."
           ]
         },
         {
@@ -392,6 +451,10 @@
       "page": "work-detail",
       "path": "/work/[slug]",
       "legacy": false,
+      "zvukContentFormatting": "Profiles narrative follows its own product logic. Four-block short overview retains existing renderer and short-profile.png followed by short-player.png; preview stays unchanged. Full media order: main.png, 4_gallery_1.png, 4_gallery_2.png, 5_gallery_1.png. Profiles are primary; the player supports uninterrupted listening in its section before the result; onboarding is outside scope. Existing full/short media, src, props and captions are preserved during text editing unless the user explicitly requests removal. Source archive: docs/archive/cases/zvuk-before-2026-10-08.mdx. Full/short/home metric labels: RR D7 · NU; public profile and playlist sharing creates an external entry for new users without measured acquisition claims; listening actions remain scenario prose. Canonical editorial scope and definitions: docs/specs/portfolio-case-json-structure.md#shortsummary-rules; presentation: design-system-spec.md#semantic-text-usage.",
+      "familiaContentFormatting": "Full narrative supports offline choice through scanner, sizes, saved/shared items, and repeat use through account, loyalty, subscriptions and stories. Gift cards are a separate gifting scenario without revenue claims. No conversion or Activation. Four-block short overview retains exact labels Контекст, Метрики, Мой вклад, Ограничение and existing media. Full/short/home metric labels: RR D30; saved-item actions remain scenario prose. Canonical evidence and definitions: docs/specs/portfolio-case-json-structure.md#shortsummary-rules. Existing slug, title, subtitle, status and media paths remain.",
+      "goldenappleContentFormatting": "Full narrative explains cosmetic choice through mood, camera guidance and AI consultation with return to the item. Short overview retains exact labels Контекст, Метрики, Мой вклад, Ограничение and both existing media. Full/short/home metric labels: CR · RR D7. Canonical editorial scope and definitions: docs/specs/portfolio-case-json-structure.md#shortsummary-rules; presentation: design-system-spec.md#semantic-text-usage. No invented figures, new measurements, fields, components or tokens.",
+      "medicineContentFormatting": "Medicine is a reference only for short-mode brevity, not for the full structure of other cases. Its own archived iterations and author-confirmed qualitative results remain. Full/short/home metric labels: CR · CSAT · AOV. Canonical editorial scope and evidence: docs/specs/portfolio-case-json-structure.md#shortsummary-rules. Short overview retains existing exact four labels and renderer; presentation and tokens: design-system-spec.md#semantic-text-usage. Case metric counts and narrative structure follow product logic, with no mandatory three-step template.",
       "motion": [
         "PersistentSiteFrame receives server-loaded published workSlugs, maps only /work/[published slug] to the to-home top card, and keeps AnimatedTopCard mounted across route changes.",
         "Header and MDX content use sequenced page reveal.",
@@ -536,3 +599,5 @@
     }
   ]
 }
+
+

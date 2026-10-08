@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+
 import Link from "next/link";
 import {
   type CSSProperties,
@@ -9,10 +10,12 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
-  useState
+  useState,
+  useSyncExternalStore
 } from "react";
 import {
   AnimatePresence,
+  animate,
   motion,
   useMotionTemplate,
   useMotionValue,
@@ -31,9 +34,26 @@ import { createPortal } from "react-dom";
 import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
 import { getCaseSlugFromHref, getCurrentPath, trackMetricaGoal } from "@/lib/analytics/yandex-metrica";
-import { type HomeShowcaseSection, type HomeWorkEntry } from "@/lib/content/types";
-import shellStyles from "@/components/shell/site-shell.module.css";
+import { type HomeShowcaseEntry, type HomeShowcaseTab } from "@/lib/content/types";
 import styles from "@/components/home/home-showcase.module.css";
+
+// Общепринятые аббревиатуры; Portfolio сохраняет ER / FA (feature adoption) / CD (content Depth).
+// Определения — в portfolio-case-json-structure.md.
+const HOME_METRIC_LABELS: Record<string, readonly string[]> = {
+  portfoliocase: ["ER", "FA", "CD"],
+  globus: ["CR", "RR D30", "NPS"],
+  medicine: ["CR", "CSAT", "AOV"],
+  familia: ["RR D30"],
+  goldenapple: ["CR", "RR D7"],
+  zvuk: ["RR D7", "NU"],
+  vk: ["TCT"]
+};
+
+const PLANNED_GLOBUS_PREVIEW_SLUGS = new Set([
+  "media-and-gallery",
+  "mini-games",
+  "content-automation"
+]);
 
 interface Rect {
   top: number;
@@ -68,7 +88,7 @@ interface PointerPosition {
 }
 
 interface SectionEntry {
-  entry: HomeWorkEntry;
+  entry: HomeShowcaseEntry;
   index: number;
 }
 
@@ -77,16 +97,13 @@ interface IndexedHomeSection {
   items: SectionEntry[];
 }
 
-interface StickerFrameSwapProps {
-  stickerSrcs: string[];
-  frameIndex: number;
-  isActive: boolean;
-  shouldReduceMotion: boolean;
+interface IndexedHomeTab {
+  title: string;
+  sections: IndexedHomeSection[];
 }
 
 const PREVIEW_OFFSET_FALLBACK = 60;
 const ACTIVE_TEXT_SHIFT_SCALE = 0.25;
-const STICKER_PARALLAX_SCALE = 0.5;
 const HIGHLIGHT_TARGET_TOLERANCE = 0.25;
 const POSITION_STIFFNESS_NEAR = 320;
 const POSITION_STIFFNESS_FAR = 460;
@@ -103,56 +120,165 @@ const SIZE_STIFFNESS = 220;
 const SIZE_DAMPING = 22;
 const SIZE_MASS = 1;
 const GLASS_OPACITY_DURATION_SECONDS = 0.28;
+// Reuse the existing 1120ms page-reveal movement duration for the year bracket.
+const YEAR_APPEARANCE_DURATION_SECONDS = 1.12;
 const STICKER_APPEARANCE_DURATION_SECONDS = 0.7;
 const STICKER_APPEARANCE_DELAY_SECONDS = GLASS_OPACITY_DURATION_SECONDS;
-const STICKER_BLUR_PX = 4;
-const STICKER_ROTATION_DEGREES = -15;
-const STICKER_FRAME_INTERVAL_MS = 1000 / 5;
-const STICKER_CYCLE_START_DELAY_MS = STICKER_APPEARANCE_DELAY_SECONDS * 1000;
-const PUFFY_STAR_STICKER_SRC =
-  "/media/cases/portfoliocase/sticker-puffy-star-darker-yellow.svg";
+const STICKER_FRAME_INTERVAL_MS = 200;
+const YEAR_BLUR_PX = 4;
 const EXPRESSIVE_EASING = [0.22, 1, 0.36, 1] as const;
+const HOME_TAB_STORAGE_KEY = "home-active-tab-title";
+const HOME_TAB_TRAVEL_PX = 80;
+const HOME_TAB_TOTAL_DURATION_MS = 1129;
+const HOME_TAB_EXIT_DURATION_MS = 200;
+const HOME_TAB_ENTER_STAGGER_MS = 20;
+const HOME_TAB_EXIT_STAGGER_MS = 0;
+const HOME_TAB_INCOMING_DELAY_MS = 200;
+const HOME_TAB_ENTER_WAVE_DURATION_MS = HOME_TAB_TOTAL_DURATION_MS - HOME_TAB_INCOMING_DELAY_MS;
+const HOME_INITIAL_REVEAL_STAGGER_MS = 80;
+const subscribeToHydration = () => () => {};
+const getHydratedSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
+const HOME_TAB_BACKGROUND_MOTION = {
+  stiffness: 560,
+  damping: 40,
+  mass: 1.51,
+  deformationDuration: 0.8,
+  scaleXFirst: 0.92,
+  scaleXSecond: 1.08,
+  scaleXSettle: 1,
+  scaleYFirst: 1.08,
+  scaleYSecond: 0.92,
+  scaleYSettle: 1
+} as const;
 const OUTGOING_TEXT_DURATION_MS = 600;
 const OUTGOING_TEXT_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
 
-interface StickerFrameCycleProps {
-  frameIndex: number;
-  shouldReduceMotion: boolean;
+function StickerFrameCycle({ stickerSrcs, frameIndex, reducedMotion }: {
   stickerSrcs: readonly string[];
-}
-
-function getStickerImageClassName(stickerSrc: string) {
-  return [
-    styles.hoverIconImage,
-    stickerSrc === PUFFY_STAR_STICKER_SRC ? styles.hoverIconImagePuffyStar : ""
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function StickerFrameCycle({ frameIndex, shouldReduceMotion, stickerSrcs }: StickerFrameCycleProps) {
-  const normalizedFrameIndex = shouldReduceMotion ? 0 : frameIndex % stickerSrcs.length;
-
+  frameIndex: number;
+  reducedMotion: boolean;
+}) {
+  const displayedFrame = reducedMotion ? 0 : frameIndex % stickerSrcs.length;
   return (
     <span className={styles.hoverIconFrames}>
-      {stickerSrcs.map((stickerSrc, stickerIndex) => (
+      {stickerSrcs.map((src, index) => (
         <Image
-          key={`${stickerSrc}-${stickerIndex}`}
-          className={[
-            getStickerImageClassName(stickerSrc),
-            stickerIndex === normalizedFrameIndex ? styles.hoverIconImageActive : ""
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          src={stickerSrc}
+          key={`${src}-${index}`}
+          src={src}
           alt=""
           width={27}
           height={27}
           loading="eager"
           draggable={false}
+          className={[
+            styles.hoverIconImage,
+            index === displayedFrame ? styles.hoverIconImageActive : "",
+            src === "/media/cases/portfoliocase/sticker-puffy-star-darker-yellow.svg" ? styles.hoverIconImagePuffyStar : ""
+          ].filter(Boolean).join(" ")}
         />
       ))}
     </span>
+  );
+}
+
+function YearGroupBracket({ year, indices, active, reducedMotion, isActivePane }: {
+  year: string;
+  indices: string;
+  active: boolean;
+  reducedMotion: boolean;
+  isActivePane: (element: Element) => boolean;
+}) {
+  const bracketRef = useRef<HTMLSpanElement | null>(null);
+  const [bounds, setBounds] = useState<{ top: number; height: number } | null>(null);
+  const shiftXRaw = useMotionValue(0);
+  const shiftYRaw = useMotionValue(0);
+  const shiftX = useSpring(shiftXRaw, { stiffness: 300, damping: 24, mass: 0.75 });
+  const shiftY = useSpring(shiftYRaw, { stiffness: 300, damping: 24, mass: 0.75 });
+
+  useLayoutEffect(() => {
+    const container = bracketRef.current?.parentElement;
+    if (!container) return;
+    const contents = indices.split(",").flatMap((index) => {
+      const content = container.querySelector<HTMLElement>(
+        `[data-home-showcase-index="${index}"] .${styles.itemContent}`
+      );
+      return content ? [content] : [];
+    });
+    const measure = () => {
+      if (!contents.length) return;
+      const layoutTop = (content: HTMLElement) => {
+        let top = 0;
+        let node: HTMLElement | null = content;
+        while (node && node !== container) {
+          top += node.offsetTop;
+          node = node.offsetParent as HTMLElement | null;
+        }
+        return top;
+      };
+      const top = Math.min(...contents.map(layoutTop));
+      const bottom = Math.max(...contents.map((content) => layoutTop(content) + content.offsetHeight));
+      setBounds((previous) => previous?.top === top && previous.height === bottom - top
+        ? previous : { top, height: bottom - top });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    contents.forEach((content) => observer.observe(content));
+    return () => observer.disconnect();
+  }, [indices]);
+
+  useEffect(() => {
+    const container = bracketRef.current?.parentElement;
+    const reset = () => {
+      shiftXRaw.set(0);
+      shiftYRaw.set(0);
+    };
+    if (!container || !bounds || reducedMotion) {
+      reset();
+      return;
+    }
+    const onMouseMove = (event: MouseEvent) => {
+      if (!isActivePane(container)) return;
+      const rect = container.getBoundingClientRect();
+      const nx = (event.clientX - rect.left - rect.width / 2) / Math.max(1, rect.width / 2);
+      const ny = (event.clientY - rect.top - bounds.top - bounds.height / 2) / Math.max(1, bounds.height / 2);
+      shiftXRaw.set((16 * (0.5 / 1.5) / 4) * getSoftShift(nx, 1.4));
+      shiftYRaw.set((10 * (0.5 / 1.5) / 4) * getSoftShift(ny, 1.4));
+    };
+    container.addEventListener("mousemove", onMouseMove);
+    container.addEventListener("mouseleave", reset);
+    return () => {
+      container.removeEventListener("mousemove", onMouseMove);
+      container.removeEventListener("mouseleave", reset);
+    };
+  }, [bounds, reducedMotion, isActivePane, shiftXRaw, shiftYRaw]);
+
+  return (
+    <motion.span
+      ref={bracketRef}
+      className={styles.hoverYear}
+      aria-hidden="true"
+      transformTemplate={({ x = 0, y = 0 }) =>
+        `translate3d(${typeof x === "number" ? `${x}px` : x}, ${typeof y === "number" ? `${y}px` : y}, 0)`
+      }
+      style={{
+        top: bounds?.top ?? 0,
+        height: bounds?.height ?? 0,
+        x: reducedMotion ? 0 : shiftX,
+        y: reducedMotion ? 0 : shiftY
+      }}
+      initial={{ opacity: 0, filter: reducedMotion ? "blur(0px)" : `blur(${YEAR_BLUR_PX}px)` }}
+      animate={{ opacity: active && bounds ? 1 : 0, filter: reducedMotion || active ? "blur(0px)" : `blur(${YEAR_BLUR_PX}px)` }}
+      transition={{
+        duration: active ? YEAR_APPEARANCE_DURATION_SECONDS : GLASS_OPACITY_DURATION_SECONDS,
+        delay: 0,
+        ease: EXPRESSIVE_EASING
+      }}
+    >
+      <span className={styles.yearBracketLine} />
+      <span className={styles.yearBracketLabel}>{year}</span>
+    </motion.span>
   );
 }
 
@@ -348,18 +474,31 @@ function getAdaptivePositionSpring(current: Rect | null, target: Rect, listHeigh
 
 interface HomeShowcaseProps {
   title: string;
-  subtitle?: string;
-  sections: HomeShowcaseSection[];
+  tabs: HomeShowcaseTab[];
 }
 
-export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
+export function HomeShowcase({ title, tabs }: HomeShowcaseProps) {
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    getHydratedSnapshot,
+    getServerHydrationSnapshot
+  );
   const shouldReduceMotion = useReducedMotion();
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const [renderedTabIndex, setRenderedTabIndex] = useState(0);
+  const [hasRestoredSavedTab, setHasRestoredSavedTab] = useState(false);
+  const [incomingRevealStartAt, setIncomingRevealStartAt] = useState<number | undefined>();
+  const [tabDirection, setTabDirection] = useState(1);
+  const [hasChangedTab, setHasChangedTab] = useState(false);
+  const [tabSelectionGeneration, setTabSelectionGeneration] = useState(0);
   const [canHover, setCanHover] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [stickerFrameIndices, setStickerFrameIndices] = useState<Record<number, number>>({});
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [previewSuppressed, setPreviewSuppressed] = useState(false);
+  const hoverSuppressedRef = useRef(false);
   const [previewLeft, setPreviewLeft] = useState<number | null>(null);
   const [highlightState, setHighlightState] = useState<HighlightState | null>(null);
-  const [stickerFrameIndices, setStickerFrameIndices] = useState<Record<number, number>>({});
   const positionSpringGenerator = useMemo(
     () =>
       createPositionSpringGenerator(
@@ -370,13 +509,24 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   );
 
   const listWrapRef = useRef<HTMLDivElement | null>(null);
+  const listWrapRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const paneRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const activePaneKeyRef = useRef<string | null>(null);
+  const tabsRef = useRef<HTMLDivElement | null>(null);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const activeTabIndexRef = useRef(activeTabIndex);
+  activeTabIndexRef.current = activeTabIndex;
+  const tabBackgroundX = useMotionValue(0);
+  const tabBackgroundWidth = useMotionValue(0);
+  const tabBackgroundScaleX = useMotionValue(1);
+  const tabBackgroundScaleY = useMotionValue(1);
   const glassRef = useRef<HTMLDivElement | null>(null);
   const highlightTargetRef = useRef<HighlightState | null>(null);
   const activeIndexRef = useRef<number | null>(null);
   const hoveredIndexRef = useRef<number | null>(null);
   const focusedIndexRef = useRef<number | null>(null);
   const lastPointerPositionRef = useRef<PointerPosition | null>(null);
-  const itemInteractionRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const itemInteractionRefs = useRef<(HTMLElement | null)[]>([]);
   const itemVisualRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const itemContentRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const textReturnAnimationsRef = useRef<Map<number, TextReturnAnimationState>>(new Map());
@@ -393,8 +543,8 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
 
   const shiftX = useSpring(shiftXRaw, { stiffness: 300, damping: 24, mass: 0.75 });
   const shiftY = useSpring(shiftYRaw, { stiffness: 300, damping: 24, mass: 0.75 });
-  const iconShiftXTarget = useTransform(shiftXRaw, (value) => value * STICKER_PARALLAX_SCALE);
-  const iconShiftYTarget = useTransform(shiftYRaw, (value) => value * STICKER_PARALLAX_SCALE);
+  const iconShiftXTarget = useTransform(shiftXRaw, (value) => value * 0.5);
+  const iconShiftYTarget = useTransform(shiftYRaw, (value) => value * 0.5);
   const iconShiftX = useSpring(iconShiftXTarget, { stiffness: 300, damping: 24, mass: 0.75 });
   const iconShiftY = useSpring(iconShiftYTarget, { stiffness: 300, damping: 24, mass: 0.75 });
   const tiltX = useSpring(tiltXRaw, { stiffness: 360, damping: 30, mass: 0.65 });
@@ -598,63 +748,108 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     resetPointerMotion();
   }, [cancelAllTextMotion, resetPointerMotion, shouldReduceMotion]);
 
-  const indexedSections = useMemo<IndexedHomeSection[]>(() => {
+  const indexedTabs = useMemo<IndexedHomeTab[]>(() => {
     let currentIndex = 0;
 
-    return sections
-      .map((section) => ({
-        title: section.title,
-        items: section.items.map((entry) => ({
-          entry,
-          index: currentIndex++
+    return tabs.map((tab) => ({
+      title: tab.title,
+      sections: tab.sections
+        .map((section) => ({
+          title: section.title,
+          items: section.items.map((entry) => ({ entry, index: currentIndex++ }))
         }))
-      }))
-      .filter((section) => section.items.length > 0);
-  }, [sections]);
+        .filter((section) => section.items.length > 0)
+    }));
+  }, [tabs]);
+
+  const activeTab = indexedTabs[renderedTabIndex] ?? indexedTabs[0];
+  activePaneKeyRef.current = activeTab?.title ?? null;
+
+  useLayoutEffect(() => {
+    try {
+      const savedTitle = window.sessionStorage.getItem(HOME_TAB_STORAGE_KEY);
+      const savedIndex = indexedTabs.findIndex((tab) => tab.title === savedTitle);
+      if (savedIndex > 0) {
+        setActiveTabIndex(savedIndex);
+        setRenderedTabIndex(savedIndex);
+        setHasRestoredSavedTab(true);
+      }
+    } catch {
+      // Storage can be disabled; the first tab remains the default.
+    }
+  }, [indexedTabs]);
+
+  useLayoutEffect(() => {
+    listWrapRef.current = activeTab?.title ? listWrapRefs.current.get(activeTab.title) ?? null : null;
+  }, [activeTab?.title]);
+
+  useLayoutEffect(() => {
+    const activePane = activeTab?.title ? paneRefs.current.get(activeTab.title) : null;
+    if (!activePane) return;
+    delete activePane.dataset.homePaneExiting;
+    activePane.inert = false;
+    activePane.removeAttribute("aria-hidden");
+    activePane.style.removeProperty("pointer-events");
+  }, [activeTab?.title, tabSelectionGeneration]);
+
+  useLayoutEffect(() => {
+    const tabsNode = tabsRef.current;
+    if (!tabsNode) return;
+
+    const syncBackground = () => {
+      const activeButton = tabRefs.current[activeTabIndexRef.current];
+      if (!activeButton) return;
+      tabBackgroundX.set(activeButton.getBoundingClientRect().left - tabsNode.getBoundingClientRect().left);
+      tabBackgroundWidth.set(activeButton.offsetWidth);
+      tabBackgroundScaleX.set(1);
+      tabBackgroundScaleY.set(1);
+    };
+
+    syncBackground();
+    const observer = new ResizeObserver(syncBackground);
+    observer.observe(tabsNode);
+    tabRefs.current.forEach((button) => {
+      if (button) observer.observe(button);
+    });
+    return () => observer.disconnect();
+  }, [indexedTabs.length, tabBackgroundScaleX, tabBackgroundScaleY, tabBackgroundWidth, tabBackgroundX]);
+
+  useLayoutEffect(() => {
+    if (hasChangedTab) return;
+    const tabsNode = tabsRef.current;
+    const button = tabRefs.current[activeTabIndex];
+    if (!tabsNode || !button) return;
+    tabBackgroundX.set(button.getBoundingClientRect().left - tabsNode.getBoundingClientRect().left);
+    tabBackgroundWidth.set(button.offsetWidth);
+  }, [activeTabIndex, hasChangedTab, tabBackgroundWidth, tabBackgroundX]);
 
   const displayEntries = useMemo(
-    () => indexedSections.flatMap((section) => section.items.map((item) => item.entry)),
-    [indexedSections]
+    () =>
+      indexedTabs.flatMap((tab) =>
+        tab.sections.flatMap((section) => section.items.map((item) => item.entry))
+      ),
+    [indexedTabs]
   );
 
   useEffect(() => {
     if (activeIndex === null) return;
-
-    const stickerSrcs = displayEntries[activeIndex]?.stickerSrcs;
+    const activeEntry = displayEntries[activeIndex];
+    const stickerSrcs = activeEntry?.kind === "game" ? undefined : activeEntry?.stickerSrcs;
     if (!stickerSrcs?.length) return;
-
-    const canCycle = !shouldReduceMotion && stickerSrcs.length > 1;
     setStickerFrameIndices((current) => ({ ...current, [activeIndex]: 0 }));
-
-    if (!canCycle) return;
-
-    let isCancelled = false;
-    const timeoutIds = new Set<ReturnType<typeof setTimeout>>();
-    const schedule = (callback: () => void, delay: number) => {
-      const timeoutId = setTimeout(() => {
-        timeoutIds.delete(timeoutId);
-        if (!isCancelled) callback();
-      }, delay);
-      timeoutIds.add(timeoutId);
+    if (shouldReduceMotion || stickerSrcs.length < 2) return;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const next = () => {
+      setStickerFrameIndices((current) => ({
+        ...current,
+        [activeIndex]: ((current[activeIndex] ?? 0) + 1) % stickerSrcs.length
+      }));
+      timeoutId = setTimeout(next, STICKER_FRAME_INTERVAL_MS);
     };
-    const scheduleNextFrame = (): void => {
-      schedule(() => {
-        setStickerFrameIndices((current) => ({
-          ...current,
-          [activeIndex]: ((current[activeIndex] ?? 0) + 1) % stickerSrcs.length
-        }));
-        scheduleNextFrame();
-      }, STICKER_FRAME_INTERVAL_MS);
-    };
-
-    schedule(scheduleNextFrame, STICKER_CYCLE_START_DELAY_MS);
-
-    return () => {
-      isCancelled = true;
-      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
-      timeoutIds.clear();
-    };
+    timeoutId = setTimeout(next, STICKER_APPEARANCE_DELAY_SECONDS * 1000 + STICKER_FRAME_INTERVAL_MS);
+    return () => clearTimeout(timeoutId);
   }, [activeIndex, displayEntries, shouldReduceMotion]);
+
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -674,6 +869,8 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     const container = listWrapRef.current;
     const item = itemVisualRefs.current[index];
     if (!container || !item) return null;
+    const activePane = activePaneKeyRef.current ? paneRefs.current.get(activePaneKeyRef.current) : null;
+    if (!activePane || !activePane.contains(container) || !activePane.contains(item)) return null;
 
     const c = container.getBoundingClientRect();
     const r = item.getBoundingClientRect();
@@ -721,6 +918,8 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
 
   const isItemRevealReady = useCallback((index: number) => {
     const item = itemInteractionRefs.current[index];
+    const activePane = activePaneKeyRef.current ? paneRefs.current.get(activePaneKeyRef.current) : null;
+    if (!item || !activePane?.contains(item)) return false;
     const revealTarget = item?.closest<HTMLElement>("[data-page-reveal]");
     if (!revealTarget) return true;
 
@@ -777,13 +976,18 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
 
   const previewMedia = useMemo(() => {
     if (previewIndex === null) return null;
-    const entry = displayEntries[previewIndex];
+    const selectedEntry = displayEntries[previewIndex];
+    const isPlannedPreview = selectedEntry?.kind === "planned" && PLANNED_GLOBUS_PREVIEW_SLUGS.has(selectedEntry.slug);
+    const entry = isPlannedPreview
+      ? displayEntries.find((candidate) => candidate.kind !== "game" && candidate.kind !== "planned" && candidate.href === "/work/globus")
+      : selectedEntry;
 
-    if (!entry) {
+    if (!entry || entry.kind === "game" || entry.kind === "planned") {
       return null;
     }
 
     return {
+      isPlannedPreview,
       kind: entry.preview.kind,
       src: entry.preview.src,
       aspectRatio: entry.preview.src ? entry.preview.aspectRatio : "2 / 1",
@@ -799,7 +1003,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     } as const;
   }, [previewIndex, displayEntries]);
 
-  const portalTarget = typeof document === "undefined" ? null : document.body;
+  const portalTarget = isHydrated ? document.body : null;
 
   const cancelCloseIndex = useCallback(() => {
     if (!closeTimerRef.current) return;
@@ -844,7 +1048,16 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
 
   function openIndex(index: number) {
     if (!isItemRevealReady(index)) return null;
+    const pane = activePaneKeyRef.current ? paneRefs.current.get(activePaneKeyRef.current) : null;
+    const item = itemInteractionRefs.current[index];
+    if (!pane || pane.inert || !item || !pane.contains(item)) return null;
 
+    const nextHighlightState = syncHighlight(index);
+    if (!nextHighlightState) return null;
+
+    delete pane.dataset.homeHoverSuppressed;
+    hoverSuppressedRef.current = false;
+    setPreviewSuppressed(false);
     cancelCloseIndex();
 
     const previousActiveIndex = activeIndexRef.current;
@@ -854,11 +1067,10 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     }
     activeIndexRef.current = index;
 
-    const nextHighlightState = syncHighlight(index);
     syncPreviewPosition();
 
     const nextEntry = displayEntries[index];
-    if (nextEntry) {
+    if (nextEntry && nextEntry.kind !== "game" && nextEntry.kind !== "planned") {
       if (!hasTrackedPreviewOpen.current) {
         hasTrackedPreviewOpen.current = true;
         trackMetricaGoal("home_preview_open", {
@@ -870,7 +1082,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
         const previousEntry = displayEntries[previousActiveIndex];
         trackMetricaGoal("home_preview_change", {
           case_slug: getCaseSlugFromHref(nextEntry.href),
-          previous_case_slug: previousEntry ? getCaseSlugFromHref(previousEntry.href) : null,
+          previous_case_slug: previousEntry && previousEntry.kind !== "game" && previousEntry.kind !== "planned" ? getCaseSlugFromHref(previousEntry.href) : null,
           case_title: nextEntry.label,
           page_path: getCurrentPath()
         });
@@ -880,6 +1092,12 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     setActiveIndex(index);
     setPreviewIndex(index);
     return nextHighlightState?.rect ?? null;
+  }
+
+  function isActivePaneEvent(element: Element) {
+    const key = activePaneKeyRef.current;
+    const pane = key ? paneRefs.current.get(key) : null;
+    return Boolean(pane?.contains(element));
   }
 
   function closeIndex() {
@@ -933,7 +1151,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
   }
 
   function onMouseMove(event: React.MouseEvent<HTMLDivElement>) {
-    if (!canHover) return;
+    if (!canHover || event.currentTarget !== listWrapRef.current || !isActivePaneEvent(event.currentTarget)) return;
 
     lastPointerPositionRef.current = {
       clientX: event.clientX,
@@ -959,7 +1177,9 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     updatePointerMotion(hoveredIndex, event.clientX, event.clientY);
   }
 
-  function onItemMouseEnter(index: number, clientX: number, clientY: number) {
+  function onItemMouseEnter(index: number, event: React.MouseEvent<HTMLElement>) {
+    if (!isActivePaneEvent(event.currentTarget)) return;
+    const { clientX, clientY } = event;
     hoveredIndexRef.current = index;
     lastPointerPositionRef.current = { clientX, clientY };
 
@@ -972,7 +1192,8 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     updatePointerMotion(index, clientX, clientY);
   }
 
-  function onItemFocus(index: number) {
+  function onItemFocus(index: number, event: React.FocusEvent<HTMLAnchorElement>) {
+    if (!isActivePaneEvent(event.currentTarget)) return;
     focusedIndexRef.current = index;
     if (!isItemRevealReady(index)) {
       hideActiveIndexImmediately();
@@ -982,7 +1203,8 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     openIndex(index);
   }
 
-  function onItemBlur(index: number) {
+  function onItemBlur(index: number, event: React.FocusEvent<HTMLAnchorElement>) {
+    if (!isActivePaneEvent(event.currentTarget)) return;
     if (focusedIndexRef.current === index) {
       focusedIndexRef.current = null;
     }
@@ -998,66 +1220,299 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
     closeIndex();
   }
 
+  function resetActiveCase() {
+    cancelCloseIndex();
+    cancelAllTextMotion();
+    activeIndexRef.current = null;
+    hoveredIndexRef.current = null;
+    focusedIndexRef.current = null;
+    lastPointerPositionRef.current = null;
+    highlightTargetRef.current = null;
+    setActiveIndex(null);
+    setPreviewIndex(null);
+    setHighlightState(null);
+    resetPointerMotion();
+  }
+
+  function animateTabBackground(nextIndex: number) {
+    const tabsNode = tabsRef.current;
+    const button = tabRefs.current[nextIndex];
+    if (!tabsNode || !button) return;
+
+    const targetX = button.getBoundingClientRect().left - tabsNode.getBoundingClientRect().left;
+    const targetWidth = button.offsetWidth;
+    tabBackgroundX.stop();
+    tabBackgroundWidth.stop();
+    tabBackgroundScaleX.stop();
+    tabBackgroundScaleY.stop();
+
+    if (shouldReduceMotion) {
+      tabBackgroundX.set(targetX);
+      tabBackgroundWidth.set(targetWidth);
+      tabBackgroundScaleX.set(1);
+      tabBackgroundScaleY.set(1);
+      return;
+    }
+
+    const travel = {
+      type: "spring" as const,
+      stiffness: HOME_TAB_BACKGROUND_MOTION.stiffness,
+      damping: HOME_TAB_BACKGROUND_MOTION.damping,
+      mass: HOME_TAB_BACKGROUND_MOTION.mass
+    };
+    void animate(tabBackgroundX, targetX, travel);
+    void animate(tabBackgroundWidth, targetWidth, travel);
+    void animate(tabBackgroundScaleX, [tabBackgroundScaleX.get(), HOME_TAB_BACKGROUND_MOTION.scaleXFirst, HOME_TAB_BACKGROUND_MOTION.scaleXSecond, HOME_TAB_BACKGROUND_MOTION.scaleXSettle, 1], {
+      duration: HOME_TAB_BACKGROUND_MOTION.deformationDuration,
+      times: [0, 0.18, 0.46, 0.76, 1],
+      ease: ["easeOut", "easeInOut", "easeOut", "easeInOut"]
+    });
+    void animate(tabBackgroundScaleY, [tabBackgroundScaleY.get(), HOME_TAB_BACKGROUND_MOTION.scaleYFirst, HOME_TAB_BACKGROUND_MOTION.scaleYSecond, HOME_TAB_BACKGROUND_MOTION.scaleYSettle, 1], {
+      duration: HOME_TAB_BACKGROUND_MOTION.deformationDuration,
+      times: [0, 0.18, 0.46, 0.76, 1],
+      ease: ["easeOut", "easeInOut", "easeOut", "easeInOut"]
+    });
+  }
+
+  function selectTab(nextIndex: number) {
+    if (!indexedTabs[nextIndex]) return;
+    hoverSuppressedRef.current = true;
+    setPreviewSuppressed(true);
+    paneRefs.current.forEach((pane) => {
+      pane.dataset.homeHoverSuppressed = "true";
+    });
+    resetActiveCase();
+    animateTabBackground(nextIndex);
+    if (nextIndex === activeTabIndex) return;
+    if (nextIndex === renderedTabIndex) {
+      const returningPane = activeTab ? paneRefs.current.get(activeTab.title) : null;
+      if (returningPane) {
+        delete returningPane.dataset.homePaneExiting;
+        returningPane.inert = false;
+        returningPane.removeAttribute("aria-hidden");
+      }
+      setTabDirection(-tabDirection);
+      setTabSelectionGeneration((generation) => generation + 1);
+      setIncomingRevealStartAt(undefined);
+      setActiveTabIndex(nextIndex);
+      try {
+        window.sessionStorage.setItem(HOME_TAB_STORAGE_KEY, indexedTabs[nextIndex].title);
+      } catch {
+        // The tab remains usable when session storage is unavailable.
+      }
+      return;
+    }
+    const direction = nextIndex > renderedTabIndex ? 1 : -1;
+    const outgoingPane = activeTab ? paneRefs.current.get(activeTab.title) : null;
+    const outgoingTargets = outgoingPane
+      ? Array.from(outgoingPane.querySelectorAll<HTMLElement>("[data-page-reveal]"))
+      : [];
+    if (outgoingPane && !shouldReduceMotion) {
+       outgoingPane.style.setProperty("--home-tab-exit-x", direction > 0 ? `-${HOME_TAB_TRAVEL_PX}px` : `${HOME_TAB_TRAVEL_PX}px`);
+      outgoingTargets.forEach((target, index) => {
+        const computed = getComputedStyle(target);
+        target.style.setProperty("--home-tab-exit-index", String(index));
+        target.style.setProperty("--home-tab-exit-start-transform", computed.transform);
+        target.style.setProperty("--home-tab-exit-start-opacity", computed.opacity);
+        target.style.setProperty("--home-tab-exit-start-filter", computed.filter);
+      });
+      outgoingPane.dataset.homePaneExiting = "true";
+      outgoingPane.inert = true;
+      outgoingPane.setAttribute("aria-hidden", "true");
+    }
+    const returningPane = paneRefs.current.get(indexedTabs[nextIndex].title);
+    if (returningPane) {
+      delete returningPane.dataset.homePaneExiting;
+      returningPane.inert = false;
+      returningPane.removeAttribute("aria-hidden");
+    }
+    setTabDirection(direction);
+    setHasChangedTab(true);
+    setActiveTabIndex(nextIndex);
+    setIncomingRevealStartAt(
+      shouldReduceMotion || !outgoingPane || outgoingTargets.length === 0
+        ? undefined
+         : performance.now() + HOME_TAB_INCOMING_DELAY_MS
+    );
+    setTabSelectionGeneration((generation) => generation + 1);
+    setRenderedTabIndex(nextIndex);
+    try {
+      window.sessionStorage.setItem(HOME_TAB_STORAGE_KEY, indexedTabs[nextIndex].title);
+    } catch {
+      // The tab remains usable when session storage is unavailable.
+    }
+  }
+
+  function onTabKeyDown(event: React.KeyboardEvent<HTMLButtonElement>, index: number) {
+    const availableIndices = indexedTabs.map((_, tabIndex) => tabIndex);
+    if (!availableIndices.length) return;
+    const position = availableIndices.indexOf(index);
+    let nextIndex: number | null = null;
+
+    if (event.key === "ArrowRight") nextIndex = availableIndices[(position + 1) % availableIndices.length];
+    if (event.key === "ArrowLeft") nextIndex = position < 0 ? availableIndices[availableIndices.length - 1] : availableIndices[(position - 1 + availableIndices.length) % availableIndices.length];
+    if (event.key === "Home") nextIndex = availableIndices[0];
+    if (event.key === "End") nextIndex = availableIndices[availableIndices.length - 1];
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    selectTab(nextIndex);
+    tabRefs.current[nextIndex]?.focus();
+  }
+
+  function onListRevealTargetReady(target: HTMLElement) {
+    const rawIndex = target.dataset.homeShowcaseIndex;
+    if (rawIndex === undefined) return;
+
+    const index = Number.parseInt(rawIndex, 10);
+    if (!Number.isInteger(index)) return;
+
+    const pointerPosition = lastPointerPositionRef.current;
+    let isHovered = hoveredIndexRef.current === index;
+    if (
+      isHovered &&
+      (!pointerPosition ||
+        !isCursorInsideItemHoverZone(index, pointerPosition.clientX, pointerPosition.clientY))
+    ) {
+      hoveredIndexRef.current = null;
+      lastPointerPositionRef.current = null;
+      isHovered = false;
+    }
+
+    const isFocused = focusedIndexRef.current === index;
+    if (!isHovered && !isFocused) return;
+
+    openIndex(index);
+    if (isHovered && pointerPosition) {
+      updatePointerMotion(index, pointerPosition.clientX, pointerPosition.clientY);
+    }
+  }
+
   return (
     <div className={styles.root}>
+      <svg className={styles.previewFilterDefinitions} width="0" height="0" aria-hidden="true" focusable="false">
+        <defs>
+          <filter id="home-planned-preview-saturation" x="-10%" y="-10%" width="120%" height="120%" colorInterpolationFilters="sRGB">
+            <feColorMatrix type="saturate" values="0" />
+            <feComponentTransfer>
+              <feFuncR type="gamma" amplitude="1" exponent="2" offset="0" />
+              <feFuncG type="gamma" amplitude="1" exponent="2" offset="0" />
+              <feFuncB type="gamma" amplitude="1" exponent="2" offset="0" />
+            </feComponentTransfer>
+          </filter>
+        </defs>
+      </svg>
       <div className={styles.leftColumn}>
         <div className={styles.heroStack}>
-          <PageRevealSequence
-            className={styles.revealStack}
-            onTargetReady={(target) => {
-              const rawIndex = target.dataset.homeShowcaseIndex;
-              if (rawIndex === undefined) return;
+          <PageRevealSequence className={styles.revealStack}>
+            <h1 className={styles.pageTitle}>{title}</h1>
+            <div ref={tabsRef} className={styles.tabs} role="tablist" aria-label={title} data-page-reveal="">
+              <motion.span
+                aria-hidden="true"
+                className={styles.tabActiveBackground}
+                style={{ x: tabBackgroundX, width: tabBackgroundWidth, scaleX: tabBackgroundScaleX, scaleY: tabBackgroundScaleY }}
+              />
+              {indexedTabs.map((tab, index) => {
+                const isActive = index === activeTabIndex;
+                return (
+                  <button
+                    key={tab.title}
+                    ref={(node) => {
+                      tabRefs.current[index] = node;
+                    }}
+                    className={[styles.tab, isActive ? styles.tabActive : ""].filter(Boolean).join(" ")}
+                    type="button"
+                    role="tab"
+                    id={`home-tab-${index}`}
+                    aria-controls={`home-tabpanel-${index}`}
+                    aria-selected={isActive}
+                    tabIndex={isActive ? 0 : -1}
+                    onClick={() => selectTab(index)}
+                    onKeyDown={(event) => onTabKeyDown(event, index)}
+                  >
+                    <span className={styles.tabLabel}>{tab.title}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-              const index = Number.parseInt(rawIndex, 10);
-              if (!Number.isInteger(index)) return;
-
-              const pointerPosition = lastPointerPositionRef.current;
-              let isHovered = hoveredIndexRef.current === index;
-              if (
-                isHovered &&
-                (!pointerPosition ||
-                  !isCursorInsideItemHoverZone(index, pointerPosition.clientX, pointerPosition.clientY))
-              ) {
-                hoveredIndexRef.current = null;
-                lastPointerPositionRef.current = null;
-                isHovered = false;
-              }
-
-              const isFocused = focusedIndexRef.current === index;
-              if (!isHovered && !isFocused) return;
-
-              openIndex(index);
-              if (isHovered && pointerPosition) {
-                updatePointerMotion(index, pointerPosition.clientX, pointerPosition.clientY);
-              }
-            }}
-          >
-            <header className={[shellStyles.headerBlock, shellStyles.compensated].join(" ")}>
-              <h1 className={shellStyles.title} data-page-reveal="">
-                {title}
-              </h1>
-              {subtitle ? (
-                <p
-                  className={[shellStyles.subtitle, shellStyles.subtitleStrong, shellStyles.subtitleWorkMeta].join(" ")}
-                  data-page-reveal=""
-                >
-                  {subtitle}
-                </p>
-              ) : null}
-            </header>
-
+            <div className={styles.paneViewport}>
+              <AnimatePresence key={hasRestoredSavedTab ? "restored" : "initial"} initial={false} mode="popLayout">
+                {activeTab ? (
+                  <motion.div
+                    key={activeTab.title}
+                    ref={(node) => {
+                      if (!node) return;
+                      const key = activeTab.title;
+                      paneRefs.current.set(key, node);
+                      if (hoverSuppressedRef.current) node.dataset.homeHoverSuppressed = "true";
+                      return () => {
+                        if (paneRefs.current.get(key) === node) paneRefs.current.delete(key);
+                      };
+                    }}
+                    className={styles.tabPane}
+                    role="tabpanel"
+                    id={`home-tabpanel-${renderedTabIndex}`}
+                    aria-labelledby={`home-tab-${renderedTabIndex}`}
+                    initial={false}
+                    style={
+                      {
+                        ["--home-tab-move-duration" as string]: `${HOME_TAB_EXIT_DURATION_MS}ms`,
+                        ["--home-tab-stagger" as string]: `${HOME_TAB_EXIT_STAGGER_MS}ms`
+                      } as CSSProperties
+                    }
+                    animate={{ opacity: 1, transition: { duration: 0 } }}
+                    exit={
+                      shouldReduceMotion
+                        ? { opacity: 0, transition: { duration: 0 } }
+                        : {
+                            opacity: [1, 1, 0],
+                            transition: {
+                              duration:
+                                (HOME_TAB_EXIT_DURATION_MS +
+                                  Math.max(
+                                    0,
+                                    activeTab.sections.reduce(
+                                      (count, section) => count + (section.title ? 1 : 0) + section.items.length,
+                                      0
+                                    ) - 1
+                                  ) * HOME_TAB_EXIT_STAGGER_MS) / 1000,
+                              times: [0, 0.999, 1],
+                              ease: "linear"
+                            }
+                          }
+                    }
+                  >
             <motion.div
               className={styles.listWrap}
-              ref={listWrapRef}
+              ref={(node) => {
+                if (!node) return;
+                const key = activeTab.title;
+                listWrapRefs.current.set(key, node);
+                if (activePaneKeyRef.current === key) listWrapRef.current = node;
+                return () => {
+                  if (listWrapRefs.current.get(key) === node) listWrapRefs.current.delete(key);
+                  if (listWrapRef.current === node) listWrapRef.current = null;
+                };
+              }}
               onMouseMove={onMouseMove}
               style={
                 {
                   ["--item-shift-x" as string]: listShiftXVar,
                   ["--item-shift-y" as string]: listShiftYVar,
-                  ["--item-shift-scale" as string]: ACTIVE_TEXT_SHIFT_SCALE
+                  ["--item-shift-scale" as string]: ACTIVE_TEXT_SHIFT_SCALE,
+                  ["--page-reveal-x" as string]:
+                    hasChangedTab && !shouldReduceMotion
+                      ? (tabDirection > 0 ? `${HOME_TAB_TRAVEL_PX}px` : `-${HOME_TAB_TRAVEL_PX}px`)
+                      : "0px",
+                  ["--page-reveal-y" as string]: hasChangedTab ? "0px" : "28px",
+                  ["--page-reveal-move-duration" as string]: `${hasChangedTab ? HOME_TAB_ENTER_WAVE_DURATION_MS : 1120}ms`,
+                  ["--page-reveal-visibility-duration" as string]: `${hasChangedTab ? HOME_TAB_ENTER_WAVE_DURATION_MS : 700}ms`,
+                  ["--page-reveal-stagger" as string]: `${hasChangedTab ? HOME_TAB_ENTER_STAGGER_MS : HOME_INITIAL_REVEAL_STAGGER_MS}ms`
                 } as unknown as CSSProperties
               }
-              onMouseLeave={() => {
+              onMouseLeave={(event) => {
+                if (event.currentTarget !== listWrapRef.current || !isActivePaneEvent(event.currentTarget)) return;
                 hoveredIndexRef.current = null;
                 lastPointerPositionRef.current = null;
                 resetPointerMotion();
@@ -1147,11 +1602,35 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                 )}
               </AnimatePresence>
 
-              <div className={styles.list}>
-                {indexedSections.map((section, sectionIndex) => (
+              {Array.from(activeTab.sections.flatMap((section) => section.items).reduce((groups, { entry, index }) => {
+                if (entry.kind === "game") return groups;
+                const year = entry.subtitle.split("·")[0].trim();
+                groups.set(year, [...(groups.get(year) ?? []), index]);
+                return groups;
+              }, new Map<string, number[]>())).map(([year, indices]) => (
+                <YearGroupBracket
+                  key={year}
+                  year={year}
+                  indices={indices.join(",")}
+                  active={activeIndex !== null && indices.includes(activeIndex)}
+                  reducedMotion={Boolean(shouldReduceMotion)}
+                  isActivePane={isActivePaneEvent}
+                />
+              ))}
+              <PageRevealSequence
+                key={`${activeTab.title}-${tabSelectionGeneration}`}
+                className={styles.list}
+                onTargetReady={onListRevealTargetReady}
+                startImmediately={hasChangedTab}
+                startAt={incomingRevealStartAt}
+                waveDurationMs={hasChangedTab ? HOME_TAB_ENTER_WAVE_DURATION_MS : undefined}
+                waveStaggerMs={HOME_TAB_ENTER_STAGGER_MS}
+              >
+                {activeTab.sections.map((section, sectionIndex) => (
                   <section
                     key={`${section.title ?? "untitled"}-${sectionIndex}`}
                     className={styles.section}
+                    data-untitled={section.title ? undefined : "true"}
                     aria-label={section.title}
                   >
                     {section.title ? (
@@ -1161,7 +1640,115 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                     ) : null}
                     <div className={styles.sectionList}>
                       {section.items.map(({ entry, index }) => (
-                        <span key={entry.href} data-page-reveal="" data-home-showcase-index={index}>
+                        <span
+                          key={entry.kind === "game" || entry.kind === "planned" ? `${entry.kind}:${entry.slug}` : entry.href}
+                          data-page-reveal=""
+                          data-home-showcase-index={index}
+                        >
+                          {entry.kind === "game" ? (
+                            <span
+                              className={[styles.item, styles.itemGame, activeIndex === index ? styles.itemActive : ""].filter(Boolean).join(" ")}
+                              ref={(node) => {
+                                if (!node) return;
+                                itemInteractionRefs.current[index] = node;
+                                return () => {
+                                  if (itemInteractionRefs.current[index] === node) itemInteractionRefs.current[index] = null;
+                                };
+                              }}
+                              onMouseEnter={(event) => onItemMouseEnter(index, event)}
+                            >
+                              <span
+                                ref={(node) => {
+                                  if (!node) return;
+                                  itemVisualRefs.current[index] = node;
+                                  return () => {
+                                    if (itemVisualRefs.current[index] === node) itemVisualRefs.current[index] = null;
+                                  };
+                                }}
+                                className={styles.itemVisualBounds}
+                              >
+                                <span
+                                  ref={(node) => {
+                                    if (!node) return;
+                                    itemContentRefs.current[index] = node;
+                                    return () => {
+                                      if (itemContentRefs.current[index] === node) itemContentRefs.current[index] = null;
+                                    };
+                                  }}
+                                  className={styles.itemContent}
+                                >
+                                  <span className={styles.itemLabel}>{entry.label}</span>
+                                  <span className={styles.itemMeta}>{entry.subtitle}</span>
+                                </span>
+                              </span>
+                            </span>
+                          ) : entry.kind === "planned" || entry.href === "/work/globus" ? (
+                          <span
+                            ref={(node) => {
+                              if (!node) return;
+                              itemInteractionRefs.current[index] = node;
+                              return () => {
+                                if (itemInteractionRefs.current[index] === node) itemInteractionRefs.current[index] = null;
+                              };
+                            }}
+                            className={[
+                              styles.item,
+                              styles.itemNonNavigable,
+                              activeIndex === index ? styles.itemActive : ""
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                            onMouseEnter={(event) => onItemMouseEnter(index, event)}
+                          >
+                            {/* Temporary: <Link href="/work/globus">...</Link>. Restore the shared Link branch to reopen from home. */}
+                            <span
+                              ref={(node) => {
+                                if (!node) return;
+                                itemVisualRefs.current[index] = node;
+                                return () => {
+                                  if (itemVisualRefs.current[index] === node) itemVisualRefs.current[index] = null;
+                                };
+                              }}
+                              className={styles.itemVisualBounds}
+                            >
+                              <span
+                                ref={(node) => {
+                                  if (!node) return;
+                                  itemContentRefs.current[index] = node;
+                                  return () => {
+                                    if (itemContentRefs.current[index] === node) itemContentRefs.current[index] = null;
+                                  };
+                                }}
+                                className={styles.itemContent}
+                              >
+                                <span className={[styles.itemLabel, styles.itemLabelSecondary].join(" ")}>{entry.label}</span>
+                                <span className={styles.itemMeta}>
+                                  {entry.kind === "planned" ? entry.statusLabel : (HOME_METRIC_LABELS[getCaseSlugFromHref(entry.href) ?? ""] ?? []).join(" · ")}
+                                </span>
+                              </span>
+                              {entry.stickerSrcs?.length ? (
+                                <motion.span
+                                  className={styles.hoverIcon}
+                                  aria-hidden="true"
+                                  initial={{ opacity: 0, filter: shouldReduceMotion ? "blur(0px)" : "blur(4px)" }}
+                                  animate={{ opacity: activeIndex === index ? 1 : 0, filter: shouldReduceMotion || activeIndex === index ? "blur(0px)" : "blur(4px)" }}
+                                  transition={{
+                                    duration: activeIndex === index ? STICKER_APPEARANCE_DURATION_SECONDS : GLASS_OPACITY_DURATION_SECONDS,
+                                    delay: activeIndex === index ? STICKER_APPEARANCE_DELAY_SECONDS : 0,
+                                    ease: EXPRESSIVE_EASING
+                                  }}
+                                  style={{ x: shouldReduceMotion ? 0 : iconShiftX, y: shouldReduceMotion ? 0 : iconShiftY, rotate: -15 }}
+                                >
+                                  <StickerFrameCycle
+                                    stickerSrcs={entry.stickerSrcs}
+                                    frameIndex={stickerFrameIndices[index] ?? 0}
+                                    reducedMotion={Boolean(shouldReduceMotion)}
+                                  />
+                                </motion.span>
+                              ) : null}
+                            </span>
+                          </span>
+                          ) : (
                           <Link
                             href={entry.href}
                             {...getExternalLinkProps(entry.href)}
@@ -1174,7 +1761,11 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                               });
                             }}
                             ref={(node) => {
+                              if (!node) return;
                               itemInteractionRefs.current[index] = node;
+                              return () => {
+                                if (itemInteractionRefs.current[index] === node) itemInteractionRefs.current[index] = null;
+                              };
                             }}
                             className={[
                               styles.item,
@@ -1182,11 +1773,9 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                             ]
                               .filter(Boolean)
                               .join(" ")}
-                            onMouseEnter={(event) => {
-                              onItemMouseEnter(index, event.clientX, event.clientY);
-                            }}
-                            onFocus={() => onItemFocus(index)}
-                            onBlur={() => onItemBlur(index)}
+                            onMouseEnter={(event) => onItemMouseEnter(index, event)}
+                            onFocus={(event) => onItemFocus(index, event)}
+                            onBlur={(event) => onItemBlur(index, event)}
                             onClick={() => {
                               trackMetricaGoal("click_case_card", {
                                 case_slug: getCaseSlugFromHref(entry.href),
@@ -1198,93 +1787,79 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                           >
                             <span
                               ref={(node) => {
+                                if (!node) return;
                                 itemVisualRefs.current[index] = node;
+                                return () => {
+                                  if (itemVisualRefs.current[index] === node) itemVisualRefs.current[index] = null;
+                                };
                               }}
                               className={styles.itemVisualBounds}
                             >
                               <span
                                 ref={(node) => {
+                                  if (!node) return;
                                   itemContentRefs.current[index] = node;
+                                  return () => {
+                                    if (itemContentRefs.current[index] === node) itemContentRefs.current[index] = null;
+                                  };
                                 }}
                                 className={styles.itemContent}
                               >
                                 <span className={styles.itemLabel}>{entry.label}</span>
                                 <span className={styles.itemMeta}>
-                                  <span>{entry.subtitle}</span>
+                                  {(HOME_METRIC_LABELS[getCaseSlugFromHref(entry.href) ?? ""] ?? []).join(" · ")}
                                 </span>
                               </span>
-                              {entry.stickerSrcs ? (
+                              {entry.stickerSrcs?.length ? (
                                 <motion.span
                                   className={styles.hoverIcon}
                                   aria-hidden="true"
-                                  initial={{
-                                    opacity: 0,
-                                    filter: shouldReduceMotion ? "blur(0px)" : `blur(${STICKER_BLUR_PX}px)`
-                                  }}
-                                  animate={{
-                                    opacity: activeIndex === index ? 1 : 0,
-                                    filter:
-                                      shouldReduceMotion || activeIndex === index
-                                        ? "blur(0px)"
-                                        : `blur(${STICKER_BLUR_PX}px)`
-                                  }}
+                                  initial={{ opacity: 0, filter: shouldReduceMotion ? "blur(0px)" : "blur(4px)" }}
+                                  animate={{ opacity: activeIndex === index ? 1 : 0, filter: shouldReduceMotion || activeIndex === index ? "blur(0px)" : "blur(4px)" }}
                                   transition={{
-                                    opacity: {
-                                      duration:
-                                        activeIndex === index
-                                          ? STICKER_APPEARANCE_DURATION_SECONDS
-                                          : GLASS_OPACITY_DURATION_SECONDS,
-                                      delay:
-                                        activeIndex === index ? STICKER_APPEARANCE_DELAY_SECONDS : 0,
-                                      ease: EXPRESSIVE_EASING
-                                    },
-                                    filter: {
-                                      duration:
-                                        activeIndex === index
-                                          ? STICKER_APPEARANCE_DURATION_SECONDS
-                                          : GLASS_OPACITY_DURATION_SECONDS,
-                                      delay:
-                                        activeIndex === index ? STICKER_APPEARANCE_DELAY_SECONDS : 0,
-                                      ease: EXPRESSIVE_EASING
-                                    }
+                                    duration: activeIndex === index ? STICKER_APPEARANCE_DURATION_SECONDS : GLASS_OPACITY_DURATION_SECONDS,
+                                    delay: activeIndex === index ? STICKER_APPEARANCE_DELAY_SECONDS : 0,
+                                    ease: EXPRESSIVE_EASING
                                   }}
-                                  style={{
-                                    x: shouldReduceMotion ? 0 : iconShiftX,
-                                    y: shouldReduceMotion ? 0 : iconShiftY,
-                                    rotate: STICKER_ROTATION_DEGREES
-                                  }}
+                                  style={{ x: shouldReduceMotion ? 0 : iconShiftX, y: shouldReduceMotion ? 0 : iconShiftY, rotate: -15 }}
                                 >
                                   <StickerFrameCycle
-                                    frameIndex={stickerFrameIndices[index] ?? 0}
-                                    shouldReduceMotion={Boolean(shouldReduceMotion)}
                                     stickerSrcs={entry.stickerSrcs}
+                                    frameIndex={stickerFrameIndices[index] ?? 0}
+                                    reducedMotion={Boolean(shouldReduceMotion)}
                                   />
                                 </motion.span>
                               ) : null}
                             </span>
                           </Link>
+                          )}
                         </span>
                       ))}
                     </div>
                   </section>
                 ))}
-              </div>
+              </PageRevealSequence>
             </motion.div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
           </PageRevealSequence>
         </div>
       </div>
 
-      {portalTarget &&
+      {portalTarget && !previewSuppressed &&
         createPortal(
           <AnimatePresence>
             {canHover && activeIndex !== null && previewMedia?.src && previewLeft !== null && (
               <motion.aside
+                key={previewMedia.isPlannedPreview ? "planned-preview-pane" : "work-preview-pane"}
                 className={styles.previewPane}
                 style={{ left: `${previewLeft}px` }}
                 aria-label="Content area"
-                initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, filter: "blur(10px)" }}
-                animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, filter: "blur(0)" }}
-                exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, filter: "blur(10px)" }}
+                initial={shouldReduceMotion || previewMedia.isPlannedPreview ? { opacity: 0 } : { opacity: 0, filter: "blur(10px)" }}
+                animate={shouldReduceMotion || previewMedia.isPlannedPreview ? { opacity: 1 } : { opacity: 1, filter: "blur(0)" }}
+                exit={shouldReduceMotion || previewMedia.isPlannedPreview ? { opacity: 0 } : { opacity: 0, filter: "blur(10px)" }}
                 transition={
                   shouldReduceMotion
                     ? { duration: 0.18 }
@@ -1295,12 +1870,12 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                   <div className={styles.previewStage}>
                     <AnimatePresence mode={shouldReduceMotion ? "sync" : "popLayout"}>
                       <motion.div
-                        key={previewIndex ?? -1}
+                        key={previewMedia.isPlannedPreview ? "planned-globus-preview" : previewIndex ?? -1}
                         className={styles.previewMediaFrame}
                         initial={
                           shouldReduceMotion
                             ? { opacity: 0 }
-                            : { opacity: 0, filter: "blur(10px)", scale: 0.97 }
+                            : { opacity: 0, filter: previewMedia.isPlannedPreview ? "blur(0px)" : "blur(10px)", scale: 0.97 }
                         }
                         animate={
                           shouldReduceMotion
@@ -1310,7 +1885,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                         exit={
                           shouldReduceMotion
                             ? { opacity: 0 }
-                            : { opacity: 0, filter: "blur(10px)", scale: 0.97 }
+                            : { opacity: 0, filter: previewMedia.isPlannedPreview ? "blur(0px)" : "blur(10px)", scale: 0.97 }
                         }
                         transition={
                           shouldReduceMotion
@@ -1321,7 +1896,7 @@ export function HomeShowcase({ title, subtitle, sections }: HomeShowcaseProps) {
                         <MediaPlaceholderView
                           media={previewMedia}
                           variant="homePreview"
-                          className={styles.previewCard}
+                          className={[styles.previewCard, previewMedia.isPlannedPreview && styles.plannedPreviewCard].filter(Boolean).join(" ")}
                           frame="square"
                           fit="contain"
                         />

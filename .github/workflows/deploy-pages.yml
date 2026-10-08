@@ -18,6 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
+      ENABLE_GAMES: 'false'
       NEXT_PUBLIC_YANDEX_METRICA_ID: ${{ vars.YANDEX_METRICA_ID }}
     steps:
       - name: Checkout

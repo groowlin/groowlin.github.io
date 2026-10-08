@@ -76,8 +76,11 @@
   --home-left-column-width: 405px;
   --home-list-padding-block: 22px;
   --home-list-padding-inline: 45px;
-  --home-section-gap: 80px;
-  --home-section-title-gap: 60px;
+  --home-section-gap: 60px;
+  --home-tabs-gap: 20px;
+  --home-tabs-to-list-gap: 60px;
+  --home-top-card-to-tabs-gap: 80px;
+  --home-section-title-gap: 40px;
   --home-heading-padding-bottom: 22px;
   --home-item-gap: 8px;
   --home-meta-gap: 7px;
@@ -117,6 +120,7 @@
   --color-gray-40: #f4f4f5;
   --color-gray-35: #f5f5f5;
   --color-gray-25: #fafafa;
+  --color-accent-blue: #339CFF;
   --white-92: rgba(255, 255, 255, 0.92);
   --white-90: rgba(255, 255, 255, 0.9);
   --white-85: rgba(255, 255, 255, 0.85);
@@ -231,7 +235,7 @@ a {
 }
 
 a:hover {
-  color: #339CFF;
+  color: var(--color-accent-blue);
   text-decoration-color: rgba(51, 156, 255, 0.2);
 }
 
@@ -308,8 +312,6 @@ samp {
     --rhythm-title-block-bottom: 24px;
     --rhythm-section-heading-top: 40px;
     --rhythm-section-heading-bottom: 24px;
-    --home-section-gap: 40px;
-    --home-section-title-gap: 24px;
     --home-item-gap: 8px;
     --home-meta-gap: 6px;
     --home-micro-gap: 4px;

@@ -7,7 +7,9 @@ import { PersistentSiteFrame } from "@/components/shell/PersistentSiteFrame";
 import { getLinkPreviewMetadataContent, getSiteMetadataSettingsContent, getTopCardContent } from "@/lib/content/site.server";
 import type { TopCardContent, TopCardVariant } from "@/lib/content/types";
 import { getWorkSlugs } from "@/lib/content/work.server";
+import { gamesEnabled } from "@/lib/features";
 import { scrollRestorationScript } from "@/app/scroll-restoration-script";
+import { gamesBootstrapScript } from "@/app/games-bootstrap-script";
 import "./globals.css";
 
 const inter = localFont({
@@ -74,6 +76,7 @@ export default async function RootLayout({
   return (
     <html lang="ru" className={inter.variable} suppressHydrationWarning>
       <body>
+        {gamesEnabled && <script dangerouslySetInnerHTML={{ __html: gamesBootstrapScript }} />}
         <script dangerouslySetInnerHTML={{ __html: scrollRestorationScript }} />
         <YandexMetrica />
         <AssetInteractionGuard />

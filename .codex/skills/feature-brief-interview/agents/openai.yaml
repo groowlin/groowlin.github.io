@@ -1,0 +1,6 @@
+interface:
+  display_name: "Feature Brief Interview"
+  short_description: "Уточняет крупную фичу до реализации"
+  default_prompt: "Use $feature-brief-interview to prepare an approval-ready brief for this feature."
+policy:
+  allow_implicit_invocation: true

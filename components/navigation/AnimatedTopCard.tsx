@@ -135,6 +135,7 @@ function AnimatedTopCardWheel({
   topCards,
   workSlugs
 }: AnimatedTopCardWheelProps) {
+  const { navigateWithContentExit } = useNavigationLifecycle();
   const initialSnapshot: TopCardSnapshot = {
     card: committedCard,
     identity: committedIdentity,
@@ -275,6 +276,8 @@ function AnimatedTopCardWheel({
       return;
     }
 
+    event.preventDefault();
+    navigateWithContentExit(targetPathname);
     const targetCard = getTopCardForPathname(targetPathname, topCards, workSlugs);
     appendSnapshot({
       card: targetCard,

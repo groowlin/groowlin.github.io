@@ -35,6 +35,12 @@ export const homeFrontmatterSchema = z.object({
   title: z.string().min(1),
   subtitle: z.string().min(1).optional(),
   itemStickers: z.record(workSlugSchema, z.array(internalSvgPathSchema).min(1)).optional(),
+  gameItems: z.record(workSlugSchema, z.object({ label: z.string().min(1), subtitle: z.string().min(1) })).optional(),
+  plannedItems: z.record(workSlugSchema, z.object({
+    label: z.string().min(1),
+    subtitle: z.string().min(1),
+    statusLabel: z.string().min(1)
+  })).optional(),
   seo: z.object({
     siteUrl: z.string().url(),
     siteName: z.string().min(1),

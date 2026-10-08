@@ -1,7 +1,11 @@
 # Portfolio Design System
 
 ## Source of truth
-- Основные токены: `/Users/groowlin/groowlin.github.io/app/globals.css` (`:root`).
+
+- Current home content uses one untitled list per tab. Experience (`Опыт`) contains `globus`, `goldenapple`, `zvuk`, `medicine`, `familia`; VK is temporarily commented out in home.mdx, with its case file and route retained; Authored (`Авторское`) contains `portfoliocase`, followed by planned `media-and-gallery`, `mini-games`, and `content-automation` in the shared 2026 year group. Games are available through the independent `GamesExperience` mascot only when `ENABLE_GAMES=true`; otherwise all `gameItems` and the planned `mini-games` entry are omitted from the rendered list. Former section headings are retained as single-line MDX comments in `content/site/home.mdx`.
+- Утверждённая текущая реализация — baseline этой редакции. Основные токены: `app/globals.css` (`:root`); локальные параметры — CSS-модули и компоненты. Документ фиксирует их контракт.
+- При последующих изменениях UI одновременно согласовывать и обновлять затронутые правила ДС, спеки и оба структурных JSON в том же изменении; порядок работы и запуск проверок определяет `AGENTS.md`, §§9–12.
+- Документные и UI-only изменения не запускают проверки, тесты, сборку или browser/visual smoke-test. Проверки и тесты выполняются только для изменений, которые могут повлиять на сборку, по `AGENTS.md`, §§9–10.
 - Применение токенов в UI: CSS-модули в `components/**` и `app/page-content.module.css`.
 
 ## Layout
@@ -18,10 +22,11 @@
 - Global header rhythm: `--rhythm-title-block-top = 60px`, `--rhythm-title-block-bottom = 40px` для блока `title + subtitle` на всех страницах. Mobile override at `max-width: 767px`: `--rhythm-title-block-top = 32px`, `--rhythm-title-block-bottom = 24px`.
 - Global section-heading rhythm: `--rhythm-section-heading-top = 60px`, `--rhythm-section-heading-bottom = 40px` для заголовков секций кейсов. Mobile override at `max-width: 767px`: `--rhythm-section-heading-top = 40px`, `--rhythm-section-heading-bottom = 24px`.
 - Home preview pane size: `--layout-preview-size = 484px`
-- Home preview offset from list: `--layout-preview-offset-x = 60px`
-- Home left column width: `--home-left-column-width = 360px`
-- Home layout paddings: `--home-layout-pad-left = 120px`, `--home-layout-pad-top = 120px`
-- Home section rhythm: between sections `--home-section-gap = 80px`, section title to first case `--home-section-title-gap = 60px`, between adjacent cases `40px` via vertical item padding, case title to subtitle `--home-item-gap = 8px`. Hover glass keeps its previous `74px` height via `--home-item-hover-padding-y = 14px`. Mobile overrides at `max-width: 767px`: `--home-section-gap = 40px`, `--home-section-title-gap = 24px`, `--home-item-padding-y = 8px`, `--home-item-hover-padding-y = 12px`, `--home-meta-gap = 6px`, `--home-micro-gap = 4px`, `--home-contact-gap = 8px`, `--home-top-card-padding = 16px`, `--home-top-card-subtitle-gap = 6px`, `--home-top-card-icon-gap = 8px`.
+- Home preview offset from list: `--layout-preview-offset-x = 68px`
+- Home left column width: `--home-left-column-width = 405px`
+- Home layout paddings: `--home-layout-pad-left = 135px`, `--home-layout-pad-top = 135px`
+- Home section rhythm: from the last case subtitle to the next section heading `--home-section-gap = 60px`, from section heading to the first case title `--home-section-title-gap = 40px`, between adjacent cases `40px` via vertical item padding, case title to subtitle `--home-item-gap = 8px`. Section and list CSS subtract the item layout padding so the visible text distances match these tokens. Hover glass keeps its previous `74px` height via `--home-item-hover-padding-y = 14px`. Mobile overrides at `max-width: 767px`: `--home-item-padding-y = 8px`, `--home-item-hover-padding-y = 12px`, `--home-meta-gap = 6px`, `--home-micro-gap = 4px`, `--home-contact-gap = 8px`, `--home-top-card-padding = 16px`, `--home-top-card-subtitle-gap = 6px`, `--home-top-card-icon-gap = 8px`.
+- Home tab rhythm: `--home-tabs-gap = 20px` between tab labels, `--home-tabs-to-list-gap = 60px` from tab-label bottom to the first list heading or first case title text in an untitled section (compensating item layout padding with a first-section negative margin), and `--home-top-card-to-tabs-gap = 80px` from the top-card bottom to the tab-label top. These values apply on mobile too.
 - Breakpoints: 680px (masonry/icon grid), 768px (shell layout), 1180px (fixed preview pane)
 
 ## Typography Tokens
@@ -42,8 +47,8 @@
 - `--font-size-caption = 0.875rem` (14px)
 - `--font-size-overline = 0.75rem` (12px)
 - `--font-size-overline-xs = 0.6875rem` (11px)
-- `--home-font-size-md = 14px`
-- `--home-font-size-lg = 16px`
+- `--home-font-size-md = 16px`
+- `--home-font-size-lg = 18px`
 
 ### Line-height and tracking
 - `--line-height-base = 1.5`
@@ -56,8 +61,15 @@
 
 ### Semantic text usage
 - Body text and links: `font-size-body` + `font-weight-regular`
-- Section headings (`h1`, `h3`, `.sectionTitle`, name/title blocks): `font-weight-medium`
-- Secondary/meta text (`.itemMeta`, captions, icon titles): `font-size-caption`
+- Medicine and Golden Apple case narratives follow the existing case format: one section-heading level (`#` in MDX), regular-weight paragraphs and list items, no inline bold labels or metric emphasis, and no label-based extra heading tier. Introductory role/team context is prose rather than a labeled passport. This is a content-formatting rule; shared typography tokens and renderer styles stay unchanged.
+- Medicine and Golden Apple reading rhythm follows Familia/Zvuk: short paragraphs with one main thought, existing `<br/>` pauses between semantic groups, and flat lists for funnels, states, responsibilities and metrics. Do not collapse several distinct claims into one dense paragraph. `<br/>` stays away from section headings and does not introduce new spacing values; shared font sizes and text-container width stay unchanged.
+- Medicine is a reference only for short-mode brevity, not for other full narratives. Each case follows its own product logic without required iteration count. Canonical editorial scope, short length and metric evidence: `docs/specs/portfolio-case-json-structure.md#shortsummary-rules`.
+- Medicine, Familia, Zvuk, Golden Apple and Portfolio short overviews have four compact labeled blocks before the existing media, with no cards, backgrounds, borders or shadows. The overview is a semantic `dl`: one column at every viewport width. Each label uses `font-size-caption`, `font-weight-medium`, `text-muted`; values use `font-size-body`, `font-weight-regular`. Block gap uses `space-xl`, label-to-value gap uses `space-sm`. It is opt-in through four existing `shortSummary.paragraphs` strings whose first lines exactly match one of two ordered sets: `Контекст`, `Метрики`, `Мой вклад`, `Ограничение`, or Portfolio's `Продуктовая задача`, `Решения`, `Аналитика и развитие`, `Автоматизация и AI`. Each block has a nonempty body. Both sets reuse `shortOverview`, `shortOverviewBlock`, `shortOverviewLabel` and `shortOverviewValue` with semantic `dl/dt/dd` and the same tokens. Other formats retain the existing renderer. This scoped label hierarchy is allowed only in the overview; full-mode prose keeps its no-inline-bold/no-extra-heading-tier rule. No new content fields, controls or spacing tokens are introduced.
+- Zvuk retains existing case typography and reading rhythm. Profiles scope, short overview, source archive and metric definitions are canonical in `docs/specs/portfolio-case-json-structure.md#shortsummary-rules`. Existing short-profile and short-player media and renderer remain; Profiles are primary, the player supports uninterrupted listening, and onboarding is outside scope. Preserve existing full/short media during text editing unless the user explicitly requests removal; canonical media order is in the case contract. No new tokens or fields.
+- Familia retains existing case typography and reading rhythm: single-level headings, regular prose, flat lists and pauses away from headings. Its four-block short overview retains existing media. Editorial scope and metrics are canonical in `docs/specs/portfolio-case-json-structure.md#shortsummary-rules`; no new tokens, components or fields.
+- Golden Apple full mode follows its own product logic, with contribution, scenario value and boundaries; no fixed three-step template or public model-status notes. Canonical editorial scope and metric definitions: `docs/specs/portfolio-case-json-structure.md#shortsummary-rules`.
+- Page headings, MDX section headings and Home `.sectionTitle`: `font-weight-heavy` (800). Global unqualified `h1/h3` retain medium (500); TopCard title uses bold (700).
+- Captions and icon titles: `font-size-caption` (14px). Home `.itemMeta` uses `--home-font-size-md` (16px); its line-height is `--home-line-height-tight` (19px).
 - Uppercase media labels: `font-size-overline` + `letter-spacing-overline`
 
 ## Color Tokens
@@ -79,7 +91,11 @@
 - `--color-gray-50 = #f4f4f6`
 - `--color-gray-40 = #f4f4f5`
 - `--color-gray-35 = #f5f5f5`
+- `--color-accent-blue = #339CFF` — переиспользуемый интерактивный акцент для hover, focus-visible и active состояний.
 - `--color-gray-25 = #fafafa`
+
+### Approved local hover color
+- `#f0f3f6` is the current local hover backing in TopCard, shell controls and ShortSummary. It is allowed in these components without introducing a global token.
 
 ### Semantic color tokens
 - `--text-primary`, `--text-muted`, `--text-light`, `--text-marker`
@@ -124,16 +140,16 @@
 - `--radius-xl = 24px`
 - `--radius-2xl = 40px`
 - `--radius-avatar-home = 44px`
-- `--radius-home-preview = 20px`
+- `--radius-home-preview = 22px`
 - `--radius-home-top-card = 40px`
-- `--radius-home-avatar = 44px`
+- `--radius-home-avatar = 50px`
 - `--radius-pill = 999px`
 
 ## Size Tokens
 - `--size-dot-md = 0.45rem`
 - `--size-dot-sm = 0.4rem`
 - `--home-avatar-size = 64px`
-- `--home-icon-size = 16px`
+- `--home-icon-size = 18px`
 - `--home-arrow-size = 27px`
 
 ## Motion System
@@ -141,7 +157,7 @@
 ### Motion principles
 - Motion supports orientation, hierarchy, and state change; it must not exist as decoration detached from interaction or layout.
 - Default motion language is soft, blurred, and slightly eased into place: `opacity + blur + translateY` for reveal, `opacity + blur + scale` for surface swaps, and restrained pointer-reactive transforms only where already designed. Persistent top-card route swaps are the explicit exception: their content uses `opacity + translateY + scale` without blur.
-- Ambient infinite animation is not allowed by default. Continuous loops are reserved for the home top-card hover state and the active mapped home sticker frame cycle; both are interaction-bound and stop when inactive.
+- Ambient infinite animation is not allowed by default. Home top-card hover and active mapped sticker cycles stop when inactive. Explicit local exceptions are game simulation/ambient effects and visibility-gated `PortfolioMotionDemo` (including its demonstrated 620ms icon cycle); their local lifecycle and reduced-motion contracts apply.
 - Scroll-linked animation patterns (`useScroll`, parallax, while-in-view transforms, progress-based transforms) are not part of the current design system.
 - New motion values should reuse the existing motion tiers below. If a new duration/easing family is needed, it must be added here first.
 
@@ -149,7 +165,7 @@
 - Use `Framer Motion` for stateful enter/exit, geometry transitions, pointer-follow behavior, and portal-based overlays.
 - Use CSS transitions/keyframes for simple hover, asset loading, and deterministic page-reveal sequencing.
 - Prefer property-specific transitions. Avoid `transition: all` for new UI work.
-- Reduced motion support is mandatory for page reveal, top-card swaps, lightbox open/close, and any keyframe-driven effect with semantic meaning.
+- Page reveal, top-card swaps, lightbox open/close and Home glass/preview implement the reduced-motion behavior documented below. Other component behavior is described locally; do not infer a global JS fallback from a CSS media query.
 
 ### Motion tokens
 
@@ -170,14 +186,19 @@
 - `motion-base-plus = 320ms`; allowed for asset settle/load completion and top-card background color.
 - `motion-emphasis = 420ms`; used by the home active-item text shift and each persistent top-card route-swap tape retarget.
 - `motion-layout = 600ms`; used by the home outgoing-text return and preview enter/swap.
-- `motion-page-reveal = 700ms`
+- `motion-page-reveal = 700ms`; visibility track; movement uses `1120ms` and `cubic-bezier(0.18, 0.88, 0.28, 1)`
 - `motion-spring-soft = 800ms`; used by shared Framer Motion item reveal.
 - `motion-ambient-enter = 1240ms`; reserved for the initial top-card document reveal.
-- `motion-loop-icon = 1400ms`; reserved for top-card icon wave on hover.
+- `motion-loop-icon = 620ms`; reserved for top-card icon wave on hover.
 - `motion-loop-shimmer = 4200ms`; reserved for top-card shimmer on hover.
 
+#### Approved local motion values
+- Lightbox floating close: `440ms`, delay `80ms`; close icon `360ms`; ordinary closing geometry `240ms`, interrupted closing `160ms`; navigation press `120ms`. These use expressive easing.
+- Gallery trigger hover: scale `1 → 1.018`, `420ms`, `cubic-bezier(0.16, 1, 0.3, 1)`; no reduced-motion override for this transform.
+- Local game and PortfolioMotionDemo timing follows their component contracts rather than the common duration tiers.
+
 #### Reveal primitives
-- Page and MDX reveal uses `opacity + blur(8px) + translateY(12px..16px)`.
+- Page and MDX reveal uses `opacity + blur(8px) + translateY(28px)`.
 - Sequenced reveal stagger is `80ms` between siblings.
 - Initial top-card surface/content reveal uses `scale(0.985 → 1)`; the route wheel uses the component-specific symmetric `0.667 ↔ 1` scale lifecycle defined below.
 - Media loading/handoff may use blur up to `18px`; this is the upper bound in the current system.
@@ -186,7 +207,7 @@
 - `PageRevealSequence` must resolve to fully visible static content when `prefers-reduced-motion: reduce` is active.
 - `AnimatedTopCard` must render the static `TopCard` without route-swap motion when reduced motion is requested.
 - `GalleryLightbox` must collapse motion transitions to `duration: 0` for open/close/backdrop/close-button choreography when reduced motion is requested.
-- CSS hover/loop/keyframe effects must expose a `prefers-reduced-motion` fallback that disables transition/animation when the effect is not essential.
+- Reduced-motion behavior is scoped to each component. MediaPlaceholder handoff/load and Gallery trigger hover remain animated; mobile ShortSummary skips initial hidden state but retains its JS springs/deformations. Its CSS fallback disables CSS animation/transition only. These are current implementation contracts, not assertions of complete accessibility coverage.
 - Home active-case glass must switch geometry instantly, disable pointer tilt/shift and active-text transforms, and keep transform origin centered when reduced motion is requested. Home preview must omit blur/scale and use opacity-only motion.
 
 ## Progressive Blur
@@ -209,28 +230,31 @@ backdrop-filter: blur(var(--progressive-blur));
 - В Pixel Perfect размытие усиливается слева направо: радиусы `0 / 5 / 10 / 20 / 40px`, пары start/end масок соответственно `0/25`, `8/35`, `16/45`, `24/55`, `32/65%`. Эти значения задаются локально в `PixelPerfect`, а не defaults или токенами общего компонента. Источники имеют `z-index: 0`, blur — `1–5`, tint — `6`. Направление и область эффекта адаптируются через props под конкретный запрос с сохранением механизма.
 - Reduced motion сохраняет статичный progressive blur и отключает пространственные анимации.
 
-Если пользователь не запретил технические проверки, диагностика начинается с реально сгенерированного CSS, computed `backdrop-filter`, `CSS.supports`, значений переменных, геометрии и масок; затем проверяются разделяющие границы у предков. Не менять вслепую `z-index` или радиусы. Визуальную оценку выполняет пользователь; автоматические визуальные проверки не создавать.
+Технические проверки CSS запускаются только при возможном влиянии изменения на сборку по `AGENTS.md`, §§9–10; UI-only и документные изменения их не запускают. При разрешённой диагностике сборки начинать с реально сгенерированного CSS и сохранности обеих backdrop-filter деклараций. Browser computed `backdrop-filter`, `CSS.supports`, геометрия, маски и разделяющие границы предков проверяются только по отдельному явному запросу пользователя. Не менять вслепую `z-index` или радиусы. Визуальную оценку выполняет пользователь; автоматические визуальные проверки не создавать.
 
 ## Home Top Card Tokens
-- `--home-top-card-width = 360px`
+- `--home-top-card-width = 340px`
 - `--home-top-card-padding = 20px`; mobile override at `max-width: 767px` = `16px`
 - `--home-top-card-radius = 40px`
-- `--home-top-card-content-gap = 20px`
-- `--home-top-card-subtitle-gap = 6px`
-- `--home-top-card-icon-gap = 8px`
-- `--home-name-size = 18px`
-- `--home-subtitle-size = 16px`
+- `--home-top-card-content-gap = 12px`
+- `--home-top-card-subtitle-gap = 7px`
+- `--home-top-card-icon-gap = 9px`
+- `--home-name-size = 20px`
+- `--home-subtitle-size = 18px`
 - `--home-line-height-tight = 19px`
-- `--home-avatar-radius = 44px`
+- `--home-avatar-radius = 50px` (alias `--radius-home-avatar`)
+- Desktop `--home-meta-gap = 7px`, `--home-micro-gap = 5px`, `--home-contact-gap = 9px`, `--home-top-card-gap = 22px`.
+- Declared legacy values without active layout/typography consumers: `--home-layout-pad-left/top = 135px`, `--home-top-card-gap = 22px`, `--home-contact-gap = 9px`, `--home-name-size = 20px`, `--home-subtitle-size = 18px`. TopCard binds text to `--home-font-size-lg/md`, not these legacy font-size declarations.
 
 ## Components
 
 ### Games Experience (`GamesExperience`)
+- Build availability: `lib/features.ts` evaluates `process.env.ENABLE_GAMES === "true"`, default false; GitHub Pages explicitly sets `ENABLE_GAMES=false`. When disabled, `app/page.tsx` omits `GamesExperience`, its mascot and all `gameItems` plus the planned `mini-games` entry; `app/layout.tsx` omits the games bootstrap. The validated MDX source stays unchanged; filtering occurs only in the page builder. The rules below apply when enabled. Sources and public game assets remain available.
 - Home-only, desktop-only (`min-width: 768px`) inline game mode after `SiteShell`; mascot is absolute at the physical page bottom, centered, 125×72 CSS px.
 - `GameModeShell` → `GameFrame` / (`PixelPerfect` → `CharacterPlayground`), with a `MascotMessage` slot. The final Далее button advances to the second game. No additional route, overlay, backend, overall games title or sequence progress.
-- One versioned sessionStorage record restores open state and unlimited attempts through an early safe bootstrap before scroll restoration; CSS reserves restored-open geometry before hydration.
-- In closed state, the page tail after `SiteShell` is exactly 80svh, so maximum scroll leaves the lower 20% of the case list visible; the 125×72 mascot is fully visible with its bottom at the physical document/viewport bottom. This is scoped to the desktop home main and does not change global spacing tokens.
-- Uses one wide card with width `min(672px, viewport minus existing page gutters)` and height50svh. Pixel Perfect uses the local dark contract below. Intro/final show two background squares with progressive backdrop blur; play shows five hearts at top40px. Exact16 or five attempts including violations complete the series; best gap is nearest16. Final has no active square; its full-card Далее button opens CharacterPlayground and preserves the Pixel Perfect result. Outer lifecycle, measurement geometry and mascot behavior remain unchanged.
+- One versioned sessionStorage record restores open state and Pixel Perfect attempts/results (maximum five attempts per series) through an early safe bootstrap before scroll restoration; CSS reserves restored-open geometry before hydration.
+- In closed state, the page tail after `SiteShell` has a minimum height of 80svh and expands when the selected list is shorter than the viewport. Maximum scroll leaves the lower 20% of a sufficiently long case list visible; the 125×72 mascot is fully visible with its bottom at the physical document/viewport bottom. This is scoped to the desktop home main and does not change global spacing tokens.
+- Uses one wide card with width `min(672px, viewport minus existing page gutters)` and height50svh. Pixel Perfect uses the local dark contract below. Intro/final render three background source squares with progressive backdrop blur; play shows five hearts at top40px. Exact16 or five attempts including violations complete the series; best gap is nearest16. Final has no active square; its full-card Далее button opens CharacterPlayground and preserves the Pixel Perfect result. Outer lifecycle, measurement geometry and mascot behavior remain unchanged.
 - Pixel Perfect local measurement: orange #ff835e line/dashes/endcaps1px, badge filled orange #ff835e with white text; number24px regular white, padding4px8px and radius4px. Draggable hover outline remains #0C8CE9, centered on the edge (1px inside and1px outside). Hearts use heart-active.png / heart-spent.png, size30px, DS space-md gap, top40px. These are local game values, not changes to the global palette.
 - Pixel Perfect has no external contour glow, white frame border or frame shadow. Victory uses internal spotlights only.
 - Detailed behavior, geometry, Figma-derived component values, state schema and browser edge cases: [Games specification](docs/specs/games.md).
@@ -243,27 +267,8 @@ backdrop-filter: blur(var(--progressive-blur));
 - Gameplay uses three compact continuous metric bars without visible numeric thresholds or a task card. Each bar has seamless low/normal/high background zones, no white surface, black outline, gaps or button-like segments; its continuous fill animates width and pastel zone color for300ms. Local colors are low `#d58b8c`, normal `#e2c66f`, high `#87b895`; they do not alter the global palette. Acceptable target zones softly pulse, minimum Normal highlights Normal+High, and a newly met metric uses one350ms success pulse instead of persistent arrows/checks. Department requirements and AI markers enter/exit through fade/scale. Crisis countdown is embedded in the60–80px metrics HUD and fades with its state.
 - Normal task hold is1s; crisis hold is0.7s and its timer is5s. Lightweight success/fail feedback lasts500ms, then the next round is immediately playable. Lower contextual content uses one compact hand-drawn bubble without a tail or white underlay, with normal/think/robot/shout/whisper semantics and red !/!!/!!! markers. Bubble reveal/hide takes220ms through opacity and scale `.96↔1`; text replacement completes fade-out before fade-in.
 - Three crisis successes mean «Компания растёт», two mean «Бизнес удержался», zero or one mean «Компания обанкротилась». Every path reaches the report.
-### Home Top Card (`.topCard`)
-Structure:
-- avatar (`.avatar`)
-- profile text block (`.topName`, `.aboutLink`)
-- contact icons (`.contactLink`)
-- arrow trigger (`.topArrowLink`)
-
-Spacing:
-- card padding: `--home-top-card-padding` (20px); mobile override at `max-width: 767px` = `16px`
-- internal gap: `--home-top-card-gap` (20px)
-- text micro gap: `--home-micro-gap` (4px)
-- contact gap: `--home-contact-gap` (8px)
-
-Shape:
-- card radius: `--home-top-card-radius` (40px)
-- avatar radius: `--home-avatar-radius` (44px)
-
-Rules:
-- top-card uses `--home-top-card-bg`
-- typography uses общий системный стек `--font-family-sans` и home font-size tokens
-- on mobile, top-card occupies the surface grid (`16px` from viewport edge)
+### Home Top Card
+Текущая главная использует тот же persistent `TopCard` (`.card`), что описан ниже; отдельный `.topCard/.avatar/.topName/.contactLink` контракт — прежняя структура, не активный компонент. Старые `home-top-card-gap` (22px) и `home-contact-gap` (9px) остаются декларациями без текущих потребителей; `home-micro-gap` равен 5px desktop /4px mobile. Аватар текущего TopCard использует `home-avatar-radius` 50px.
 
 ### Home Case Card (`.item`)
 Structure:
@@ -274,10 +279,10 @@ Spacing:
 - row spacing: `40px` via `--home-item-layout-pad-y = 20px` on each side; mobile keeps its previous vertical spacing via `--home-item-padding-y = 8px`
 - hover glass padding: `--home-item-hover-padding-y = 14px` on desktop and `12px` on mobile
 - internal gap: `--home-item-gap` (8px)
-- meta inline gap: `--home-meta-gap` (6px)
+- declared meta gap: `--home-meta-gap` (7px desktop, 6px mobile); current HOME_METRIC_LABELS are joined as ordinary text rather than separate gap-controlled items.
 
 Shape:
-- radius: `--radius-lg`
+- radius: `--home-bubble-radius` (18px)
 
 Rules:
 - label всегда сверху meta
@@ -306,8 +311,8 @@ Shape:
 - avatar radius: `--home-avatar-radius`
 
 Typography:
-- title: `--home-name-size / --home-line-height-tight / --font-weight-bold`
-- subtitle: `--home-subtitle-size / --home-line-height-tight / --font-weight-regular`
+- title: `--home-font-size-lg` (18px) / `--home-line-height-tight` / `--font-weight-bold`
+- subtitle: `--home-font-size-md` (16px) / `--home-line-height-tight` / `--font-weight-regular`
 
 ### Media Placeholder (`.wrapper`, `.mediaLabel`)
 Structure:
@@ -317,13 +322,13 @@ Structure:
 - optional caption
 
 Spacing:
-- caption: `--space-sm` `--space-3xs` `--space-0`
+- caption: margin-top `--space-md` (9.6px), margin-left `--home-top-card-padding` (20px); at max-width 767px margin-left `--layout-mobile-content-inset` (16px).
 - pill padding: `--space-xs` `--space-lg-compact`
 - pill gap: `--space-sm`
 
 Shape:
 - default radius: `--radius-md`
-- work radius fallback: `--radius-xs`
+- work radius fallback: `--radius-xs`; content-media override uses `--home-top-card-padding` (20px desktop /16px at max-width767px).
 - pill radius: `--radius-pill`
 
 Rules:
@@ -376,7 +381,7 @@ Rules:
 - if the current source remains in the viewport, close returns to its source bounds; otherwise the media dissolves in place
 - mobile uses full-viewport contain media while preserving the computed border radius of its inline source in every lightbox phase; it keeps a static top-right close control, side tap zones, horizontal swipe navigation across the lightbox, and the always-visible scroll-snap thumbnail rail; a swipe requires at least `48px` predominantly horizontal displacement, navigates non-cyclically, and suppresses the synthetic backdrop click; desktop side arrows are not rendered
 - mobile images support centered touch zoom from `1x` to `4x`: two-finger pinch scales continuously around the gesture midpoint, while double tap toggles `1x`/`2x` around the tap position; zoom resets on media change and close, disables one-finger gallery swipe above `1x`, and never changes desktop interaction
-- a pointer-transparent bottom rail backing fades from transparent at the thumbnail top edge to opaque `--color-white` at the viewport bottom, including the current rail bottom offset and padding
+- bottom rail backing has no active white gradient; its retained CSS declaration is commented out. The lower region uses static 0/8/16px progressive blur layers and 400ms mask-alpha fade described above.
 - navigation controls are rendered only when the scope contains more than one openable item
 
 ### Work Article Section (`.article`, `.section`)
@@ -389,7 +394,7 @@ Spacing:
 - section gap: `--space-sm`
 
 Typography:
-- section title: `font-weight-medium`
+- section title: `font-weight-heavy` (800)
 - quote attribution: `font-size-caption`
 
 ### Sticker (inline SVG in text)
@@ -404,23 +409,27 @@ Rules:
 
 ### Shared page reveal
 - `components/motion/PageRevealSequence.tsx` + `components/motion/page-reveal-sequence.module.css` are the canonical sequential reveal system used by `SiteShell`.
-- Reveal readiness is tracked per `data-page-reveal` target from its own Web Animations API records. A target becomes `ready` only after all of its actual CSS animations settle; this includes its own stagger and durations and is not derived from a global sequence timeout. Instant and reduced-motion targets become ready immediately.
+- Reveal readiness is tracked per `data-page-reveal` target from its own Web Animations API records. A target becomes `ready` after its own visibility animations (opacity/filter) settle, including its stagger. Movement is not part of this readiness gate and may continue. Waiting for all CSS animations is used for lifecycle cleanup, not readiness; this is not derived from a global sequence timeout. Instant and reduced-motion targets become ready immediately.
 - `components/motion/MdxMotionComponents.tsx` marks MDX headings, paragraphs, list items, blockquotes, sections, and media wrappers with `data-page-reveal`, so case/about content participates in the same reveal contract.
 - `components/motion/MotionPage.tsx` and `components/motion/MotionItem.tsx` mirror the same language in Framer Motion form: `opacity + blur + y`, `staggerChildren: 0.08`, `spring` item settle.
 - New page-level reveal patterns must stay visually aligned with this system: no new reveal direction, no aggressive overshoot, no larger blur than `18px`.
 
 ### Home showcase motion
-- Home uses the shared reveal language for heading/list entry, then adds a dedicated interactive layer for the active case bubble and preview pane.
-- A case item cannot open its glass or preview until that specific reveal target is ready. Hover and focus intent are retained while its reveal runs, so a stationary pointer or focused link opens automatically as soon as that target's own animations settle; navigation itself remains available. This gate is per item, not tied to the end of the complete page sequence.
+- Temporary Globus exception: the home title uses `--home-text-secondary` (gray500), including hover. The item remains available to hover, preview and stickers, but renders with the default arrow cursor (`cursor: default`) and without link semantics or click navigation; the `/work/globus` link is preserved in a code comment for restoration. The detailed route remains available directly.
+- Planned authored cases use the same non-navigable span branch and secondary title color as Globus, including hover, with the default arrow cursor. They have no href, link role, keyboard link target, detail page or own preview; preview analytics excludes them. Their label, subtitle and statusLabel come from optional `plannedItems` in `content/site/home.mdx` ([content contract](docs/specs/site-and-pages-mdx-structure.md)). The configured entries follow `portfoliocase` in the shared 2026 bracket; `mini-games` is displayed only when `ENABLE_GAMES=true`: `media-and-gallery` (Медиа и галерея) and `content-automation` (Автоматизация контента) show «Подготовка кейса» instead of metrics; `mini-games` (Мини игры) shows «В разработке». Hover keeps the existing glass and sticker motion. Each uses only the first frame from `itemStickers.globus` at build time, without frame cycling or duplicating asset paths. They share the Globus work preview decoratively with one stable `planned-globus-preview` key, source and video DOM across direct switches between these three cases; playback does not restart. If the Globus entry is absent, this preview is omitted. This local exception uses a persistent inline SVG filter outside the keyed preview: grayscale luminance followed by gamma exponent 2 in sRGB preserves white and gives a lighter blue rendering with greater separation of intermediate tones, without contrast clipping. The full `--color-accent-blue` token overlays it with `screen` blending, mapping dark tones to saturated accent blue and white to white; no black color mix is applied. The actual media and overlay are clipped together by `inset(0 round var(--home-radius-preview-media))`: zero inset at the media edges, without resizing the video. The outer backing remains `--color-white`, preserving white before and after reveal. The SVG definitions have zero layout size and an expanded filter region; they introduce no additional clipping. Planned preview aside/frame enter and exit omit blur while preserving existing opacity/scale (opacity-only under reduced motion); asset loading/handoff sets `--media-loading-blur: 0px`. The modifier remains inside the keyed subtree, and a separate planned pane key preserves its blur-free exit even when switching to a work preview. Globus and other previews keep their original colors and motion.
+- Tabs sit directly below the persistent top card and remain on one line. The label-to-label gap is `--home-tabs-gap` on desktop and mobile; button padding is compensated with sibling overlap, without wrapping or horizontal scrolling. The top-card-bottom-to-label-top gap is `--home-top-card-to-tabs-gap`, compensating the shell's page gap and the tab's vertical padding. Buttons use half of `--space-md` vertical and half of `--space-xl` horizontal padding, reduced to half of `--space-md` horizontal on mobile; the tablist's left inset subtracts that button padding so the first label aligns with section-heading text on both desktop and mobile. The active background has `--radius-pill`. The label-bottom-to-first-heading distance uses `--home-tabs-to-list-gap` (60px), compensating the tab's vertical padding. When the first section has no heading, its negative margin compensates the first item's layout padding, measuring the same gap to the case title text rather than its container. Labels use the existing home text size; inactive labels use the secondary color, while hover, focus-visible, and active labels use `--color-gray-700`. One persistent `--color-gray-35` background travels between the buttons with a position/width spring (stiffness 560, damping 40, mass 1.51) and `800ms` `scaleX [1, 0.92, 1.08, 1, 1]` / `scaleY [1, 1.08, 0.92, 1, 1]` deformation. Clicking the selected tab restarts deformation from its current shape; rapid clicks retarget from the current position. Reduced motion moves the background instantly without deformation.
+- Home tab order comes from `content/site/home.mdx`. The active title is stored in sessionStorage and restored on return, reload, and in-site navigation without changing the URL; unavailable storage falls back to the first tab. Restoration remounts the pane-presence boundary before paint, so the server-rendered default pane cannot linger alongside the saved pane and no tab-switch transition replays. Switching right moves each outgoing heading and case item 80px left and brings each incoming target 80px from the right; switching left mirrors the motion. A non-adjacent switch targets the selected pane directly. The first incoming target begins its reveal `200ms` after the outgoing wave starts; the two waves can overlap. The incoming pane enters normal document flow immediately, while `AnimatePresence` keeps the outgoing pane out of flow until its exit completes. The pane viewport has no overflow clipping. The active pane has identity transform and no filter. Each keyed pane has its own DOM reference for the hover glass. Reduced motion switches panes instantly without blur or translation.
+- Every valid tab activation, including clicking the current tab and rapid returns, immediately clears close timers, pointer/focus intent and active case state before any early return. A pane DOM suppression flag immediately hides glass, year and stickers and restores text to its default unshifted state without transition, including retained outgoing panes; the preview portal and its AnimatePresence boundary unmount together without an exit fade. Only a subsequent valid case hover/focus opening in the active non-inert pane clears its suppression and permits preview mounting; tab re-entry alone does not restore hover. Keyed item and list refs remain available while an exiting pane is mounted, so a rapid return can reuse them. The exiting pane ignores pointer and focus interactions and cannot close the active pane's glass. Only its exiting DOM state applies `pointer-events: none`; Framer Motion never writes that property inline. On rapid re-entry, the active pane also clears any stale `inert`, `aria-hidden`, and inline pointer-events state. Existing per-case hover, focus, year, glass, and preview behavior remains unchanged inside the active pane.
+- Home uses the shared reveal language for heading/list entry, then adds a dedicated interactive layer for the active case bubble and preview pane. The tablist keeps its page-level reveal; each selected pane owns a nested, keyed reveal sequence for section headings and case items. Initial entry and sessionStorage restoration wait for scroll restoration and use no horizontal offset. On a tab switch, the incoming reveal is prepared after two animation frames, and its remaining CSS delay is calculated from the outgoing wave's start timestamp so its first target starts at the `200ms` offset; rapid re-entry restarts that pane's wave. Each incoming target combines signed horizontal `80px` travel with no vertical travel and `20ms` per-target stagger. The complete switch lasts `1129ms` from outgoing start to the final incoming target: after the `200ms` incoming offset, movement, opacity and blur share `929ms - (N - 1) * 20ms`, where N counts only targets actually animated after scroll restoration. Late preparation subtracts elapsed time from the remaining wave; exceptionally long waves cap the stagger to fit the budget. The outgoing targets use the opposite horizontal direction and 200ms without stagger, starting from their current computed transform during rapid switches. Neither pane uses a whole-panel horizontal transition. Reveal readiness continues to gate the case glass and preview per item. Initial entry uses the shared 80ms per-row wave; nested reveal roots do not hide each other's initialized targets. In scripting-enabled browsers, uninitialized leaf targets inside pending roots are hidden by server-rendered CSS before hydration, including the complete tablist and its background; no-JS and reduced-motion content remains visible.
+- A case item cannot open its glass or preview until that specific reveal target is ready. Hover and focus intent are retained while its reveal runs, so a stationary pointer or focused link opens automatically as soon as that target's own visibility animations settle; navigation itself remains available. This gate is per item, not tied to the end of the complete page sequence.
 - The active glass bubble position uses a velocity-preserving physics spring with `mass: 0.9`. Normalized travel distance still maps through `smoothstep` to `stiffness: 320..460`, and the post-target tail time-warp remains `1x..2x`. A separate normalized exponential reference damping curve uses actual item steps, a `4.5`-step scale, and ratios from approximately `0.80` near to `0.62` far; these are reference values, not the final damping applied to the spring. Its theoretical start-from-rest peak is preserved through `12px`, then mapped by an exponential target-amplitude curve toward an `18px` asymptote. The effective damping ratio is derived from that target peak (approximately `0.7566` at maximum travel), so the spring physically reaches the intended overshoot and reverses naturally with no post-crossing position or velocity compression. The approach is normalized to `1.20x` the reference spring crossing time using damping-aware compensation; the internal flight scale therefore falls below `1` where effective damping is substantially higher, while the distance-aware tail scale takes over unchanged after the first crossing. Initial inherited velocity is pre-compensated by the active flight scale in a copied spring options object for interruption handoff. Distance is measured between the current untransformed glass layout center and the next target center.
 - Bubble `width/height` morph with a separate physics spring: `stiffness: 220`, `damping: 22`, `mass: 1.0`. Do not add SVG, Canvas, WebGL, motion-blur, or duplicated-layer stretch to this effect.
-- Pointer response targets `x: ±16px`, `y: ±10px` through `stiffness: 300`, `damping: 24`, `mass: 0.75`, using soft-shift power `1.4`. Existing tilt angles and highlight-origin springs remain unchanged. An item whose slug has an `itemStickers` entry in `content/site/home.mdx` renders that non-empty SVG frame array in an item-local layer inside its own `itemVisualBounds`, sized by `--home-arrow-size` (`27px`), permanently rotated `-15deg` counterclockwise, and stacked above the glass. Rotation is orientation and remains under reduced motion. The sticker follows `50%` of the same raw pointer target through its own `300/24/0.75` spring, bounded to `±8px`/`±5px` while the glass is bounded to `±16px`/`±10px`.
+- Pointer response targets x: ±16px and y: ±10px through stiffness 300, damping 24, mass 0.75, with soft-shift power 1.4. Existing glass tilt and highlight-origin springs remain unchanged. Work entries follow descending year order within each tab, retaining the current author order within the same year. The home.mdx body sets the order without automatic sorting. Work entries share one non-interactive year bracket per year group in their own pane, with no rotation. The bracket and year move together through independent raw-pointer targets and stiffness 300, damping 24, mass 0.75 springs. Their coordinates use the full listWrap width and the measured year-group top/height, rather than the active item. Targets are x: ±1⅓px and y: ±⅚px with soft-shift power 1.4 (0.5 / 1.5 / 4 of the main pointer shift limits, six times weaker than stickers). Moving within the group preserves the targets; leaving listWrap resets them. Only the active pane tracks pointer movement. The common bracket/year motion layer uses translate3d with fractional x/y values and will-change: transform; this requests compositing without changing motion targets or child geometry.
 - Active text follows `25%` of the pointer shift with `motion-emphasis` (`420ms`) and the expressive easing. On a cross-item switch, outgoing text returns from its computed transform through an explicit WAAPI animation using `motion-layout` (`600ms`) and the standard easing, avoiding shortened CSS reverse-transitions. Re-entering that item hands its current WAAPI transform back to the active CSS transition across two animation frames so motion remains continuous without a jump. The glass container uses `perspective: 1400px`.
-- The sticker does not change or reserve bubble geometry. Its item-local position is `right: calc(var(--home-arrow-size) / -2)` and `top: calc(var(--home-item-gap) / -2)`: at `27px` this leaves only `4px` above the top edge and a `13.5px` baseline horizontal intersection. Sticker parallax varies that intersection from `5.5px` to `21.5px`; because text follows `25%` of the same raw target (`±4px`), the maximum inward sticker-to-text delta is `4px`, and the existing `18px` padding keeps a minimum gap of approximately `0.5px`. The sticker therefore stays in contact with the bubble, remains outside the text, and does not travel between items when the glass changes target. The layer remains non-interactive, appears for hover and keyboard focus, and is hidden on mobile.
-- Glass opacity remains `280ms` (`motion-base`) through the shared glass-opacity constant. A mapped sticker activation reuses that constant as a `280ms` delay, then enters over `700ms` (`motion-page-reveal`) with expressive easing through `opacity: 0 → 1` and `blur(4px) → blur(0px)`; `4px` matches runtime `--space-2xs`. Deactivation starts immediately and exits over `280ms` through `opacity: 1 → 0` and `blur(0px) → blur(4px)`, so a delayed entry is cancelled cleanly during rapid switching and the old item-local sticker does not linger. Reduced motion preserves the opacity sequencing but forces blur and parallax to `0`; the `380ms` delayed close is unchanged.
-- Sticker frame arrays are eagerly preloaded as stacked SVG images and switch discretely through `visibility`, with no inner motion, opacity, blur, scale, crossfade, or frame transition. A single frame stays static and does not start the cycle. The current `portfoliocase` set contains only Puffy Sparkle Darker Violet, while `globus` uses the single static Clock Neutral sticker. Codex, GitHub, Metrica, and Puffy Star Darker Yellow remain commented in `content/site/home.mdx`. When multiple frames are configured, the cycle starts after the initial `280ms` sticker delay alongside the unchanged outer `700ms` opacity/deblur appearance and changes the visible frame every `200ms` (`5fps`). Only the active item's recursive timeout chain runs. Activation resets the visible source to frame `0`; deactivation cancels all timeouts. Reduced motion shows frame `0` only and does not start the cycle.
-- Every sticker frame keeps the same `27px × 27px` DOM/image container. Puffy Sparkle Darker Violet and Clock Neutral normalize their source artwork directly through `viewBox="2.75 2.75 18.5 18.5"`, filling approximately `26.3–26.9px` of the container without CSS scaling. The existing `scale(1.1)` mapping for the currently commented Puffy Star Darker Yellow remains available for later restoration. Tool images and the outer item-local motion wrapper are not scaled, so position, `-15deg` orientation, and parallax remain identical across frame categories.
-- The right preview pane is a fine-pointer desktop enhancement. Its standard blur/opacity/scale transitions use `motion-layout`; under reduced motion it becomes opacity-only with no blur or scale.
+- The year bracket opens right with a 2px color-gray-40 (#f4f4f5) border and radius-md rounded ends. It uses right: 100%, margin-right: home-item-gap and width: home-item-padding-x. Pane-local content layout offsets and ResizeObserver measure from the first title to the last metadata bottom of the year group, excluding layout padding and animated transforms. The centered year has no underline; its bg-page background and space-2xs block padding interrupt the line. Typography uses home-font-size-md, home-line-height-tight, font-weight-regular and home-text-secondary. Games have no bracket; mobile hides it with the glass.
+- Year appearance reuses the reveal-ready hover/focus state with no additional delay and 1120ms opacity/deblur, reusing the existing page-reveal movement duration and expressive easing; exit starts immediately over 280ms. Moving between cases of the same year keeps the bracket in place without replaying entry. Each mounted pane measures only its own content. Reduced motion removes blur and sets bracket/year pointer shift to zero. Work metadata shows HOME_METRIC_LABELS joined by · as ordinary text, with no chips, icons or year. Metric names in full/short text and home labels use established abbreviations with meanings in the canonical contract; first-use definitions are allowed in full prose. Actions without established abbreviations stay scenario prose, never invented metric labels. RR in full/short/home always includes D7 or D30, meaning return on that exact day; windows and rationale are canonical in the case contract. Home labels appear without arrows or percentages; count follows usefulness, never a mandatory set of three. Globus restores its author-provided CR · RR D30 · NPS labels without new case content or measurements. Portfolio retains ER · FA · CD and all four short-section names; authorized editing condenses short copy to a 15-second reading target and explains existing metric groups in the current full analytics section. Other narrative, media and motion remain. Canonical Portfolio definitions: `docs/specs/portfolio-analytics-metrics-spec.md#80-отображаемые-обозначения-portfolio`. Zvuk labels are RR D7 · NU; existing media order remains. Canonical current sets, definitions and evidence are in `docs/specs/portfolio-case-json-structure.md#shortsummary-rules`; no independent metric definitions are maintained here.
+- The itemStickers frontmatter configuration and loader contract remain supported alongside the year bracket. Mapped stickers occupy the original item-local top-right 27px layer, anchored at right: -half home-arrow-size and top: -half home-item-gap, rotated -15deg with 50% raw-pointer parallax through a 300/24/0.75 spring. They retain reveal-ready hover/focus gating, 280ms entry delay, 700ms expressive opacity/deblur appearance, 4px blur and immediate 280ms exit. Multiple eagerly loaded SVG frames cycle discretely every 200ms after the entry delay; activation resets frame zero, deactivation stops the timer, reduced motion shows frame zero without blur/parallax, and mobile hides the layer. Globus uses only the static Clock Neutral sticker; portfoliocase cycles through Codex, Puffy Sparkle Darker Violet, GitHub, Segmented Circle (Metrica), and Puffy Star Darker Yellow in that order. Puffy Star retains scale 1.1.
+- The right preview pane is a fine-pointer desktop enhancement. Its standard blur/opacity/scale transitions use `motion-layout`; the planned authored preview exception above omits blur. Under reduced motion it becomes opacity-only with no blur or scale.
 - Hover motion in home must stay informational and tactile, not playful: small tilt, shallow shift, no large scale jumps, no bounce-heavy springs.
 
 ### Persistent shell and top-card motion
@@ -442,7 +451,7 @@ Rules:
 - Those hover loops are only allowed while the card is actively hovered. No idle autoplay version should be introduced.
 
 ### Media and lightbox motion
-- `MediaPlaceholder` may use blur/opacity/scale state changes for asset loading and a short handoff reveal when switching from placeholder/skeleton to loaded asset.
+- `MediaPlaceholder` handoff uses opacity + blur18px over220ms expressive; load-state blur18px/scale1.02/opacity0 uses280ms ease, loaded state blur0/scale1/opacity1 uses320ms ease. Loading and handoff blur resolve through `--media-loading-blur` with an `18px` fallback; only the planned authored home preview sets it to `0px` per [Home showcase motion](#home-showcase-motion). These CSS transitions and handoff keyframe remain active with reduced motion.
 - `GalleryLightbox` owns all fullscreen media motion. Open and close are geometry-aware transitions between source media bounds and modal bounds, paired with backdrop fade/blur.
 - The floating close indicator on fine-pointer devices follows the pointer through springs; touch/coarse devices use a fixed close button instead.
 - Gallery-trigger hover feedback may scale slightly, but fullscreen motion rules belong only to media opened from `Gallery`.
@@ -452,17 +461,14 @@ Rules:
 - Global text links use a simple underline-color feedback and should remain understated relative to component-level motion.
 
 ### Work short-summary motion
-- `WorkShortSummaryToggle` is the case-level switch between full MDX content and the optional `shortSummary` content.
-- On desktop, the switch uses an icon-only inline action inside the case title container, aligned to the right edge of the content area.
-- On mobile, the switch is rendered as a portal-based floating control so it is not constrained by transformed page/header containers.
-- The control is icon-only.
-- The control uses `/media/system/read-fast.svg` and `/media/system/read-detailed.svg`.
-- Mobile floating controls use `36px` square visible buttons with `--space-lg` (`16px`) vertical gap between stacked actions.
-- The control has no bubble/glass surface; hover/focus only scales the icon slightly on fine-pointer devices.
-- Hover feedback must be guarded by `(hover: hover) and (pointer: fine)`; touch/coarse devices must not preserve hover-expanded states.
-- Mobile switching scrolls to the top of the case page after toggling short/full mode.
-- Content switching reuses the shared `PageRevealSequence` contract; do not add a separate transition system on top of it.
-- `shortSummary` passport labels use `--font-weight-heavy`; do not set raw `font-weight: 800` in component CSS.
+- `WorkShortSummaryToggle` switches full MDX and optional `shortSummary`; without `shortSummary` there is no control. Content switching uses `PageRevealSequence`; passport labels use `--font-weight-heavy`.
+- Desktop is one segmented button (84×40px) with two icon segments (36×36px), 8px gap and 2px inset, inside the title container. Shell has 14px radius, border and #f5f5f5 backing; blue #339cff thumb has 12px radius. Icons are 20px, selected icons are inverted by an active mask. Text labels are not visible on desktop; click toggles mode.
+- Mobile (`max-width: 768px`, inclusive) is a portal floating segmented group, 44px high, inset 16px from left/right/bottom. Its glass pill shell has white-50 backing, border and local inset/outer shadows. Labels accompany icons; normal thumb is 42px high and `(width - 12px) / 2` wide. The lower blend is a separate white gradient. Shell uses mobile only through 767px; at exactly 768px these controls retain their mobile branch. `ScrollToTopButton` uses the same inclusive 768px cutoff.
+- Mobile selection is pointer-up driven through pointer handlers; current buttons do not implement click/Enter/Space mode activation. This describes current behavior and does not prohibit future keyboard support.
+- Mobile press uses 120ms expressive easing; hold-to-drag begins after 360ms and turns the thumb into a 120px bubble. Drag uses pointer capture and position/shape deformation; position settles with spring 260/24/0.85, shape with 200ms expressive easing. Desktop and mobile retain local jelly shell/thumb feedback and active masks.
+- Mobile initial reveal has 1s delay, opacity 180ms easeOut and y/scale spring 360/28/0.7. Reduced motion bypasses its initial hidden pose, while ongoing mobile JS springs, shape and press feedback remain active. CSS disables CSS animation/transition only. Desktop reduced-motion paths use final states instead of deformation.
+- Hover feedback uses fine-pointer guards. Local hover backing #f0f3f6 is approved for ShortSummary, TopCard and shell controls.
+- Mobile switching scrolls to the top of the case after toggling mode.
 
 ## Что было токенизировано
 Хардкод-значения цветов/отступов/радиусов/типографики заменены на `var(--...)` в:
@@ -489,4 +495,5 @@ Only active recovered assignments contribute. Human costs13; only effective AI c
 
 ### Pixel Perfect: local dark contract
 
-Surface #111111, copy white, active square vertical gradient #D3D9FF to #7E91F6, target #363636. Radius40 reuses TopCard; square radius16. Intro/final: icon109x100, gap space-xl, title42/44 heavy, description20/22 separated by12px. Two214px background squares have gap16 and the left square extends beyond the clipped frame. Five static overlapping masked backdrop-filter layers0/5/10/20/40 progressively increase blur left-to-right; the filter elements never animate opacity or filter and remain mounted while only their source squares crossfade; a separate #111111 tint reaches full opacity at the right. Backdrop squares and blur share a permanently clipped background container. Foreground copy and draggable stay above blur; hearts render above the active square. Target state changes parallel crossfade280ms with screen-space blur16px without geometry interpolation. Ordinary attempt returns the active square with the original550ms spring, bounce0.16; other state crossfades use screen-space16px blur. Measurement retains camera zoom; terminal squares disappear through opacity and screen-space blur16px over280ms with the measurement camera held at zoom, while final copy/background appear simultaneously, without zoom-out. Final button covers the card; Далее and its icon fade in over600ms, then pulse40–60% over1200ms per direction. Its activation is sequence-locked: reset-exit starts the card shake, then after one animation frame mounts CharacterPlayground above the final. The incoming opaque gray surface fades opacity0→1 over300ms while the final stays mounted underneath; there is no transparent frame or new opacity ancestor around the backdrop filters. At completion, Pixel Perfect unmounts and currentGameId changes without clearing its result. The card itself does not fade and performs two consecutive150ms shakes during the same300ms interval. Progressive blur layers stay static. Reduced motion preserves the300ms content crossfade and removes the card shake. Victory uses seven independently moving, different-length beams with rounded tops anchored at bottom center and no card bounce animation. Each beam independently pulses between4% and16% opacity over1200ms per direction, with phases evenly distributed across the full2400ms cycle; the group waits300ms, fades in over600ms and extends beyond the clipped card boundary. Beam lengths are182/176/194/166/188/180/174% of card height. Missing results show ???; external victory test remains. Technical and visual verification wait for user visual approval.
+Surface #111111, copy white, active square vertical gradient #D3D9FF to #7E91F6, target #363636. Radius40 reuses TopCard; square radius16. Intro/final: icon109x100, gap space-xl, title42/44 heavy, description20/22 separated by12px. Three214px background source squares have gap16 and the left square extends beyond the clipped frame. Five static overlapping masked backdrop-filter layers0/5/10/20/40 progressively increase blur left-to-right; the filter elements never animate opacity or filter and remain mounted while only their source squares crossfade; a separate #111111 tint reaches full opacity at the right. Backdrop squares and blur share a permanently clipped background container. Foreground copy and draggable stay above blur; hearts render above the active square. Target state changes parallel crossfade280ms with screen-space blur16px without geometry interpolation. Ordinary attempt returns the active square with the original550ms spring, bounce0.16; other state crossfades use screen-space16px blur. Measurement retains camera zoom; terminal squares disappear through opacity and screen-space blur16px over280ms with the measurement camera held at zoom, while final copy/background appear simultaneously, without zoom-out. Final button covers the card; Далее and its icon fade in over600ms, then pulse40–60% over1200ms per direction. Its activation is sequence-locked: reset-exit starts the card shake, then after one animation frame mounts CharacterPlayground above the final. The incoming opaque gray surface fades opacity0→1 over300ms while the final stays mounted underneath; there is no transparent frame or new opacity ancestor around the backdrop filters. At completion, Pixel Perfect unmounts and currentGameId changes without clearing its result. The card itself does not fade and performs two consecutive150ms shakes during the same300ms interval. Progressive blur layers stay static. Reduced motion makes ordinary stage crossfades instant (duration0), removes zoom/shake/animated blur, and preserves the300ms transition to the next game with static progressive blur. Victory uses seven independently moving, different-length beams with rounded tops anchored at bottom center and no card bounce animation. Each beam independently pulses between4% and16% opacity over1200ms per direction, with phases evenly distributed across the full2400ms cycle; the group waits300ms, fades in over600ms and extends beyond the clipped card boundary. Beam lengths are182/176/194/166/188/180/174% of card height. Missing results show ???; external victory test remains. Visual assessment belongs to the user. Checks/tests are conditional on build impact under AGENTS §§9–10; UI-only changes do not run them.
+

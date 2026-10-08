@@ -1,0 +1,6 @@
+interface:
+  display_name: "Case Publish"
+  short_description: "Публикует согласованный кейс и media"
+  default_prompt: "Use $case-publish to add this approved case and its assets to the portfolio."
+policy:
+  allow_implicit_invocation: true

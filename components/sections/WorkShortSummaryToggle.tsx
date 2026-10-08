@@ -92,6 +92,11 @@ const SHORT_SUMMARY_LABELS = new Set([
   "Автоматизация и AI"
 ]);
 
+const SHORT_OVERVIEW_LABEL_SETS = [
+  ["Контекст", "Метрики", "Мой вклад", "Ограничение"],
+  ["Продуктовая задача", "Решения", "Аналитика и развитие", "Автоматизация и AI"]
+];
+
 interface WorkShortSummaryContextValue {
   displayMode: DisplayMode;
   hasToggled: boolean;
@@ -828,20 +833,40 @@ export function WorkShortSummaryContent({ children, shortAfterContent }: WorkSho
     return <>{children}</>;
   }
 
+  const overviewBlocks = shortSummary.paragraphs.map((paragraph) => {
+    const [label, ...lines] = paragraph.trim().split(/\r?\n/);
+    return { label, body: lines.join("\n").trim() };
+  });
+  const hasOverview = SHORT_OVERVIEW_LABEL_SETS.some((labels) =>
+    overviewBlocks.length === labels.length
+    && overviewBlocks.every((block, index) => block.label === labels[index] && block.body.length > 0)
+  );
+
   const content =
     displayMode === "full" ? (
       children
     ) : (
       <section className={styles.shortSummary} aria-label="Короткая версия кейса" data-work-short-summary="">
-        <div className={styles.shortText}>
-          {shortSummary.paragraphs.flatMap((paragraph) =>
-            getShortSummaryBlocks(paragraph).map((block) => (
-              <p key={block} data-page-reveal="">
-                {renderLineBreaks(block)}
-              </p>
-            ))
-          )}
-        </div>
+        {hasOverview ? (
+          <dl className={styles.shortOverview}>
+            {overviewBlocks.map((block) => (
+              <div key={block.label} className={styles.shortOverviewBlock} data-page-reveal="">
+                <dt className={styles.shortOverviewLabel}>{block.label}</dt>
+                <dd className={styles.shortOverviewValue}>{renderLineBreaks(block.body)}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <div className={styles.shortText}>
+            {shortSummary.paragraphs.flatMap((paragraph) =>
+              getShortSummaryBlocks(paragraph).map((block) => (
+                <p key={block} data-page-reveal="">
+                  {renderLineBreaks(block)}
+                </p>
+              ))
+            )}
+          </div>
+        )}
         {shortSummary.media && shortSummary.media.length > 0 ? (
           <>
             <br />

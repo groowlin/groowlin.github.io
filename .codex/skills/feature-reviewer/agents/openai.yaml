@@ -1,0 +1,6 @@
+interface:
+  display_name: "Feature Reviewer"
+  short_description: "Read-only ревью brief и реализации"
+  default_prompt: "Use $feature-reviewer to review this feature without changing files."
+policy:
+  allow_implicit_invocation: true

@@ -13,6 +13,7 @@ import { getContentDir, parseMdxFrontmatter, renderMdx } from "@/lib/content/mdx
 import type {
   HomeSectionConfig,
   HomeShowcaseConfig,
+  HomeTabConfig,
   LinkPreviewMetadata,
   NotFoundPageContent,
   SiteMetadataSettings,
@@ -33,7 +34,8 @@ const TOP_CARD_FILE_BY_VARIANT: Record<TopCardVariant, string> = {
   default: "top-card-default.mdx"
 };
 const HOME_SECTION_SPLIT_RE = /\n\s*---\s*\n/g;
-const HOME_SECTION_TITLE_RE = /^##\s+(.+)$/;
+const HOME_TAB_TITLE_RE = /^##\s+(.+)$/;
+const HOME_SECTION_TITLE_RE = /^###\s+(.+)$/;
 const HOME_SECTION_ITEM_RE = /^-\s+(.+)$/;
 const HOME_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -111,7 +113,40 @@ function normalizeHomeSlug(value: string): string | null {
   return HOME_SLUG_RE.test(normalized) ? normalized : null;
 }
 
-function parseHomeBodySections(body: string): HomeSectionConfig[] {
+function parseHomeTabSections(lines: string[]): HomeSectionConfig[] {
+  const sections: HomeSectionConfig[] = [];
+  let currentSection: HomeSectionConfig = { slugs: [] };
+
+  const commitSection = () => {
+    if (currentSection.slugs.length > 0) {
+      sections.push(currentSection);
+    }
+  };
+
+  for (const line of lines) {
+    const maybeTitle = line.match(HOME_SECTION_TITLE_RE);
+    if (maybeTitle?.[1]) {
+      commitSection();
+      currentSection = { title: maybeTitle[1].trim(), slugs: [] };
+      continue;
+    }
+
+    const itemMatch = line.match(HOME_SECTION_ITEM_RE);
+    if (!itemMatch?.[1]) {
+      continue;
+    }
+
+    const slug = normalizeHomeSlug(itemMatch[1]);
+    if (slug) {
+      currentSection.slugs.push(slug);
+    }
+  }
+
+  commitSection();
+  return sections;
+}
+
+function parseHomeBodyTabs(body: string): HomeTabConfig[] {
   const normalizedBody = body.replace(/\r\n/g, "\n").trim();
 
   if (!normalizedBody) {
@@ -122,7 +157,7 @@ function parseHomeBodySections(body: string): HomeSectionConfig[] {
     .split(HOME_SECTION_SPLIT_RE)
     .map((chunk) => chunk.trim())
     .filter(Boolean)
-    .map((chunk): HomeSectionConfig | null => {
+    .map((chunk): HomeTabConfig | null => {
       const lines = chunk
         .split("\n")
         .map((line) => line.trim())
@@ -132,36 +167,24 @@ function parseHomeBodySections(body: string): HomeSectionConfig[] {
         return null;
       }
 
-      const maybeTitle = lines[0]?.match(HOME_SECTION_TITLE_RE);
-      const title = maybeTitle?.[1]?.trim() || undefined;
-      const firstItemIndex = maybeTitle ? 1 : 0;
-      const slugs = lines.slice(firstItemIndex).reduce<string[]>((accumulator, line) => {
-        const itemMatch = line.match(HOME_SECTION_ITEM_RE);
-        if (!itemMatch?.[1]) {
-          return accumulator;
-        }
-
-        const slug = normalizeHomeSlug(itemMatch[1]);
-        if (slug) {
-          accumulator.push(slug);
-        }
-
-        return accumulator;
-      }, []);
-
-      if (slugs.length === 0) {
+      const maybeTitle = lines[0]?.match(HOME_TAB_TITLE_RE);
+      const title = maybeTitle?.[1]?.trim();
+      if (!title) {
         return null;
       }
 
-      return { title, slugs };
+      const sections = parseHomeTabSections(lines.slice(1));
+      return sections.length > 0 ? { title, sections } : null;
     })
-    .filter((section): section is HomeSectionConfig => section !== null);
+    .filter((tab): tab is HomeTabConfig => tab !== null);
 }
 
 export async function getHomeShowcaseConfigContent(): Promise<HomeShowcaseConfig> {
   const { frontmatter, body } = await loadHomeSource();
-  const sections = parseHomeBodySections(body);
-  const bodySlugs = new Set(sections.flatMap((section) => section.slugs));
+  const tabs = parseHomeBodyTabs(body);
+  const bodySlugs = new Set(
+    tabs.flatMap((tab) => tab.sections.flatMap((section) => section.slugs))
+  );
 
   for (const slug of Object.keys(frontmatter.itemStickers ?? {})) {
     if (!bodySlugs.has(slug)) {
@@ -171,11 +194,28 @@ export async function getHomeShowcaseConfigContent(): Promise<HomeShowcaseConfig
     }
   }
 
+  for (const slug of Object.keys(frontmatter.gameItems ?? {})) {
+    if (!bodySlugs.has(slug)) {
+      throw new Error(`Home gameItems references slug "${slug}" that is not listed in content/site/home.mdx body`);
+    }
+  }
+
+  for (const slug of Object.keys(frontmatter.plannedItems ?? {})) {
+    if (!bodySlugs.has(slug)) {
+      throw new Error(`Home plannedItems references slug "${slug}" that is not listed in content/site/home.mdx body`);
+    }
+    if (frontmatter.gameItems?.[slug]) {
+      throw new Error(`Home slug "${slug}" cannot be both a game and a planned item`);
+    }
+  }
+
   return {
     title: frontmatter.title,
     subtitle: frontmatter.subtitle,
     itemStickers: frontmatter.itemStickers,
-    sections
+    gameItems: frontmatter.gameItems,
+    plannedItems: frontmatter.plannedItems,
+    tabs
   };
 }
 

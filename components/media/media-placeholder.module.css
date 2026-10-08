@@ -84,7 +84,7 @@
 }
 
 .assetLoading {
-  filter: blur(18px);
+  filter: var(--media-color-filter, opacity(1)) blur(var(--media-loading-blur, 18px));
   transform: scale(1.02);
   opacity: 0;
   transition:
@@ -94,7 +94,7 @@
 }
 
 .assetLoaded {
-  filter: blur(0);
+  filter: var(--media-color-filter, opacity(1)) blur(0);
   transform: scale(1);
   opacity: 1;
   transition:
@@ -106,12 +106,12 @@
 @keyframes asset-handoff-reveal {
   from {
     opacity: 0;
-    filter: blur(18px);
+    filter: var(--media-color-filter, opacity(1)) blur(var(--media-loading-blur, 18px));
   }
 
   to {
     opacity: 1;
-    filter: blur(0);
+    filter: var(--media-color-filter, opacity(1)) blur(0);
   }
 }
 

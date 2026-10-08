@@ -1,0 +1,6 @@
+interface:
+  display_name: "Case Authoring"
+  short_description: "Пишет кейсы только по подтверждённым данным"
+  default_prompt: "Use $case-authoring to interview me and prepare a portfolio case draft."
+policy:
+  allow_implicit_invocation: true

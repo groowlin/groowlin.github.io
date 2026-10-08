@@ -7,13 +7,17 @@ interface PageRevealSequenceProps {
   children: React.ReactNode;
   className?: string;
   onTargetReady?: (target: HTMLElement) => void;
+  startImmediately?: boolean;
+  startAt?: number;
+  waveDurationMs?: number;
+  waveStaggerMs?: number;
 }
 
 function joinClassNames(...values: Array<string | undefined>) {
   return values.filter(Boolean).join(" ");
 }
 
-export function PageRevealSequence({ children, className, onTargetReady }: PageRevealSequenceProps) {
+export function PageRevealSequence({ children, className, onTargetReady, startImmediately = false, startAt, waveDurationMs, waveStaggerMs = 0 }: PageRevealSequenceProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const onTargetReadyRef = useRef(onTargetReady);
 
@@ -86,6 +90,9 @@ export function PageRevealSequence({ children, className, onTargetReady }: PageR
     });
 
     const prepareTargets = () => {
+      const preparedAt = performance.now();
+      const startDelay = Math.max(0, (startAt ?? 0) - preparedAt);
+      root.style.setProperty("--page-reveal-start-delay", `${startDelay}ms`);
       let revealIndex = 0;
 
       targets.forEach((target) => {
@@ -104,6 +111,16 @@ export function PageRevealSequence({ children, className, onTargetReady }: PageR
         target.dataset.pageRevealActive = "true";
         revealIndex += 1;
       });
+
+      if (waveDurationMs !== undefined) {
+        // Count only targets participating in this wave, after scroll restoration.
+        const remainingWaveDuration = Math.max(0, waveDurationMs - Math.max(0, preparedAt - (startAt ?? preparedAt)));
+        const stagger = Math.min(waveStaggerMs, remainingWaveDuration / Math.max(1, revealIndex - 1));
+        const targetDuration = Math.max(0, remainingWaveDuration - Math.max(0, revealIndex - 1) * stagger);
+        root.style.setProperty("--page-reveal-stagger", `${stagger}ms`);
+        root.style.setProperty("--page-reveal-move-duration", `${targetDuration}ms`);
+        root.style.setProperty("--page-reveal-visibility-duration", `${targetDuration}ms`);
+      }
 
       root.dataset.state = "ready";
 
@@ -156,8 +173,12 @@ export function PageRevealSequence({ children, className, onTargetReady }: PageR
       queuePrepareTargets();
     };
 
-    window.addEventListener("app:scroll-restored", onScrollRestored, { once: true });
-    timeoutId = window.setTimeout(onScrollRestored, 250);
+    if (startImmediately) {
+      queuePrepareTargets();
+    } else {
+      window.addEventListener("app:scroll-restored", onScrollRestored, { once: true });
+      timeoutId = window.setTimeout(onScrollRestored, 250);
+    }
 
     return () => {
       disposed = true;
@@ -166,13 +187,17 @@ export function PageRevealSequence({ children, className, onTargetReady }: PageR
       window.clearTimeout(timeoutId);
       window.removeEventListener("app:scroll-restored", onScrollRestored);
       delete root.dataset.state;
+      root.style.removeProperty("--page-reveal-start-delay");
+      root.style.removeProperty("--page-reveal-stagger");
+      root.style.removeProperty("--page-reveal-move-duration");
+      root.style.removeProperty("--page-reveal-visibility-duration");
       targets.forEach((target) => {
         target.style.removeProperty("--page-reveal-index");
         delete target.dataset.pageRevealActive;
         delete target.dataset.pageRevealState;
       });
     };
-  }, []);
+  }, [startImmediately, startAt, waveDurationMs, waveStaggerMs]);
 
   return (
     <div ref={rootRef} className={joinClassNames(styles.root, className)} data-page-reveal-root="" data-state="pending">

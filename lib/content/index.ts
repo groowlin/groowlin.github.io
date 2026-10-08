@@ -4,6 +4,8 @@ export type {
   HomeSectionConfig,
   HomeShowcaseConfig,
   HomeShowcaseSection,
+  HomeShowcaseTab,
+  HomeTabConfig,
   HomeWorkEntry,
   PageMeta,
   SiteMetadataSettings,

@@ -3,16 +3,18 @@
   flex-direction: column;
 }
 
-:global([data-page-reveal-root][data-state="pending"] [data-page-reveal]) {
-  opacity: 0;
-  transform: translateY(28px);
-  filter: blur(8px);
+@media (scripting: enabled) {
+  :global([data-page-reveal-root][data-state="pending"] [data-page-reveal]:not([data-page-reveal-state]):not(:has([data-page-reveal]))) {
+    opacity: 0;
+    transform: translate(var(--page-reveal-x, 0px), var(--page-reveal-y, 28px));
+    filter: blur(8px);
+  }
 }
 
 :global([data-page-reveal][data-page-reveal-state="pending"]),
 :global([data-page-reveal][data-page-reveal-state="animate"]:not([data-page-reveal-active="true"])) {
   opacity: 0;
-  transform: translateY(28px);
+  transform: translate(var(--page-reveal-x, 0px), var(--page-reveal-y, 28px));
   filter: blur(8px);
 }
 
@@ -24,9 +26,9 @@
 
 :global([data-page-reveal][data-page-reveal-active="true"]) {
   animation-name: pageRevealVisibility, pageRevealMove;
-  animation-duration: 0.7s, 1.12s;
+  animation-duration: var(--page-reveal-visibility-duration, 0.7s), var(--page-reveal-move-duration, 1.12s);
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.18, 0.88, 0.28, 1);
-  animation-delay: calc(var(--page-reveal-index, 0) * 80ms), calc(var(--page-reveal-index, 0) * 80ms);
+  animation-delay: calc(var(--page-reveal-start-delay, 0ms) + var(--page-reveal-index, 0) * var(--page-reveal-stagger, 80ms)), calc(var(--page-reveal-start-delay, 0ms) + var(--page-reveal-index, 0) * var(--page-reveal-stagger, 80ms));
   animation-fill-mode: both, both;
 }
 
@@ -44,17 +46,49 @@
 
 @keyframes pageRevealMove {
   from {
-    transform: translateY(28px);
+    transform: translate(var(--page-reveal-x, 0px), var(--page-reveal-y, 28px));
   }
 
   to {
-    transform: translateY(0);
+    transform: translate(0, 0);
+  }
+}
+
+:global([data-home-pane-exiting="true"] [data-page-reveal-root] [data-page-reveal]) {
+  animation-name: homeTabExitVisibility, homeTabExitMove;
+  animation-duration: var(--home-tab-move-duration, 200ms), var(--home-tab-move-duration, 200ms);
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.18, 0.88, 0.28, 1);
+  animation-delay: calc(var(--home-tab-exit-index, 0) * var(--home-tab-stagger, 80ms)), calc(var(--home-tab-exit-index, 0) * var(--home-tab-stagger, 80ms));
+  animation-fill-mode: both, both;
+}
+
+@keyframes homeTabExitVisibility {
+  from {
+    opacity: var(--home-tab-exit-start-opacity, 1);
+    filter: var(--home-tab-exit-start-filter, none);
+  }
+
+  to {
+    opacity: 0;
+    filter: blur(10px);
+  }
+}
+
+@keyframes homeTabExitMove {
+  from {
+    transform: var(--home-tab-exit-start-transform, none);
+  }
+
+  to {
+    transform: translate(var(--home-tab-exit-x, 0px), 0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :global([data-page-reveal-root][data-state="pending"] [data-page-reveal]:not([data-page-reveal-state]):not(:has([data-page-reveal]))),
   :global([data-page-reveal][data-page-reveal-state]),
-  :global([data-page-reveal][data-page-reveal-active="true"]) {
+  :global([data-page-reveal][data-page-reveal-active="true"]),
+  :global([data-home-pane-exiting="true"] [data-page-reveal-root] [data-page-reveal]) {
     opacity: 1;
     transform: none;
     filter: none;

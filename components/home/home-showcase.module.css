@@ -1,5 +1,6 @@
 .root {
   position: relative;
+  margin-top: calc(var(--home-top-card-to-tabs-gap) - var(--rhythm-title-block-top) - var(--space-md) / 2);
   width: fit-content;
   display: flex;
   flex-direction: column;
@@ -16,13 +17,94 @@
 .heroStack {
   display: flex;
   flex-direction: column;
-  gap: var(--rhythm-title-block-top);
 }
 
 .revealStack {
   display: flex;
   flex-direction: column;
-  gap: var(--rhythm-title-block-bottom);
+  gap: calc(var(--home-tabs-to-list-gap) - var(--space-md) / 2);
+}
+
+.pageTitle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.tabs {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: fit-content;
+  padding-left: calc(var(--home-rounding-compensation) - var(--space-xl) / 2);
+}
+
+.tab {
+  position: relative;
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: calc(var(--space-md) / 2) calc(var(--space-xl) / 2);
+  background: transparent;
+  color: var(--home-text-secondary);
+  font: inherit;
+  font-size: var(--home-font-size-md);
+  line-height: var(--home-line-height-tight);
+  cursor: pointer;
+  transition: color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab + .tab {
+  margin-left: calc(var(--home-tabs-gap) - var(--space-xl));
+}
+
+.tabActiveBackground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  z-index: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-gray-35);
+  pointer-events: none;
+}
+
+.tabLabel {
+  position: relative;
+  z-index: 1;
+}
+
+.tab:hover,
+.tab:focus-visible,
+.tabActive {
+  color: var(--color-gray-700);
+}
+
+.tab:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: var(--space-2xs);
+}
+
+.paneViewport {
+  position: relative;
+  width: var(--home-left-column-width);
+  overflow-anchor: none;
+}
+
+.tabPane {
+  position: relative;
+  width: 100%;
+}
+
+.tabPane[data-home-pane-exiting="true"] {
+  pointer-events: none;
 }
 
 .topCardWrap {
@@ -39,7 +121,7 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: var(--home-section-gap);
+  gap: calc(var(--home-section-gap) - var(--home-item-padding-y) - var(--home-item-gap) / 2);
   width: fit-content;
   position: relative;
   z-index: 2;
@@ -48,7 +130,7 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: var(--home-section-title-gap);
+  gap: calc(var(--home-section-title-gap) - var(--home-item-padding-y) - var(--home-item-gap) / 2);
 }
 
 .sectionTitle {
@@ -58,6 +140,10 @@
   font-size: var(--home-font-size-lg);
   line-height: var(--home-line-height-tight);
   font-weight: var(--font-weight-heavy);
+}
+
+.section:first-child[data-untitled="true"] {
+  margin-top: calc((var(--home-item-padding-y) + var(--home-item-gap) / 2) * -1);
 }
 
 .sectionList {
@@ -79,6 +165,11 @@
   border-radius: var(--home-bubble-radius);
   text-decoration: none;
   color: var(--home-text-primary);
+}
+
+.itemNonNavigable,
+.itemGame {
+  cursor: default;
 }
 
 .itemVisualBounds {
@@ -111,11 +202,26 @@
   );
 }
 
+.tabPane[data-home-hover-suppressed="true"] .glass,
+.tabPane[data-home-hover-suppressed="true"] .hoverYear,
+.tabPane[data-home-hover-suppressed="true"] .hoverIcon {
+  visibility: hidden;
+}
+
+.tabPane[data-home-hover-suppressed="true"] .itemContent {
+  transform: translate3d(0, 0, 0) !important;
+  transition: none !important;
+}
+
 .itemLabel {
   color: var(--home-text-primary);
   font-size: var(--home-font-size-lg);
   line-height: var(--home-line-height-tight);
   font-weight: var(--font-weight-regular);
+}
+
+.itemLabelSecondary {
+  color: var(--home-text-secondary);
 }
 
 .itemActive .itemLabel {
@@ -130,6 +236,8 @@
   font-size: var(--home-font-size-md);
   line-height: var(--home-line-height-tight);
   font-weight: var(--font-weight-regular);
+  height: var(--home-line-height-tight);
+  white-space: nowrap;
 }
 
 .metaDot {
@@ -173,6 +281,40 @@
   opacity: 0.72;
 }
 
+.hoverYear {
+  position: absolute;
+  right: 100%;
+  margin-right: var(--home-item-gap);
+  width: var(--home-item-padding-x);
+  font-size: var(--home-font-size-md);
+  line-height: var(--home-line-height-tight);
+  font-weight: var(--font-weight-regular);
+  color: var(--home-text-secondary);
+  z-index: 3;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.yearBracketLine {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--color-gray-40);
+  border-right: 0;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.yearBracketLabel {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translate(-50%, -50%);
+  padding-block: var(--space-2xs);
+  background: var(--bg-page);
+  white-space: nowrap;
+}
+
+
+
 .hoverIcon {
   position: absolute;
   top: calc(var(--home-item-gap) / -2);
@@ -180,6 +322,12 @@
   width: var(--home-arrow-size);
   height: var(--home-arrow-size);
   z-index: 3;
+  pointer-events: none;
+}
+
+.hoverIconFrames {
+  position: absolute;
+  inset: 0;
   pointer-events: none;
 }
 
@@ -194,24 +342,14 @@
   user-select: none;
 }
 
-.hoverIconFrames {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
 .hoverIconImageActive {
   visibility: visible;
 }
 
 .hoverIconImagePuffyStar {
   transform-origin: center;
-}
-
-.hoverIconImagePuffyStar {
   transform: scale(1.1);
 }
-
 .previewPane {
   display: none;
 }
@@ -246,6 +384,33 @@
   border-radius: var(--home-radius-preview-media);
 }
 
+/* Shared Globus preview recolor is local to the three planned authored entries. */
+.previewFilterDefinitions {
+  position: absolute;
+  pointer-events: none;
+}
+
+.plannedPreviewCard {
+  --media-color-filter: url("#home-planned-preview-saturation");
+  --media-loading-blur: 0px;
+  --placeholder-bg: var(--color-white);
+}
+
+.plannedPreviewCard > div {
+  isolation: isolate;
+  background: var(--color-white);
+  clip-path: inset(0 round var(--home-radius-preview-media));
+}
+
+.plannedPreviewCard > div::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-accent-blue);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
 @media (min-width: 1180px) {
   .previewPane {
     position: fixed;
@@ -262,6 +427,30 @@
 }
 
 @media (max-width: 767px) {
+  .tabs {
+    gap: 0;
+    width: 100%;
+    padding-left: calc(var(--layout-mobile-content-inset) - var(--space-md) / 2);
+    padding-right: var(--layout-mobile-content-inset);
+    white-space: nowrap;
+  }
+
+  .paneViewport {
+    width: 100%;
+  }
+
+  .tab {
+    padding-inline: calc(var(--space-md) / 2);
+  }
+
+  .tab + .tab {
+    margin-left: calc(var(--home-tabs-gap) - var(--space-md));
+  }
+
+  .itemMeta {
+    max-width: calc(100vw - (var(--layout-mobile-content-padding-x) * 2));
+  }
+
   .root,
   .leftColumn,
   .topCardWrap {
@@ -295,7 +484,8 @@
   }
 
   .glass,
-  .hoverIcon {
+  .hoverIcon,
+  .hoverYear {
     display: none;
   }
 
@@ -305,6 +495,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .tab {
+    transition: none;
+  }
+
   .itemContent,
   .itemActive .itemContent {
     transform: none;

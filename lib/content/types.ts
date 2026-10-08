@@ -86,6 +86,7 @@ export interface HomePreview {
 }
 
 export interface HomeWorkEntry {
+  kind?: "work";
   label: string;
   subtitle: string;
   href: string;
@@ -93,21 +94,54 @@ export interface HomeWorkEntry {
   stickerSrcs?: string[];
 }
 
+export interface HomeGameEntry {
+  kind: "game";
+  slug: string;
+  label: string;
+  subtitle: string;
+}
+
+export interface HomePlannedItem {
+  label: string;
+  subtitle: string;
+  statusLabel: string;
+}
+
+export interface HomePlannedEntry extends HomePlannedItem {
+  kind: "planned";
+  slug: string;
+  stickerSrcs?: string[];
+}
+
+export type HomeShowcaseEntry = HomeWorkEntry | HomeGameEntry | HomePlannedEntry;
+
 export interface HomeSectionConfig {
   title?: string;
   slugs: string[];
+}
+
+export interface HomeTabConfig {
+  title: string;
+  sections: HomeSectionConfig[];
 }
 
 export interface HomeShowcaseConfig {
   title: string;
   subtitle?: string;
   itemStickers?: Record<string, string[]>;
-  sections: HomeSectionConfig[];
+  gameItems?: Record<string, { label: string; subtitle: string }>;
+  plannedItems?: Record<string, HomePlannedItem>;
+  tabs: HomeTabConfig[];
 }
 
 export interface HomeShowcaseSection {
   title?: string;
-  items: HomeWorkEntry[];
+  items: HomeShowcaseEntry[];
+}
+
+export interface HomeShowcaseTab {
+  title: string;
+  sections: HomeShowcaseSection[];
 }
 
 export type WorkCaseStatus = "published" | "hidden";
@@ -151,6 +185,7 @@ export interface HomeFrontmatter {
   title: string;
   subtitle?: string;
   itemStickers?: Record<string, string[]>;
+  plannedItems?: Record<string, HomePlannedItem>;
   seo: SiteMetadataSettings;
 }
 

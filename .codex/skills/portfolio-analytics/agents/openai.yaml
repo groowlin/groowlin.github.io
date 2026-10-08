@@ -1,0 +1,6 @@
+interface:
+  display_name: "Portfolio Analytics"
+  short_description: "Анализирует метрики без ложных выводов"
+  default_prompt: "Use $portfolio-analytics to compare the latest portfolio analytics snapshot with the baseline."
+policy:
+  allow_implicit_invocation: true

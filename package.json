@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "media:prepare": "node scripts/media-prepare.mjs",
+    "content:validate": "node scripts/content-validate.mjs",
+    "analytics:collect": "node scripts/analytics-collect.mjs"
   },
   "dependencies": {
     "framer-motion": "^12.23.24",
@@ -24,6 +27,7 @@
     "@types/react-dom": "^19.2.2",
     "eslint": "^9.36.0",
     "eslint-config-next": "16.1.6",
+    "sharp": "0.34.5",
     "typescript": "^5.9.3"
   },
   "packageManager": "pnpm@10.32.1"

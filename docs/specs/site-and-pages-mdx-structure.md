@@ -15,11 +15,13 @@
 - `seo.siteName: string`
 - `seo.defaultTitle: string`
 - `seo.defaultDescription: string`
-- `seo.robotsIndexByDefault: boolean`
 
 ### Frontmatter (optional)
+- `seo.robotsIndexByDefault: boolean` — default `true` при отсутствии.
 - `subtitle: string`
 - `itemStickers: Record<workSlug, NonEmptyArray<internalSvgPath>>`
+- `gameItems: Record<gameSlug, { label: string, subtitle: string }>`
+- `plannedItems: Record<plannedSlug, { label: string, subtitle: string, statusLabel: string }>` — будущие кейсы без страницы и собственного preview; все строки непустые, slug соответствует общему формату списка.
 - `seo.defaultOgImage: string`
 - `seo.faviconUrl: string`
 
@@ -27,18 +29,39 @@
 - `itemStickers` настраивает sticker только для элементов списка главной; frontmatter кейсов не меняется.
 - Ключ — work slug, который обязательно должен присутствовать среди slug в body этого же `home.mdx`.
 - Значение — непустой массив внутренних путей; каждый путь начинается с `/` и заканчивается на `.svg`.
-- Массив из одного SVG рендерится статично. Несколько SVG циклично сменяются в указанном порядке.
-- Отсутствие ключа означает, что у соответствующего элемента списка sticker не рендерится.
+- HomeShowcase рендерит SVG справа сверху у элемента параллельно годовой скобке слева. Один SVG статичен, несколько сменяются по порядку каждые 200ms; активирование сбрасывает кадр, деактивирование останавливает таймер. Сохранены hover/focus, reveal-ready, задержка появления 280ms и opacity/blur 700ms, поворот -15deg и parallax 50%; на mobile оба слоя скрыты. Скобка/год появляются без дополнительной задержки за 1120ms. Их совместное движение от курсора рассчитывается по общему блоку года независимо от активного кейса; сглаживание, амплитуда и reduced-motion fallback определены в [каноническом разделе Home showcase motion дизайн-системы](../../design-system-spec.md#home-showcase-motion).
+- Отсутствие ключа означает отсутствие sticker-конфигурации у опубликованного элемента; отображение года от itemStickers не зависит. Будущие кейсы из `plannedItems` используют только первый стикер из `itemStickers.globus` при сборке, без смены кадров и копирования путей в собственные записи.
 - Несуществующий в body ключ считается ошибкой контракта и останавливает загрузку.
 
 ```yaml
 itemStickers:
   portfoliocase:
-    - "/media/cases/portfoliocase/sticker-figma.svg"
     - "/media/cases/portfoliocase/sticker-codex.svg"
+    - "/media/cases/portfoliocase/sticker-puffy-sparkle-darker-violet.svg"
     - "/media/cases/portfoliocase/sticker-github.svg"
     - "/media/cases/portfoliocase/sticker-segmented-circle.svg"
+    - "/media/cases/portfoliocase/sticker-puffy-star-darker-yellow.svg"
+  globus:
+    - "/media/cases/globus/sticker-clock-neutral.svg"
 ```
+
+### Body
+- Управляет табами и секциями списка кейсов на главной.
+- Формат:
+  - табы разделяются строкой `---`;
+  - первая строка каждого таба обязательна: `## Название таба`;
+  - внутри таба `### Заголовок секции` начинает новую секцию;
+  - далее следует список slug: `- my-case-slug`;
+  - список до первого `###` поддерживается как секция без заголовка.
+- Порядок табов в файле определяет направление переключения в UI; первый таб открыт по умолчанию.
+- Любая активация вкладки, включая повторное нажатие и быстрый возврат, сразу сбрасывает состояние кейса: пузырь, год, стикеры и preview исчезают без таймера закрытия и exit fade, текст возвращается в исходное положение без transition. Восстановление hover требует следующего допустимого hover/focus кейса в активной панели; возврат на вкладку сам по себе его не восстанавливает. Каноническое правило: [Home showcase motion](../../design-system-spec.md#home-showcase-motion).
+- Внутри вкладки кейсы перечисляются по убыванию года; при одинаковом годе сохраняется текущий авторский порядок. Порядок задаётся строками body, без автоматической сортировки.
+- В текущем `home.mdx` каждый таб содержит один список без заголовка секции; прежние `###` сохранены однострочными MDX-комментариями `{/* ### Заголовок */}`. «Опыт»: `globus`, `goldenapple`, `zvuk`, `medicine`, `familia`; VK временно скрыт однострочным MDX-комментарием `{/* - vk */}`, файл кейса и маршрут сохранены; «Авторское»: `portfoliocase`, `media-and-gallery`, `mini-games`, `content-automation`. Три будущих кейса следуют после портфолио в общей группе 2026. Игры доступны через маскота независимого `GamesExperience` только при `ENABLE_GAMES=true`. Серверный флаг `lib/features.ts` по умолчанию отключён; GitHub Pages явно задаёт `ENABLE_GAMES=false`. В отключённой сборке `app/page.tsx` исключает все `gameItems` и анонс `mini-games`, не монтирует `GamesExperience` и маскота; layout не добавляет игровой bootstrap. Остальные анонсы остаются. MDX-источник и его валидация не меняются; фильтрация выполняется только в сборщике списка страницы.
+- Метрики кейсов — разрешённые renderer-owned строки `HOME_METRIC_LABELS` из HomeShowcase; они отображаются обычным текстом, объединённым через « · », без чипов и года в метаданных. Набор подписей VK задан в каноническом разделе [Home showcase motion](../../design-system-spec.md#home-showcase-motion). `subtitle` кейса не выводится как роль/формат на главной; период используется для группировки годовой скобки.
+- Временное исключение для Globus: заголовок использует второстепенный цвет из [Home showcase motion](../../design-system-spec.md#home-showcase-motion). Карточка сохраняет hover, preview и стикер, использует обычный курсор-стрелку (`cursor: default`) и не открывает кейс с главной; связь `/work/globus` сохранена в комментарии кода. Подробная страница доступна по прямому адресу.
+- Источник карточек и preview кейсов остается `content/work/*.mdx` (`published` only).
+- Если задано необязательное поле `gameItems`, его элементы перечисляются в body как обычные slug. Они показывают `label` и `subtitle` из frontmatter, реагируют на hover, но не открывают страницу и не имеют preview. В текущем `home.mdx` поле не задано: при включённом build-флаге игры доступны через независимый `GamesExperience`. При отключённом флаге элементы `gameItems` не передаются в отображаемые вкладки.
+- Элементы `plannedItems` перечисляются в body как обычные slug. Название и статус берутся из frontmatter, период из `subtitle` участвует в группировке года. Вместо метрик отображается `statusLabel`: «Подготовка кейса» у «Медиа и галерея» (`media-and-gallery`) и «Автоматизация контента» (`content-automation`), «В разработке» у «Мини игры» (`mini-games`). Анонс `mini-games` отображается только при `ENABLE_GAMES=true`; остальные два отображаются независимо от флага. Все три имеют `subtitle: "2026 · Авторское"`. Заголовок серый, hover и первый стикер используют некликабельную ветку Globus; элемент — `span` без `href`, link-role и клавиатурной навигации. Собственное preview и события аналитики открытия preview не создаются. Три кейса используют один декоративный Globus preview со стабильным ключом и video DOM при прямом переключении между ними; при отсутствии донора preview не показывается. Более светлая синяя перекраска с различиями по тону (умеренная SVG gamma + полный accent-blue в screen), маска по краям media без внутреннего отступа с сохранением размера видео, белая подложка и локальное отсутствие blur при появлении/выходе и loading/handoff задаются каноническим правилом [Home showcase motion](../../design-system-spec.md#home-showcase-motion). Globus и остальные preview сохраняют исходные цвета и motion. Отдельные страницы и `content/work` для будущих кейсов не нужны.
 
 ## 2.1 Link Preview Settings (`content/site/link-preview.mdx`)
 
@@ -46,24 +69,15 @@ itemStickers:
 - `title: string`
 - `description: string`
 - `url: string`
-- `type: "website" | "article"`
 
 ### Frontmatter (optional)
+- `type: "website" | "article"` — default `"website"` при отсутствии.
 - `image: string`
 
 ### Behavior
 - This file defines the shared Open Graph and Twitter preview metadata.
 - Preview cards are intentionally identical across all pages.
-- Page-level metadata still controls per-page `title`, `description`, and `canonical`.
-
-### Body
-- Управляет секциями списка кейсов на главной.
-- Формат:
-  - секции разделяются строкой `---`;
-  - в секции опциональна первая строка `## Заголовок`;
-  - далее список slug: `- my-case-slug`.
-- Секция без заголовка поддерживается.
-- Источник карточек и preview кейсов остается `content/work/*.mdx` (`published` only).
+- Work, About and 404 inherit the common document title from `app/layout.tsx`; their frontmatter title supplies visible content, not a page-specific metadata title. Page-level metadata supplies description and canonical. Work canonical is derived from slug; About/404 use their frontmatter canonical.
 
 ## 3. Top-Card Settings (`content/site/top-card-*.mdx`)
 
@@ -116,14 +130,15 @@ itemStickers:
 - Верхняя карточка должна приходить через `topCardVariant="default"`.
 
 ## 6. Validation and Loading
-- Frontmatter валидируется через Zod в `lib/content/schemas.ts`.
-- `lib/content/site.server.ts` дополнительно fail-fast проверяет, что каждый ключ `itemStickers` присутствует среди slug, реально перечисленных в body `home.mdx`.
+- Runtime-источник контракта frontmatter — Zod в `lib/content/schemas.ts`; optional поля с defaults не обязательны в исходном MDX.
+- `gameItems` поддерживается schema/loader и `HomeShowcaseConfig`. Ручной `HomeFrontmatter` сейчас не содержит этого поля; он не определяет runtime-валидацию и не является полной копией схемы.
+- `lib/content/site.server.ts` дополнительно fail-fast проверяет, что каждый ключ `itemStickers`, `gameItems` и `plannedItems` присутствует среди slug, реально перечисленных в body `home.mdx`; один slug не может одновременно быть игрой и будущим кейсом. При сборке списка `app/page.tsx` также отклоняет совпадение будущего кейса с опубликованным work entry. `plannedItems` поддерживается схемой, типами и loader.
 - Загрузка и рендер выполняются через `lib/content/site.server.ts`.
 
 ## 7. Motion and Reveal Contract
 - Home (`/`) uses `SiteShell` plus a custom `HomeShowcase` motion path. The top card is still rendered through `AnimatedTopCard`, while the showcase area owns its own list/preview/hover motion.
 - About (`/about`), work detail (`/work/[slug]`), and not-found (`/404`) use `SiteShell`, which applies:
-  - animated top-card replacement through `components/navigation/AnimatedTopCard.tsx`;
+  - persistent top-card replacement owned by `PersistentSiteFrame` through `components/navigation/AnimatedTopCard.tsx`;
   - sequential page reveal through `components/motion/PageRevealSequence.tsx`.
 - Static page and MDX content do not expose motion controls in frontmatter. Motion is renderer-defined and must stay consistent across pages.
 - MDX elements rendered through `lib/content/mdx-components.tsx` participate in page reveal via `components/motion/MdxMotionComponents.tsx`.
@@ -136,7 +151,9 @@ itemStickers:
   - move track: `1.12s`, `cubic-bezier(0.18, 0.88, 0.28, 1)`;
   - shared stagger: `calc(var(--page-reveal-index, 0) * 80ms)`;
   - initial offset: `translateY(28px)`.
+- Per-target readiness waits only for opacity/filter visibility animations; movement can continue. Full-animation waiting is lifecycle cleanup, not the Home glass/preview readiness gate.
 - Bottom page padding is still renderer-controlled. `components/shell/BottomPaddingController.tsx` must re-check trim state after `load` and `app:scroll-restored` so reload/scroll-restore does not collapse the page container height incorrectly.
 - Reduced motion is part of the rendering contract:
   - top-card swaps fall back to static rendering;
   - page-reveal sequence resolves to immediately visible content without animation.
+  - home tab content swaps and container-height changes become instant.
