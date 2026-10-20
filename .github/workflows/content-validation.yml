@@ -9,6 +9,10 @@ on:
       - "portfolio-structure.json"
       - "portoflio-structure.json"
       - "scripts/content-validate.mjs"
+      - "scripts/content-validation.mjs"
+      - "tests/content-validation.test.mjs"
+      - ".github/workflows/content-validation.yml"
+      - ".github/workflows/deploy-pages.yml"
       - "package.json"
       - "pnpm-lock.yaml"
   push:
@@ -20,6 +24,12 @@ on:
       - "portfolio-structure.json"
       - "portoflio-structure.json"
       - "scripts/content-validate.mjs"
+      - "scripts/content-validation.mjs"
+      - "tests/content-validation.test.mjs"
+      - ".github/workflows/content-validation.yml"
+      - ".github/workflows/deploy-pages.yml"
+      - "package.json"
+      - "pnpm-lock.yaml"
 
 jobs:
   validate:
@@ -34,4 +44,5 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: node --test tests/content-validation.test.mjs
       - run: pnpm content:validate

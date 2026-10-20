@@ -39,6 +39,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Test content validation
+        run: node --test tests/content-validation.test.mjs
+
+      - name: Validate content
+        run: pnpm content:validate
+
       - name: Build static site
         run: pnpm build
 

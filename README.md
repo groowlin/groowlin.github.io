@@ -42,7 +42,11 @@ Deployment workflow: `.github/workflows/deploy-pages.yml`
 
 Games use the server-side build flag `ENABLE_GAMES` (`lib/features.ts`), disabled by default. Set `ENABLE_GAMES=true` locally to enable the game experience, mascot, bootstrap and home game entries, including the planned `mini-games` item. GitHub Pages explicitly builds with `ENABLE_GAMES=false`; changing this flag requires rebuilding the static site. Game sources remain in the repository and files from `public/media/games` remain publicly accessible by direct URL.
 
-The existing GitHub Pages workflow runs `pnpm build` to produce the published static artifact. The agent check policy above does not change that publishing workflow or require an additional local validation build for UI/documentation edits.
+The GitHub Pages workflow runs `node --test tests/content-validation.test.mjs` and `pnpm content:validate` before `pnpm build`. A failed regression test or content validation stops the build and artifact upload, so deployment cannot publish invalid content. The separate `.github/workflows/content-validation.yml` also runs these checks for relevant pushes and pull requests.
+
+The validator classifies MDX files by their first directory relative to `content`: `work`, `pages`, or `site`. Checkout ancestor names such as `/home/runner/work/` do not affect classification. Work slug/canonical checks apply only to cases; pages receive required metadata checks, while site settings receive frontmatter parsing and shared media/link checks. Complete file-specific Zod schemas remain in `lib/content/schemas.ts` and are applied during the build. Regression tests cover POSIX and Windows paths, paths outside the content root, distinct content rules, and CLI execution under `work/pages` checkout ancestors.
+
+The agent check policy above does not require an additional local validation build or test run for UI/documentation edits; the publishing workflow runs its gate automatically.
 
 Optional custom domain:
 - set repository variable `PAGES_CNAME` (for example: `portfolio.example.com`)

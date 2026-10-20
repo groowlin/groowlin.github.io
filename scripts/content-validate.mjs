@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import matter from "gray-matter";
+import { classifyContentFile, validateFrontmatter } from "./content-validation.mjs";
 
 const root = process.cwd();
 const errors = [];
@@ -26,12 +27,6 @@ function lineAt(text, index) {
   return text.slice(0, index).split(/\r?\n/).length;
 }
 
-function normalizeRoute(value) {
-  if (typeof value !== "string") return value;
-  if (value === "/") return value;
-  return value.replace(/\/+$/, "");
-}
-
 function stableJson(value) {
   if (Array.isArray(value)) return value.map(stableJson);
   if (value && typeof value === "object") {
@@ -52,7 +47,7 @@ function collectPathRefs(text) {
 async function validateMdx() {
   const contentRoot = path.join(root, "content");
   const files = await walk(contentRoot, (file) => file.endsWith(".mdx"));
-  const workFiles = files.filter((file) => file.includes(`${path.sep}work${path.sep}`));
+  const workFiles = files.filter((file) => classifyContentFile(contentRoot, file)?.type === "work");
   const workSlugs = new Set(workFiles.map((file) => path.basename(file, ".mdx")));
   const referencedMedia = new Set();
 
@@ -65,20 +60,9 @@ async function validateMdx() {
       report(errors, file, `invalid frontmatter: ${error.message}`);
       continue;
     }
-    const isWork = file.includes(`${path.sep}work${path.sep}`);
-    const isPage = file.includes(`${path.sep}pages${path.sep}`);
-    if (isWork || isPage) {
-      for (const field of ["title", "description", "canonical"]) {
-        if (typeof data[field] !== "string" || !data[field].trim()) report(errors, file, `missing required frontmatter field '${field}'`);
-      }
-    }
-    if (isWork) {
-      const filenameSlug = path.basename(file, ".mdx");
-      if (data.slug !== filenameSlug) report(errors, file, `frontmatter slug '${data.slug ?? ""}' must match filename '${filenameSlug}'`);
-      const expectedCanonical = `/work/${filenameSlug}`;
-      if (normalizeRoute(data.canonical) !== expectedCanonical) report(errors, file, `canonical must be '${expectedCanonical}'`);
-      if (typeof data.subtitle !== "string" || !data.subtitle.includes(" · ")) report(warnings, file, "subtitle should follow 'period · role/format/status'");
-    }
+    const result = validateFrontmatter(classifyContentFile(contentRoot, file), data);
+    for (const message of result.errors) report(errors, file, message);
+    for (const message of result.warnings) report(warnings, file, message);
 
     for (const ref of collectPathRefs(raw)) {
       const clean = decodeURIComponent(ref.value.split(/[?#]/)[0]);

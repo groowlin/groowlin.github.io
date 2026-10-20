@@ -130,6 +130,9 @@ itemStickers:
 - Верхняя карточка должна приходить через `topCardVariant="default"`.
 
 ## 6. Validation and Loading
+- CLI `scripts/content-validate.mjs` классифицирует MDX по первой директории относительно `content` через `scripts/content-validation.mjs`: `work`, `pages`, `site`. Имена родительских папок checkout, включая `/home/runner/work/`, не влияют на тип контента. Пути вне content root не классифицируются.
+- Лёгкие CLI-проверки разделены по типам: `work` проверяет обязательные metadata, совпадение slug с именем файла и canonical `/work/${slug}`; `pages` — обязательные `title`, `description`, `canonical`; `site` — парсинг frontmatter и общие проверки media/внутренних ссылок, без требований кейсов и страниц. Полные контракты frontmatter остаются в Zod, CLI их не дублирует. Набор допустимых work-ссылок строится только из файлов типа `work`.
+- `tests/content-validation.test.mjs` покрывает POSIX/Windows-пути, выход за content root, правила разных типов контента и запуск CLI из checkout с `work/pages` в родительском пути. Content validation workflow запускает эти тесты и `pnpm content:validate`; deploy workflow выполняет их до сборки и загрузки статического артефакта. Ошибка любого шага блокирует публикацию.
 - Runtime-источник контракта frontmatter — Zod в `lib/content/schemas.ts`; optional поля с defaults не обязательны в исходном MDX.
 - `gameItems` поддерживается schema/loader и `HomeShowcaseConfig`. Ручной `HomeFrontmatter` сейчас не содержит этого поля; он не определяет runtime-валидацию и не является полной копией схемы.
 - `lib/content/site.server.ts` дополнительно fail-fast проверяет, что каждый ключ `itemStickers`, `gameItems` и `plannedItems` присутствует среди slug, реально перечисленных в body `home.mdx`; один slug не может одновременно быть игрой и будущим кейсом. При сборке списка `app/page.tsx` также отклоняет совпадение будущего кейса с опубликованным work entry. `plannedItems` поддерживается схемой, типами и loader.
