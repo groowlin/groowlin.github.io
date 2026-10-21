@@ -321,6 +321,8 @@ samp {
     --home-top-card-padding: 16px;
     --home-top-card-subtitle-gap: 6px;
     --home-top-card-icon-gap: 8px;
+    --home-top-card-to-tabs-gap: var(--space-3xl);
+    --home-tabs-to-list-gap: var(--space-3xl);
   }
 
   html {

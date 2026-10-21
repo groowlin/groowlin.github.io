@@ -414,7 +414,6 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
   );
   const [mobileZoomScale, setMobileZoomScale] = useState(1);
   const [mobileZoomOrigin, setMobileZoomOrigin] = useState({ x: 50, y: 50 });
-  const [isMobilePinching, setIsMobilePinching] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const contextInformerContentRef = useRef<HTMLSpanElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -568,9 +567,9 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     holdContextInstant();
     const entry = scopedItems[index];
     const trigger = entry ? getRegistration(entry.registrationId)?.triggerRefs.current.get(entry.localIndex) : null;
-    setContextExpanded(contextPointerInsideRef.current || contextFocusInsideRef.current);
+    if (!isMobileViewport) setContextExpanded(contextPointerInsideRef.current || contextFocusInsideRef.current);
     setCaseContext(trigger ? getLightboxContext(trigger, { caption: entry.item.caption }) : null);
-  }, [getRegistration, holdContextInstant, scopedItems]);
+  }, [getRegistration, holdContextInstant, isMobileViewport, scopedItems]);
   const measureContextCompactWidth = useCallback(() => {
     const sizer = contextCompactSizerRef.current;
     const rect = sizer?.getBoundingClientRect();
@@ -587,6 +586,18 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
         - expandedRect.left - parseFloat(expandedStyle.paddingLeft);
       y = rect.top + parseFloat(compactStyle.paddingTop) + parseFloat(compactStyle.borderTopWidth)
         - expandedRect.top - parseFloat(expandedStyle.paddingTop);
+      if (isMobileViewport) {
+        // Both layers are bottom anchored. Use their intrinsic sizes rather
+        // than the glass's in-flight animated bounds when measuring the arc.
+        const cardStyle = expandedContent.closest('[data-lightbox-context-card="true"]');
+        const bottomBorder = cardStyle ? parseFloat(getComputedStyle(cardStyle).borderBottomWidth) : 0;
+        x = (expandedContent.offsetWidth - rect.width) / 2
+          + parseFloat(compactStyle.paddingLeft) + parseFloat(compactStyle.borderLeftWidth)
+          - parseFloat(expandedStyle.paddingLeft);
+        y = expandedContent.offsetHeight - rect.height + bottomBorder
+          + parseFloat(compactStyle.paddingTop) + parseFloat(compactStyle.borderTopWidth)
+          - parseFloat(expandedStyle.paddingTop);
+      }
     }
     const next = { width: rect.width, radius: rect.height / 2, x, y };
     if (previous
@@ -600,7 +611,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     if (rect.height) setContextCompactRadius(next.radius);
     contextTitleOffsetX.set(next.x);
     contextTitleOffsetY.set(next.y);
-  }, [contextTitleOffsetX, contextTitleOffsetY, holdContextInstant]);
+  }, [contextTitleOffsetX, contextTitleOffsetY, holdContextInstant, isMobileViewport]);
   const attachContextCompactSizer = useCallback((node: HTMLSpanElement | null) => {
     contextCompactSizerRef.current = node;
     if (node) queueMicrotask(measureContextCompactWidth);
@@ -745,6 +756,15 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     } satisfies GalleryMediaItem;
   }, [activeItem]);
 
+  const mediaTargetRect = geometry && isMobileViewport && activeModalItem?.kind === "image"
+    ? {
+        x: geometry.targetRect.x - geometry.targetRect.width * (mobileZoomOrigin.x / 100) * (mobileZoomScale - 1),
+        y: geometry.targetRect.y - geometry.targetRect.height * (mobileZoomOrigin.y / 100) * (mobileZoomScale - 1),
+        width: geometry.targetRect.width * mobileZoomScale,
+        height: geometry.targetRect.height * mobileZoomScale
+      }
+    : geometry?.targetRect;
+
   const updateMobileZoom = useCallback((scale: number) => {
     const nextScale = Math.min(MOBILE_ZOOM_MAX, Math.max(1, scale));
     mobileZoomScaleRef.current = nextScale;
@@ -796,7 +816,6 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     openingVideoSourceRef.current = null;
     updateMobileZoom(1);
     setMobileZoomOrigin({ x: 50, y: 50 });
-    setIsMobilePinching(false);
     pinchGestureRef.current = null;
   }, [clearCloseSuppression, resetControlsReveal, updateMobileZoom]);
 
@@ -899,7 +918,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
 
       const sourceRect = getCurrentSourceRect(activeIndex);
       const canReturnToSource = Boolean(sourceRect && isRectVisible(sourceRect));
-      const fallbackRect = phase === "open" ? geometry.targetRect : activeVisualRectRef.current ?? geometry.targetRect;
+      const fallbackRect = phase === "open" ? mediaTargetRect ?? geometry.targetRect : activeVisualRectRef.current ?? geometry.targetRect;
 
       setClosingVisual({
         item: displayedItem,
@@ -917,7 +936,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
         sourceRadius: geometry.sourceRadius
       });
       setClosingAnimatedRadius(animatedRadius);
-      closingVisualRectRef.current = activeVisualRectRef.current ?? geometry.targetRect;
+      closingVisualRectRef.current = fallbackRect;
     }
 
     if (displayedItem?.kind !== "video") {
@@ -934,6 +953,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     geometry,
     getCurrentSourceRect,
     getRegistration,
+    mediaTargetRect,
     openingModalItem,
     phase,
     prefersReducedMotion,
@@ -1042,8 +1062,8 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     setOpeningImageSource(null);
     updateMobileZoom(1);
     setMobileZoomOrigin({ x: 50, y: 50 });
-    setIsMobilePinching(false);
     pinchGestureRef.current = null;
+    lastImageTapRef.current = null;
     videoSyncRevisionRef.current += 1;
     setPhase("open");
     setAnimatedRadius(40);
@@ -1230,7 +1250,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
 
     const root = document.documentElement;
     const body = document.body;
-    const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
+    const previousBodyWidth = body.getBoundingClientRect().width;
     const previousRootOverflow = root.style.overflow;
     const previousRootScrollbarGutter = root.style.scrollbarGutter;
     const previousBodyOverflow = body.style.overflow;
@@ -1240,8 +1260,10 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
     root.style.scrollbarGutter = "auto";
     root.style.overflow = "hidden";
     body.style.overflow = "hidden";
-    if (scrollbarWidth > 0) {
-      body.style.paddingRight = `${computedBodyPaddingRight + scrollbarWidth}px`;
+    // A stable gutter can reserve space even when the page has no scrollbar.
+    const bodyWidthExpansion = Math.max(0, body.getBoundingClientRect().width - previousBodyWidth);
+    if (bodyWidthExpansion > 0) {
+      body.style.paddingRight = `${computedBodyPaddingRight + bodyWidthExpansion}px`;
     }
 
     return () => {
@@ -1639,29 +1661,15 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
             <div
               className={[styles.backdrop, canTrackPointer && styles.backdropTracked].filter(Boolean).join(" ")}
               style={isVideoClosing ? { pointerEvents: "none" } : undefined}
-              onClickCapture={(event) => {
-                if (!isMobileViewport || !contextExpanded || !(event.target instanceof Element)
-                  || event.target.closest('[data-lightbox-context-card="true"], [data-lightbox-debug-panel="true"]')) return;
-                event.preventDefault();
-                event.stopPropagation();
-                setContextExpanded(false);
-                contextFocusInsideRef.current = false;
-              }}
               onClick={(event) => {
                 if (suppressBackdropClickRef.current) {
                   suppressBackdropClickRef.current = false;
                   return;
                 }
-                if (isMobileViewport && galleryItems.length > 1) {
-                  const relativeX = event.clientX / window.innerWidth;
-                  if (relativeX <= 0.3) {
-                    navigateBy(-1);
-                    return;
-                  }
-                  if (relativeX >= 0.7) {
-                    navigateBy(1);
-                    return;
-                  }
+                if (isMobileViewport && contextExpanded) {
+                  contextFocusInsideRef.current = false;
+                  setContextExpanded(false);
+                  return;
                 }
                 close();
               }}
@@ -1684,7 +1692,6 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                     (firstTouch.clientX + secondTouch.clientX) / 2,
                     (firstTouch.clientY + secondTouch.clientY) / 2
                   );
-                  setIsMobilePinching(true);
                   suppressBackdropClickRef.current = true;
                   lightboxTouchStartRef.current = null;
                   return;
@@ -1711,7 +1718,6 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                 if (pinchGestureRef.current) {
                   if (event.touches.length < 2) {
                     pinchGestureRef.current = null;
-                    setIsMobilePinching(false);
                   }
                   lightboxTouchStartRef.current = null;
                   suppressBackdropClickRef.current = true;
@@ -1727,9 +1733,12 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                 const touch = event.changedTouches[0];
                 const deltaX = touch.clientX - start.x;
                 const deltaY = touch.clientY - start.y;
+                const mediaBounds = activeModalMediaRef.current?.getBoundingClientRect();
+                const relativeTapX = mediaBounds?.width ? (touch.clientX - mediaBounds.left) / mediaBounds.width : 0.5;
                 if (
                   activeModalItem.kind === "image"
                   && start.onMedia
+                  && (galleryItems.length <= 1 || (relativeTapX > 0.2 && relativeTapX < 0.8))
                   && Math.abs(deltaX) < 12
                   && Math.abs(deltaY) < 12
                 ) {
@@ -1747,6 +1756,8 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                     return;
                   }
                   lastImageTapRef.current = { at: now, x: touch.clientX, y: touch.clientY };
+                } else {
+                  lastImageTapRef.current = null;
                 }
 
                 if (mobileZoomScaleRef.current > 1) {
@@ -1762,7 +1773,6 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
               onTouchCancel={() => {
                 lightboxTouchStartRef.current = null;
                 pinchGestureRef.current = null;
-                setIsMobilePinching(false);
               }}
               onPointerMove={(event) => {
                 if (!canTrackPointer) {
@@ -2067,11 +2077,6 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                         thumbnailTouchActiveRef.current = false;
                         settleMobileThumbnailScroll();
                       }}
-                      onClick={(event) => {
-                        if (isMobileViewport) {
-                          event.stopPropagation();
-                        }
-                      }}
                       onScroll={() => {
                         if (!programmaticThumbnailScrollRef.current) {
                           showControlsTemporarily();
@@ -2182,9 +2187,8 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                     </span>
                     <div className={styles.contextCardAnchor}>
                     {contextCompactWidth !== null ? (
-                    <motion.a
+                    <motion.div
                       className={styles.contextCard}
-                      href={caseContext.href}
                       data-lightbox-context-card="true"
                       data-expanded={contextExpanded ? "true" : undefined}
                       data-instant={contextNavigationInstant ? "true" : undefined}
@@ -2195,7 +2199,6 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                         paddingBottom: contextExpanded ? "var(--space-lg)" : "var(--space-sm)"
                       }}
                       transition={prefersReducedMotion || contextNavigationInstant ? { duration: 0 } : contextResizeSpring}
-                      aria-label="Показать медиа в кейсе"
                       onFocus={() => {
                         if (isMobileViewport) return;
                         measureContextCompactWidth();
@@ -2203,21 +2206,12 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                         setContextExpanded(true);
                         showControlsTemporarily();
                       }}
-                      onBlur={() => {
+                      onBlur={(event) => {
+                        if (isMobileViewport) return;
+                        if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
                         contextFocusInsideRef.current = false;
                         setContextExpanded(contextPointerInsideRef.current);
                         showControlsTemporarily();
-                      }}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        if (isMobileViewport && !contextExpanded) {
-                          measureContextCompactWidth();
-                          setContextExpanded(true);
-                          return;
-                        }
-                        pendingContextDestinationRef.current = caseContext.destination;
-                        close();
                       }}
                       onTouchStart={(event) => {
                         lightboxTouchStartRef.current = null;
@@ -2226,6 +2220,28 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       onTouchMove={(event) => event.stopPropagation()}
                       onTouchEnd={(event) => event.stopPropagation()}
                     >
+                      {isMobileViewport ? <button
+                        type="button"
+                        className={styles.contextToggle}
+                        aria-label={caseContext.title}
+                        aria-expanded={contextExpanded}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (!contextExpanded) measureContextCompactWidth();
+                          if (contextExpanded) contextFocusInsideRef.current = false;
+                          setContextExpanded((expanded) => !expanded);
+                        }}
+                      /> : <a
+                        href={caseContext.href}
+                        className={styles.contextToggle}
+                        aria-label="Показать медиа в кейсе"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          pendingContextDestinationRef.current = caseContext.destination;
+                          close();
+                        }}
+                      />}
                       <span className={styles.contextGeometry} aria-hidden="true">
                         <motion.span
                           className={styles.contextGeometryTitle}
@@ -2235,14 +2251,15 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                         >
                           {caseContext.title}
                         </motion.span>
-                        {caseContext.body ? (
+                        {caseContext.body || isMobileViewport ? (
                           <motion.span
                             className={styles.contextGeometryDetails}
                             initial={false}
                             animate={{ height: contextExpanded ? "auto" : 0 }}
                             transition={contextTitleTransition}
                           >
-                            <span className={styles.contextBody}>{caseContext.body}</span>
+                            {caseContext.body ? <span className={styles.contextBody}>{caseContext.body}</span> : null}
+                            {isMobileViewport ? <span className={styles.contextAction}>Показать в кейсе</span> : null}
                           </motion.span>
                         ) : null}
                       </span>
@@ -2278,9 +2295,34 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                               {caseContext.body}
                             </motion.span>
                           ) : null}
+                          {isMobileViewport ? (
+                            <motion.button
+                              type="button"
+                              className={styles.contextAction}
+                              disabled={!contextExpanded}
+                              tabIndex={contextExpanded ? 0 : -1}
+                              aria-hidden={!contextExpanded}
+                              initial={false}
+                              animate={{
+                                opacity: contextExpanded ? 1 : 0,
+                                y: contextExpanded ? 0 : contextMotion.textTravel
+                              }}
+                              transition={prefersReducedMotion || contextNavigationInstant ? { duration: 0 } : {
+                                opacity: { duration: contextMotion.fadeDuration, delay: contextExpanded ? contextMotion.fadeDelay + 0.08 : 0 },
+                                y: { ...contextResizeSpring, delay: contextExpanded ? contextMotion.textDelay + 0.08 : 0 }
+                              }}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                pendingContextDestinationRef.current = caseContext.destination;
+                                close();
+                              }}
+                            >
+                              Показать в кейсе
+                            </motion.button>
+                          ) : null}
                         </span>
                       </span>
-                    </motion.a>
+                    </motion.div>
                     ) : null}
                     </div>
                   </motion.div>
@@ -2330,16 +2372,16 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                     animate={{
                       x: isVideoClosing
                         ? closingVisual?.targetRect.x
-                        : geometry.targetRect.x,
+                        : (mediaTargetRect ?? geometry.targetRect).x,
                       y: isVideoClosing
                         ? closingVisual?.targetRect.y
-                        : geometry.targetRect.y,
+                        : (mediaTargetRect ?? geometry.targetRect).y,
                       width: isVideoClosing
                         ? closingVisual?.targetRect.width
-                        : geometry.targetRect.width,
+                        : (mediaTargetRect ?? geometry.targetRect).width,
                       height: isVideoClosing
                         ? closingVisual?.targetRect.height
-                        : geometry.targetRect.height,
+                        : (mediaTargetRect ?? geometry.targetRect).height,
                       borderRadius: isMobileViewport ? geometry.sourceRadius : isVideoClosing ? 20 : animatedRadius,
                       opacity: isVideoClosing && closingVisual?.forceDissolve ? 0 : 1,
                       filter: isVideoClosing && closingVisual?.forceDissolve ? "blur(18px)" : "blur(0px)"
@@ -2359,10 +2401,10 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                     }
                     style={
                       {
-                        ["--lightbox-x" as string]: `${geometry.targetRect.x}px`,
-                        ["--lightbox-y" as string]: `${geometry.targetRect.y}px`,
-                        ["--lightbox-width" as string]: `${geometry.targetRect.width}px`,
-                        ["--lightbox-height" as string]: `${geometry.targetRect.height}px`,
+                        ["--lightbox-x" as string]: `${(mediaTargetRect ?? geometry.targetRect).x}px`,
+                        ["--lightbox-y" as string]: `${(mediaTargetRect ?? geometry.targetRect).y}px`,
+                        ["--lightbox-width" as string]: `${(mediaTargetRect ?? geometry.targetRect).width}px`,
+                        ["--lightbox-height" as string]: `${(mediaTargetRect ?? geometry.targetRect).height}px`,
                         ["--lightbox-animated-radius" as string]: `${isMobileViewport ? geometry.sourceRadius : animatedRadius}px`
                       } satisfies CSSProperties
                     }
@@ -2371,7 +2413,7 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                         return;
                       }
                       if (phase === "open" && !isVideoClosing) {
-                        activeVisualRectRef.current = geometry.targetRect;
+                        activeVisualRectRef.current = mediaTargetRect ?? geometry.targetRect;
                         return;
                       }
 
@@ -2451,20 +2493,29 @@ export function GalleryLightbox({ items, variant = "default", className, style, 
                       className={styles.mediaLayer}
                       data-lightbox-media="true"
                       onClick={(event) => {
-                        if (isMobileViewport && activeModalItem.kind === "image") {
-                          suppressBackdropClickRef.current = false;
+                        if (isMobileViewport) {
                           event.stopPropagation();
+                          if (event.target instanceof Element
+                            && event.target.closest('button, a, input, select, textarea, [role="button"], video[controls]')) return;
+                          if (suppressBackdropClickRef.current) {
+                            suppressBackdropClickRef.current = false;
+                            return;
+                          }
+                          const rect = event.currentTarget.getBoundingClientRect();
+                          const relativeX = (event.clientX - rect.left) / rect.width;
+                          if (galleryItems.length > 1 && relativeX <= 0.2) {
+                            navigateBy(-1);
+                          } else if (galleryItems.length > 1 && relativeX >= 0.8) {
+                            navigateBy(1);
+                          } else if (contextExpanded) {
+                            contextFocusInsideRef.current = false;
+                            setContextExpanded(false);
+                          }
                         }
                       }}
                     >
                         <div
                           className={styles.mobileZoomSurface}
-                          data-pinching={isMobilePinching ? "true" : undefined}
-                          style={{
-                            ["--mobile-zoom-scale" as string]: mobileZoomScale,
-                            ["--mobile-zoom-origin-x" as string]: `${mobileZoomOrigin.x}%`,
-                            ["--mobile-zoom-origin-y" as string]: `${mobileZoomOrigin.y}%`
-                          } as CSSProperties}
                         >
                           <div ref={activeModalMediaRef} className={styles.modalAssets}>
                             <LightboxImageLayers

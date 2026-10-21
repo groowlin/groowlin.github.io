@@ -205,12 +205,15 @@
 }
 
 .contextCardPositioner {
+  --context-viewport-width: calc(100vw - var(--space-lg) * 2);
+  --context-full-width: min(560px, var(--context-viewport-width));
   position: fixed;
   left: 50%;
   bottom: var(--space-3xl);
   z-index: 1003;
   width: max-content;
-  max-width: calc(100vw - var(--space-3xl) * 2);
+  box-sizing: content-box;
+  max-width: var(--context-viewport-width);
   padding-inline: calc(20px / 2);
   transform: translateX(-50%);
   pointer-events: auto;
@@ -232,7 +235,7 @@
   display: block;
   box-sizing: border-box;
   width: max-content;
-  max-width: calc(100vw - var(--space-3xl) * 2 - 20px);
+  max-width: var(--context-viewport-width);
   padding: var(--space-sm) var(--space-xl);
   border: 1px solid transparent;
   border-radius: var(--radius-pill);
@@ -251,20 +254,20 @@
   position: absolute;
   left: 50%;
   bottom: 0;
-  width: max-content;
-  max-width: calc(100vw - var(--space-3xl) * 2);
+  width: max(var(--context-compact-width, 0px), var(--context-full-width));
+  max-width: var(--context-viewport-width);
   transform: translateX(-50%);
   pointer-events: none;
 }
 
 .contextCard {
-  --context-full-width: min(560px, calc(100vw - var(--space-3xl) * 2));
   --context-inner-width: calc(var(--context-full-width) - var(--space-xl) * 2 - 2px);
   position: relative;
   display: block;
   box-sizing: border-box;
   width: max-content;
   max-width: 100%;
+  margin-inline: auto;
   padding: var(--space-sm) var(--space-xl);
   border: 1px solid var(--surface-glass-border);
   border-radius: var(--context-compact-radius, var(--radius-pill));
@@ -294,9 +297,57 @@
   text-decoration: none;
 }
 
-.contextCard:focus-visible {
+.contextCard:has(.contextToggle:focus-visible) {
   outline: 2px solid var(--line-hover);
   outline-offset: var(--space-2xs);
+}
+
+.contextToggle {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.contextAction {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  box-sizing: border-box;
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+  margin-top: var(--space-sm);
+  padding: var(--space-xs) var(--space-lg-compact);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-blue);
+  color: var(--color-white);
+  font-family: inherit;
+  font-size: var(--font-size-caption);
+  font-weight: inherit;
+  line-height: var(--line-height-caption);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.contextAction:disabled {
+  pointer-events: none;
+}
+
+.contextAction:focus-visible {
+  outline: 2px solid var(--line-hover);
+  outline-offset: var(--space-2xs);
+}
+
+.contextGeometry .contextAction {
+  pointer-events: none;
 }
 
 .contextCardStatic {
@@ -338,6 +389,8 @@
 
 .contextContentLayer {
   position: absolute;
+  /* Its transform creates a stacking context: keep the CTA above the toggle. */
+  z-index: 2;
   bottom: 0;
   left: 50%;
   box-sizing: border-box;
@@ -795,7 +848,6 @@
 
   .contextCardPositioner {
     bottom: var(--space-lg);
-    max-width: calc(100vw - var(--space-lg) * 2);
   }
 
   .contextCardPositioner[data-has-rail="true"] {
@@ -862,16 +914,6 @@
     touch-action: none;
   }
 
-  .mobileZoomSurface {
-    transform: scale(var(--mobile-zoom-scale, 1));
-    transform-origin: var(--mobile-zoom-origin-x, 50%) var(--mobile-zoom-origin-y, 50%);
-    transition: transform 200ms ease;
-    will-change: transform;
-  }
-
-  .mobileZoomSurface[data-pinching="true"] {
-    transition: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

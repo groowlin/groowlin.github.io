@@ -49,6 +49,16 @@ const HOME_METRIC_LABELS: Record<string, readonly string[]> = {
   vk: ["TCT"]
 };
 
+function HomeMetrics({ href }: { href: string }) {
+  return (HOME_METRIC_LABELS[getCaseSlugFromHref(href) ?? ""] ?? []).map((label, index) => (
+    <span className={styles.metric} key={label}>
+      {index > 0 ? <span aria-hidden="true">·</span> : null}
+      <span className={styles.metricGrowthIcon} aria-hidden="true" />
+      {label}
+    </span>
+  ));
+}
+
 const PLANNED_GLOBUS_PREVIEW_SLUGS = new Set([
   "media-and-gallery",
   "mini-games",
@@ -139,17 +149,18 @@ const HOME_INITIAL_REVEAL_STAGGER_MS = 80;
 const subscribeToHydration = () => () => {};
 const getHydratedSnapshot = () => true;
 const getServerHydrationSnapshot = () => false;
-const HOME_TAB_BACKGROUND_MOTION = {
-  stiffness: 560,
-  damping: 40,
-  mass: 1.51,
-  deformationDuration: 0.8,
-  scaleXFirst: 0.92,
-  scaleXSecond: 1.08,
-  scaleXSettle: 1,
-  scaleYFirst: 1.08,
-  scaleYSecond: 0.92,
-  scaleYSettle: 1
+const HOME_TAB_UNDERLINE_MOTION = {
+  type: "tween",
+  duration: 0.4,
+  ease: [0.4, 0, 0.2, 1]
+} as const;
+const HOME_TAB_UNDERLINE_SPRING = {
+  type: "spring",
+  stiffness: 400,
+  damping: 30,
+  mass: 1,
+  restDelta: 0.0001,
+  restSpeed: 0.001
 } as const;
 const OUTGOING_TEXT_DURATION_MS = 600;
 const OUTGOING_TEXT_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
@@ -513,13 +524,21 @@ export function HomeShowcase({ title, tabs }: HomeShowcaseProps) {
   const paneRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const activePaneKeyRef = useRef<string | null>(null);
   const tabsRef = useRef<HTMLDivElement | null>(null);
+  const paneViewportRef = useRef<HTMLDivElement | null>(null);
+  const tabSwipeRef = useRef<{
+    pointerId: number;
+    x: number;
+    y: number;
+    axis: "horizontal" | "vertical" | null;
+  } | null>(null);
+  const suppressSwipeClickUntilRef = useRef(0);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const tabLabelRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const activeTabIndexRef = useRef(activeTabIndex);
   activeTabIndexRef.current = activeTabIndex;
-  const tabBackgroundX = useMotionValue(0);
-  const tabBackgroundWidth = useMotionValue(0);
-  const tabBackgroundScaleX = useMotionValue(1);
-  const tabBackgroundScaleY = useMotionValue(1);
+  const tabUnderlineX = useMotionValue(0);
+  const tabUnderlineWidth = useMotionValue(0);
+  const tabUnderlineScaleX = useMotionValue(1);
   const glassRef = useRef<HTMLDivElement | null>(null);
   const highlightTargetRef = useRef<HighlightState | null>(null);
   const activeIndexRef = useRef<number | null>(null);
@@ -784,6 +803,26 @@ export function HomeShowcase({ title, tabs }: HomeShowcaseProps) {
   }, [activeTab?.title]);
 
   useLayoutEffect(() => {
+    const viewport = paneViewportRef.current;
+    const tabsNode = tabsRef.current;
+    if (!viewport || !tabsNode) return;
+    const syncSwipeArea = () => {
+      viewport.style.setProperty(
+        "--home-swipe-min-height",
+        `${Math.max(0, window.innerHeight - viewport.getBoundingClientRect().top)}px`
+      );
+    };
+    syncSwipeArea();
+    const observer = new ResizeObserver(syncSwipeArea);
+    observer.observe(tabsNode);
+    window.addEventListener("resize", syncSwipeArea);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", syncSwipeArea);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
     const activePane = activeTab?.title ? paneRefs.current.get(activeTab.title) : null;
     if (!activePane) return;
     delete activePane.dataset.homePaneExiting;
@@ -796,32 +835,43 @@ export function HomeShowcase({ title, tabs }: HomeShowcaseProps) {
     const tabsNode = tabsRef.current;
     if (!tabsNode) return;
 
-    const syncBackground = () => {
-      const activeButton = tabRefs.current[activeTabIndexRef.current];
-      if (!activeButton) return;
-      tabBackgroundX.set(activeButton.getBoundingClientRect().left - tabsNode.getBoundingClientRect().left);
-      tabBackgroundWidth.set(activeButton.offsetWidth);
-      tabBackgroundScaleX.set(1);
-      tabBackgroundScaleY.set(1);
+    const syncUnderline = () => {
+      const activeLabel = tabLabelRefs.current[activeTabIndexRef.current];
+      if (!activeLabel) return;
+      tabUnderlineX.stop();
+      tabUnderlineWidth.stop();
+      tabUnderlineScaleX.stop();
+      tabUnderlineScaleX.set(1);
+      tabUnderlineX.set(activeLabel.getBoundingClientRect().left - tabsNode.getBoundingClientRect().left);
+      tabUnderlineWidth.set(activeLabel.getBoundingClientRect().width);
     };
 
-    syncBackground();
-    const observer = new ResizeObserver(syncBackground);
+    syncUnderline();
+    const observer = new ResizeObserver(syncUnderline);
     observer.observe(tabsNode);
     tabRefs.current.forEach((button) => {
       if (button) observer.observe(button);
     });
-    return () => observer.disconnect();
-  }, [indexedTabs.length, tabBackgroundScaleX, tabBackgroundScaleY, tabBackgroundWidth, tabBackgroundX]);
+    return () => {
+      observer.disconnect();
+      tabUnderlineX.stop();
+      tabUnderlineWidth.stop();
+      tabUnderlineScaleX.stop();
+    };
+  }, [indexedTabs.length, tabUnderlineScaleX, tabUnderlineWidth, tabUnderlineX]);
 
   useLayoutEffect(() => {
-    if (hasChangedTab) return;
+    if (hasChangedTab && !shouldReduceMotion) return;
     const tabsNode = tabsRef.current;
-    const button = tabRefs.current[activeTabIndex];
-    if (!tabsNode || !button) return;
-    tabBackgroundX.set(button.getBoundingClientRect().left - tabsNode.getBoundingClientRect().left);
-    tabBackgroundWidth.set(button.offsetWidth);
-  }, [activeTabIndex, hasChangedTab, tabBackgroundWidth, tabBackgroundX]);
+    const label = tabLabelRefs.current[activeTabIndex];
+    if (!tabsNode || !label) return;
+    tabUnderlineX.stop();
+    tabUnderlineWidth.stop();
+    tabUnderlineScaleX.stop();
+    tabUnderlineScaleX.set(1);
+    tabUnderlineX.set(label.getBoundingClientRect().left - tabsNode.getBoundingClientRect().left);
+    tabUnderlineWidth.set(label.getBoundingClientRect().width);
+  }, [activeTabIndex, hasChangedTab, shouldReduceMotion, tabUnderlineScaleX, tabUnderlineWidth, tabUnderlineX]);
 
   const displayEntries = useMemo(
     () =>
@@ -1234,44 +1284,30 @@ export function HomeShowcase({ title, tabs }: HomeShowcaseProps) {
     resetPointerMotion();
   }
 
-  function animateTabBackground(nextIndex: number) {
+  function animateTabUnderline(nextIndex: number) {
     const tabsNode = tabsRef.current;
-    const button = tabRefs.current[nextIndex];
-    if (!tabsNode || !button) return;
+    const label = tabLabelRefs.current[nextIndex];
+    if (!tabsNode || !label) return;
 
-    const targetX = button.getBoundingClientRect().left - tabsNode.getBoundingClientRect().left;
-    const targetWidth = button.offsetWidth;
-    tabBackgroundX.stop();
-    tabBackgroundWidth.stop();
-    tabBackgroundScaleX.stop();
-    tabBackgroundScaleY.stop();
+    const targetX = label.getBoundingClientRect().left - tabsNode.getBoundingClientRect().left;
+    const targetWidth = label.getBoundingClientRect().width;
+    tabUnderlineX.stop();
+    tabUnderlineWidth.stop();
+    tabUnderlineScaleX.stop();
 
     if (shouldReduceMotion) {
-      tabBackgroundX.set(targetX);
-      tabBackgroundWidth.set(targetWidth);
-      tabBackgroundScaleX.set(1);
-      tabBackgroundScaleY.set(1);
+      tabUnderlineScaleX.set(1);
+      tabUnderlineX.set(targetX);
+      tabUnderlineWidth.set(targetWidth);
       return;
     }
 
-    const travel = {
-      type: "spring" as const,
-      stiffness: HOME_TAB_BACKGROUND_MOTION.stiffness,
-      damping: HOME_TAB_BACKGROUND_MOTION.damping,
-      mass: HOME_TAB_BACKGROUND_MOTION.mass
-    };
-    void animate(tabBackgroundX, targetX, travel);
-    void animate(tabBackgroundWidth, targetWidth, travel);
-    void animate(tabBackgroundScaleX, [tabBackgroundScaleX.get(), HOME_TAB_BACKGROUND_MOTION.scaleXFirst, HOME_TAB_BACKGROUND_MOTION.scaleXSecond, HOME_TAB_BACKGROUND_MOTION.scaleXSettle, 1], {
-      duration: HOME_TAB_BACKGROUND_MOTION.deformationDuration,
-      times: [0, 0.18, 0.46, 0.76, 1],
-      ease: ["easeOut", "easeInOut", "easeOut", "easeInOut"]
-    });
-    void animate(tabBackgroundScaleY, [tabBackgroundScaleY.get(), HOME_TAB_BACKGROUND_MOTION.scaleYFirst, HOME_TAB_BACKGROUND_MOTION.scaleYSecond, HOME_TAB_BACKGROUND_MOTION.scaleYSettle, 1], {
-      duration: HOME_TAB_BACKGROUND_MOTION.deformationDuration,
-      times: [0, 0.18, 0.46, 0.76, 1],
-      ease: ["easeOut", "easeInOut", "easeOut", "easeInOut"]
-    });
+    void animate(tabUnderlineX, targetX, HOME_TAB_UNDERLINE_MOTION);
+    void animate(tabUnderlineWidth, targetWidth, HOME_TAB_UNDERLINE_MOTION);
+    if (Math.abs(tabUnderlineScaleX.get() - 1) < 0.0001) {
+      tabUnderlineScaleX.set(0.99);
+    }
+    void animate(tabUnderlineScaleX, 1, HOME_TAB_UNDERLINE_SPRING);
   }
 
   function selectTab(nextIndex: number) {
@@ -1282,7 +1318,7 @@ export function HomeShowcase({ title, tabs }: HomeShowcaseProps) {
       pane.dataset.homeHoverSuppressed = "true";
     });
     resetActiveCase();
-    animateTabBackground(nextIndex);
+    animateTabUnderline(nextIndex);
     if (nextIndex === activeTabIndex) return;
     if (nextIndex === renderedTabIndex) {
       const returningPane = activeTab ? paneRefs.current.get(activeTab.title) : null;
@@ -1409,8 +1445,8 @@ export function HomeShowcase({ title, tabs }: HomeShowcaseProps) {
             <div ref={tabsRef} className={styles.tabs} role="tablist" aria-label={title} data-page-reveal="">
               <motion.span
                 aria-hidden="true"
-                className={styles.tabActiveBackground}
-                style={{ x: tabBackgroundX, width: tabBackgroundWidth, scaleX: tabBackgroundScaleX, scaleY: tabBackgroundScaleY }}
+                className={styles.tabActiveUnderline}
+                style={{ x: tabUnderlineX, width: tabUnderlineWidth, scaleX: tabUnderlineScaleX }}
               />
               {indexedTabs.map((tab, index) => {
                 const isActive = index === activeTabIndex;
@@ -1430,13 +1466,73 @@ export function HomeShowcase({ title, tabs }: HomeShowcaseProps) {
                     onClick={() => selectTab(index)}
                     onKeyDown={(event) => onTabKeyDown(event, index)}
                   >
-                    <span className={styles.tabLabel}>{tab.title}</span>
+                    <span
+                      ref={(node) => {
+                        tabLabelRefs.current[index] = node;
+                      }}
+                      className={styles.tabLabel}
+                    >
+                      {tab.title}
+                    </span>
                   </button>
                 );
               })}
             </div>
 
-            <div className={styles.paneViewport}>
+            <div
+              ref={paneViewportRef}
+              className={styles.paneViewport}
+              onPointerDownCapture={(event) => {
+                if (event.pointerType !== "touch" || window.innerWidth > 767) return;
+                suppressSwipeClickUntilRef.current = 0;
+                tabSwipeRef.current = null;
+                if (!event.isPrimary || !(event.target instanceof Element)) return;
+                if (event.target.closest('button, input, select, textarea, [role="button"], [contenteditable="true"]')) return;
+                let node: Element | null = event.target;
+                while (node && node !== event.currentTarget) {
+                  const overflow = getComputedStyle(node);
+                  if ((/(auto|scroll)/.test(overflow.overflowX) && node.scrollWidth > node.clientWidth)
+                    || (/(auto|scroll)/.test(overflow.overflowY) && node.scrollHeight > node.clientHeight)) return;
+                  node = node.parentElement;
+                }
+                tabSwipeRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, axis: null };
+              }}
+              onPointerMoveCapture={(event) => {
+                const swipe = tabSwipeRef.current;
+                if (!swipe || swipe.pointerId !== event.pointerId) return;
+                const dx = event.clientX - swipe.x;
+                const dy = event.clientY - swipe.y;
+                if (swipe.axis === null && Math.max(Math.abs(dx), Math.abs(dy)) >= 12) {
+                  if (Math.abs(dx) > Math.abs(dy) * 1.25) {
+                    swipe.axis = "horizontal";
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                  } else if (Math.abs(dy) >= Math.abs(dx)) {
+                    swipe.axis = "vertical";
+                  }
+                }
+                if (swipe.axis === "horizontal") {
+                  event.preventDefault();
+                  if (Math.abs(dx) >= 48) suppressSwipeClickUntilRef.current = performance.now() + 500;
+                }
+              }}
+              onPointerUpCapture={(event) => {
+                const swipe = tabSwipeRef.current;
+                if (!swipe || swipe.pointerId !== event.pointerId) return;
+                tabSwipeRef.current = null;
+                const dx = event.clientX - swipe.x;
+                if (swipe.axis !== "horizontal" || Math.abs(dx) < 48) return;
+                suppressSwipeClickUntilRef.current = performance.now() + 500;
+                event.preventDefault();
+                selectTab(activeTabIndexRef.current + (dx < 0 ? 1 : -1));
+              }}
+              onPointerCancelCapture={() => { tabSwipeRef.current = null; }}
+              onClickCapture={(event) => {
+                if (event.detail === 0 || performance.now() > suppressSwipeClickUntilRef.current) return;
+                suppressSwipeClickUntilRef.current = 0;
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+            >
               <AnimatePresence key={hasRestoredSavedTab ? "restored" : "initial"} initial={false} mode="popLayout">
                 {activeTab ? (
                   <motion.div
@@ -1723,7 +1819,7 @@ export function HomeShowcase({ title, tabs }: HomeShowcaseProps) {
                               >
                                 <span className={[styles.itemLabel, styles.itemLabelSecondary].join(" ")}>{entry.label}</span>
                                 <span className={styles.itemMeta}>
-                                  {entry.kind === "planned" ? entry.statusLabel : (HOME_METRIC_LABELS[getCaseSlugFromHref(entry.href) ?? ""] ?? []).join(" · ")}
+                                  {entry.kind === "planned" ? entry.statusLabel : <HomeMetrics href={entry.href} />}
                                 </span>
                               </span>
                               {entry.stickerSrcs?.length ? (
@@ -1807,7 +1903,7 @@ export function HomeShowcase({ title, tabs }: HomeShowcaseProps) {
                               >
                                 <span className={styles.itemLabel}>{entry.label}</span>
                                 <span className={styles.itemMeta}>
-                                  {(HOME_METRIC_LABELS[getCaseSlugFromHref(entry.href) ?? ""] ?? []).join(" · ")}
+                                  <HomeMetrics href={entry.href} />
                                 </span>
                               </span>
                               {entry.stickerSrcs?.length ? (

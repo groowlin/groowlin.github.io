@@ -287,6 +287,11 @@
     border-radius: 999px;
   }
 
+  .floatingControl .segmentTabSelected {
+    /* Reserve the gesture before pointerdown; changing touch-action after hold is too late. */
+    touch-action: none;
+  }
+
   .mobileActiveMask .segmentTab {
     cursor: default;
     pointer-events: none;
