@@ -91,6 +91,7 @@ export interface HomeWorkEntry {
   subtitle: string;
   href: string;
   preview: HomePreview;
+  previewCaption?: string;
   stickerSrcs?: string[];
 }
 

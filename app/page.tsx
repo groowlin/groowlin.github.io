@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { PageGoalTracker } from "@/components/analytics/PageGoalTracker";
-import { GamesExperience } from "@/components/games/GamesEntry";
 import { HomeShowcase } from "@/components/home/HomeShowcase";
 import { SiteShell } from "@/components/shell/SiteShell";
 import { getHomeShowcaseConfigContent, getSiteMetadataSettingsContent } from "@/lib/content/site.server";
@@ -101,13 +100,15 @@ export default async function HomePage() {
   const [homeConfig, entries] = await Promise.all([getHomeShowcaseConfigContent(), getHomeWorkEntries()]);
   const tabs = buildHomeShowcaseTabs(homeConfig.tabs, entries, homeConfig.itemStickers, homeConfig.gameItems, homeConfig.plannedItems);
 
+  const GamesExperience = gamesEnabled ? (await import("@/components/games/GamesExperienceEntry")).GamesExperienceEntry : null;
+
   return (
     <>
       <SiteShell>
         <PageGoalTracker goal="view_home" />
         <HomeShowcase title={homeConfig.title} tabs={tabs} />
       </SiteShell>
-      {gamesEnabled && <GamesExperience />}
+      {GamesExperience && <GamesExperience />}
     </>
   );
 }

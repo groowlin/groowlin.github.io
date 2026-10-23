@@ -6,11 +6,14 @@
 
 ## Область и компоненты
 
+Граница загрузки кода следует [ДС — Client runtime loading](../../design-system-spec.md#client-runtime-loading): `app/page.tsx` импортирует лёгкий `GamesExperienceEntry` только внутри включённой ветки build-флага; клиентская граница объявляет отдельный SSR-enabled dynamic import `GamesEntry`. Это предотвращает объединение игровой реализации с initial chunks отключённой страницы. При отключённых играх runtime не входит в initial HTML/RSC references. При включённых играх сохраняются стабильная SSR-разметка маскота и frame, bootstrap и session restore; догрузка игрового тела не может запускать измерение/анимацию frame до готовности его DOM.
+
 Таба «Игрушки», disabled spoiler Canvas и tooltip сейчас нет. Главная содержит «Опыт» и «Авторское»; игры открывает независимый маскот `GamesExperience`. Разблокировки таба не существует.
 
 Источник истины для MVP. Режим существует только на `/` и только при ширине viewport от 768px. Он не создаёт route, overlay, modal, drawer, API или backend. При включённом флаге `app/page.tsx` монтирует `GamesExperience` из `components/games/GamesEntry.tsx` сразу после существующего `SiteShell`; список и его page reveal сохранены. Открытый игровой блок занимает место в обычном потоке ниже списка. Маскот `position:absolute` привязан к существующему page main, расположен по центру у физического низа страницы; его размер 125×72 CSS px.
 
 - `GamesExperience`: открытие, закрытие, session restore/persist, desktop gate, прокрутка, маскот.
+- `DeferredGameModeShell`: лёгкий SSR `GameFrame` до востребованности игрового тела. Намерение на маскоте/активация или восстановление открытой сессии запрашивает отдельный `GameModeShell` chunk; open/restore дожидаются commit загруженного frame перед чтением геометрии. Обычная закрытая сессия не требует загрузки игрового тела. Правила [ДС — Client runtime loading](../../design-system-spec.md#client-runtime-loading) сохраняют bootstrap, состояние и существующие анимации.
 - `GameModeShell`: последовательность `pixel-perfect` → `characters`, текущая игра, внутренний `onNext` с точками `onGameChange` / `onSequenceComplete`. Финал Pixel Perfect остаётся до нажатия «Далее»; только это нажатие вызывает onComplete → onNext. Серая карточка персонажей появляется поверх финала за300ms, затем onGameChange сохраняет новый currentGameId. Pixel Perfect остаётся смонтированным под входящей карточкой до конца перехода; его backdrop-фильтры не получают новых opacity-обёрток. Восстановление completed само по себе не переключает игру.
 - `GameFrame`: стабильная единая игровая карточка без внешнего свечения, обводки и тени, без постоянной шапки или вложенной карточки.
 - `PixelPerfect`: стабильные экраны `intro`, `play`, `final-result`; локальные transient-фазы idle/dragging/zooming/measuring/measured/value-exit/success/unzooming/shaking/reset-exit/returning/final-exit, GameArea, камера, измерение и координаты объектов.

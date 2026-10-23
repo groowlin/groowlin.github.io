@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   type CSSProperties,
+  forwardRef,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -20,6 +21,7 @@ import {
   useMotionTemplate,
   useMotionValue,
   useReducedMotion,
+  useIsPresent,
   useSpring,
   useTransform
 } from "framer-motion";
@@ -34,7 +36,7 @@ import { createPortal } from "react-dom";
 import { PageRevealSequence } from "@/components/motion/PageRevealSequence";
 import { MediaPlaceholderView } from "@/components/media/MediaPlaceholder";
 import { getCaseSlugFromHref, getCurrentPath, trackMetricaGoal } from "@/lib/analytics/yandex-metrica";
-import { type HomeShowcaseEntry, type HomeShowcaseTab } from "@/lib/content/types";
+import { type HomePreview, type HomeShowcaseEntry, type HomeShowcaseTab } from "@/lib/content/types";
 import styles from "@/components/home/home-showcase.module.css";
 
 // Общепринятые аббревиатуры; Portfolio сохраняет ER / FA (feature adoption) / CD (content Depth).
@@ -50,9 +52,8 @@ const HOME_METRIC_LABELS: Record<string, readonly string[]> = {
 };
 
 function HomeMetrics({ href }: { href: string }) {
-  return (HOME_METRIC_LABELS[getCaseSlugFromHref(href) ?? ""] ?? []).map((label, index) => (
+  return (HOME_METRIC_LABELS[getCaseSlugFromHref(href) ?? ""] ?? []).map((label) => (
     <span className={styles.metric} key={label}>
-      {index > 0 ? <span aria-hidden="true">·</span> : null}
       <span className={styles.metricGrowthIcon} aria-hidden="true" />
       {label}
     </span>
@@ -164,6 +165,92 @@ const HOME_TAB_UNDERLINE_SPRING = {
 } as const;
 const OUTGOING_TEXT_DURATION_MS = 600;
 const OUTGOING_TEXT_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
+
+const HomePreviewFrame = forwardRef<HTMLDivElement, {
+  media: HomePreview;
+  planned: boolean;
+  caption?: string;
+  reducedMotion: boolean;
+}>(function HomePreviewFrame({ media, planned, caption, reducedMotion }, ref) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const isPresent = useIsPresent();
+  const presentRef = useRef(isPresent);
+  const mediaOpacity = useMotionValue(0);
+  const [captionReady, setCaptionReady] = useState(false);
+  const [captionBounds, setCaptionBounds] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  useLayoutEffect(() => {
+    presentRef.current = isPresent;
+    // Presence can revive the same keyed frame before its exit finishes.
+    // Each entry must pass the current surface's visibility gate again.
+    setCaptionReady(false);
+    return () => { presentRef.current = false; };
+  }, [isPresent]);
+
+  useLayoutEffect(() => {
+    const content = contentRef.current;
+    const surface = content?.querySelector<HTMLElement>("[aria-label$=' media']");
+    if (!content || !surface || !caption || planned) return;
+    const measure = () => {
+      const next = { top: surface.offsetTop + surface.offsetHeight, left: surface.offsetLeft, width: surface.offsetWidth };
+      setCaptionBounds((previous) => previous?.top === next.top && previous.left === next.left && previous.width === next.width ? previous : next);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(surface);
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [caption, planned]);
+
+  const showCaption = captionReady && isPresent;
+  return (
+    <div
+      ref={ref}
+      className={styles.previewMediaFrame}
+    >
+      <motion.div
+        ref={contentRef}
+        className={styles.previewMediaContent}
+        style={{ opacity: mediaOpacity }}
+        variants={{
+          initial: reducedMotion ? { opacity: 0 } : { opacity: 0, filter: planned ? "blur(0px)" : "blur(10px)", scale: 0.97 },
+          visible: reducedMotion ? { opacity: 1 } : { opacity: 1, filter: "blur(0px)", scale: 1 },
+          exit: reducedMotion ? { opacity: 0 } : { opacity: 0, filter: planned ? "blur(0px)" : "blur(10px)", scale: 0.97 }
+        }}
+        initial="initial"
+        animate="visible"
+        exit="exit"
+        transition={reducedMotion ? { duration: 0.18 } : { type: "spring", duration: 0.6, bounce: 0 }}
+        onUpdate={(latest) => {
+          if (presentRef.current && typeof latest.opacity === "number" && latest.opacity >= 0.98) setCaptionReady(true);
+        }}
+        onAnimationComplete={(definition) => {
+          if (definition === "visible" && presentRef.current && mediaOpacity.get() >= 0.98) setCaptionReady(true);
+        }}
+      >
+        <MediaPlaceholderView
+          media={media}
+          variant="homePreview"
+          className={[styles.previewCard, planned && styles.plannedPreviewCard].filter(Boolean).join(" ")}
+          frame="square"
+          fit="contain"
+        />
+      </motion.div>
+      {caption && !planned && captionBounds ? (
+        <motion.p
+          className={styles.previewCaption}
+          style={captionBounds}
+          initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
+          animate={reducedMotion ? { opacity: showCaption ? 1 : 0 } : { opacity: showCaption ? 1 : 0, y: showCaption ? 0 : isPresent ? 4 : 2 }}
+          exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 2 }}
+          transition={reducedMotion || !showCaption ? { duration: 0.18 } : { type: "spring", stiffness: 100, damping: 20, mass: 1 }}
+        >
+          {caption}
+        </motion.p>
+      ) : null}
+    </div>
+  );
+});
 
 function StickerFrameCycle({ stickerSrcs, frameIndex, reducedMotion }: {
   stickerSrcs: readonly string[];
@@ -1038,6 +1125,7 @@ export function HomeShowcase({ title, tabs }: HomeShowcaseProps) {
 
     return {
       isPlannedPreview,
+      previewCaption: isPlannedPreview ? undefined : entry.previewCaption,
       kind: entry.preview.kind,
       src: entry.preview.src,
       aspectRatio: entry.preview.src ? entry.preview.aspectRatio : "2 / 1",
@@ -1965,38 +2053,13 @@ export function HomeShowcase({ title, tabs }: HomeShowcaseProps) {
                 <div className={styles.contentArea}>
                   <div className={styles.previewStage}>
                     <AnimatePresence mode={shouldReduceMotion ? "sync" : "popLayout"}>
-                      <motion.div
+                      <HomePreviewFrame
                         key={previewMedia.isPlannedPreview ? "planned-globus-preview" : previewIndex ?? -1}
-                        className={styles.previewMediaFrame}
-                        initial={
-                          shouldReduceMotion
-                            ? { opacity: 0 }
-                            : { opacity: 0, filter: previewMedia.isPlannedPreview ? "blur(0px)" : "blur(10px)", scale: 0.97 }
-                        }
-                        animate={
-                          shouldReduceMotion
-                            ? { opacity: 1 }
-                            : { opacity: 1, filter: "blur(0px)", scale: 1 }
-                        }
-                        exit={
-                          shouldReduceMotion
-                            ? { opacity: 0 }
-                            : { opacity: 0, filter: previewMedia.isPlannedPreview ? "blur(0px)" : "blur(10px)", scale: 0.97 }
-                        }
-                        transition={
-                          shouldReduceMotion
-                            ? { duration: 0.18 }
-                            : { type: "spring", duration: 0.6, bounce: 0 }
-                        }
-                      >
-                        <MediaPlaceholderView
-                          media={previewMedia}
-                          variant="homePreview"
-                          className={[styles.previewCard, previewMedia.isPlannedPreview && styles.plannedPreviewCard].filter(Boolean).join(" ")}
-                          frame="square"
-                          fit="contain"
-                        />
-                      </motion.div>
+                        media={previewMedia}
+                        planned={previewMedia.isPlannedPreview}
+                        caption={previewMedia.previewCaption}
+                        reducedMotion={Boolean(shouldReduceMotion)}
+                      />
                     </AnimatePresence>
                   </div>
                 </div>

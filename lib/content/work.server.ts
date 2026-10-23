@@ -50,7 +50,11 @@ export async function getHomeWorkEntries(): Promise<HomeWorkEntry[]> {
     label: item.title,
     subtitle: item.subtitle,
     href: `/work/${item.slug}`,
-    preview: hydrateHomePreview(item.preview)
+    preview: hydrateHomePreview(item.preview),
+    previewCaption: item.shortSummary?.paragraphs
+      .map((paragraph) => paragraph.trim().split(/\r?\n/))
+      .find(([label]) => label.trim() === "Мой вклад")
+      ?.slice(1).join("\n").trim() || undefined
   }));
 }
 

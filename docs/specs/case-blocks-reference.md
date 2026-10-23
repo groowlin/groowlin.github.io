@@ -5,6 +5,8 @@
 ## Поддерживаемые MDX-компоненты
 
 ### 1) `Media`
+Inline и modal renderer разделены согласно [ДС — Client runtime loading](../../design-system-spec.md#client-runtime-loading). Inline/home media не импортируют полноэкранную progressive-video реализацию; публичные MDX props сохраняются.
+
 Props:
 - `kind?: "image" | "video" | "gif"` (default: `image`)
 - `src?: string`
@@ -24,8 +26,11 @@ Props:
 - Media выходит за границы текстового контейнера на `20px` слева и справа.
 - Скругление media — `20px`.
 - При загрузке media допускается только короткое системное состояние `blur + opacity + scale` из `MediaPlaceholder`; отдельные кастомные анимации на уровне MDX-контента не поддерживаются.
+- Загрузка inline-изображений на desktop и mobile следует [канонической политике запросов в ДС](../../design-system-spec.md#image-request-policy): native lazy loading и выбор подходящего base/retina через responsive source set, без принудительной последовательности `@2x → fullSrc`. Формат frontmatter/MDX и набор assets не меняются.
 
 ### 2) `Gallery`
+SSR inline-разметка и source refs остаются постоянными. Модальная логика догружается по намерению открыть/активации, без замены inline-галереи и без повторного reveal; момент загрузки, актуальность запроса и завершение closing portal определены в [ДС — Client runtime loading](../../design-system-spec.md#client-runtime-loading).
+
 Использование:
 - Используется как MDX-компонент: `<Gallery> ... </Gallery>`.
 - Внутри `Gallery` поддерживаются только `<Media />`.
@@ -33,6 +38,7 @@ Props:
 - Media внутри `Gallery` открывается во fullscreen-overlay по клику или тапу.
 - У конкретного `<Media />` внутри `Gallery` fullscreen можно отключить через `openable={false}`.
 - Это поведение относится только к media внутри `Gallery` и не применяется к preview, avatar, SVG-иконкам и другим изображениям вне `Gallery`.
+- Монтирование `Gallery`/scope не загружает заранее все full-изображения. Загрузка по намерению открыть trigger и ограничение full-запросов текущим изображением/соседями в открытой сессии определены в [ДС — Image request policy](../../design-system-spec.md#image-request-policy). Существующие декодирование, progressive-подмена и постоянные low-слои сохраняются.
 
 Правила раскладки:
 - Desktop/tablet: максимум `3` media в строке.
@@ -106,6 +112,8 @@ Props:
 ```
 
 ### 4) `PortfolioMotionDemo`
+MDX и `shortAfterContent` импортируют одну лёгкую точку входа со стабильной геометрией. Scene runtime догружается у существующей границы видимости по [каноническому контракту ДС](../../design-system-spec.md#client-runtime-loading); это не новый MDX-блок или контентное поле.
+
 
 Специализированная неинтерактивная motion-демонстрация для кейса `portfoliocase`.
 

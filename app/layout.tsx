@@ -15,7 +15,7 @@ import "./globals.css";
 const inter = localFont({
   src: [
     {
-      path: "./fonts/inter/Inter-Variable.ttf",
+      path: "./fonts/inter/Inter-Variable.woff2",
       weight: "100 900",
       style: "normal"
     }

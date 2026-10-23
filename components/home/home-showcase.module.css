@@ -381,8 +381,27 @@
 }
 
 .previewMediaFrame {
+  position: relative;
   width: 100%;
   height: 100%;
+}
+
+.previewMediaContent {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.previewCaption {
+  position: absolute;
+  box-sizing: border-box;
+  margin: var(--space-sm) 0 0;
+  padding-inline: var(--home-radius-preview-media);
+  color: var(--home-text-secondary);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  font-weight: var(--font-weight-regular);
+  white-space: pre-line;
 }
 
 .previewCard {

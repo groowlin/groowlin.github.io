@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { animate, useReducedMotion } from "framer-motion";
-import { GameModeShell } from "./GameModeShell";
+import { DeferredGameModeShell, type DeferredGameModeShellHandle } from "./DeferredGameModeShell";
 import { MascotMessage } from "./MascotMessage";
 import type { MascotCopy } from "./MascotMessage";
 import { createGamesSession, GAMES_SESSION_KEY, readGamesSession } from "./session";
@@ -38,6 +38,8 @@ export function GamesExperience() {
   const phaseRef = useRef<ExperiencePhase>("closed");
   const experienceRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const gameShellRef = useRef<DeferredGameModeShellHandle>(null);
+  const toggleRequestRef = useRef(0);
   const messageRef = useRef<HTMLDivElement>(null);
   const entryRef = useRef<HTMLButtonElement>(null);
   const entryAnchorRef = useRef<HTMLDivElement>(null);
@@ -87,10 +89,13 @@ export function GamesExperience() {
     interactionRef.current?.abort();
     interactionRef.current = controller;
     const { signal } = controller;
-    const frame = panelRef.current?.querySelector<HTMLElement>("[data-game-frame]") ?? null;
+    let frame: HTMLElement | null = null;
 
     void (async () => {
       try {
+        await gameShellRef.current?.ensureReady();
+        if (signal.aborted) throw new DOMException("Games restore cancelled", "AbortError");
+        frame = panelRef.current?.querySelector<HTMLElement>("[data-game-frame]") ?? null;
         await waitForScrollRestoration(signal);
         positionGameFrame(panelRef.current, messageRef.current, frame);
         setMascotHovered(false);
@@ -107,6 +112,16 @@ export function GamesExperience() {
         restoreRequestedRef.current = false;
         if (mountedRef.current) setRestoreVisual(null);
       } catch (error) {
+        if (!frame && !signal.aborted && mountedRef.current) {
+          // A failed chunk request leaves the entry usable for another attempt.
+          setSession((previous) => ({ ...previous, isOpen: false }));
+          setMascotOpen(false);
+          phaseRef.current = "closed";
+          setPhase("closed");
+          restoreRequestedRef.current = false;
+          setRestoreVisual(null);
+          return;
+        }
         normalizeRestoredOpen(frame);
         restoreRequestedRef.current = false;
         if (mountedRef.current) {
@@ -183,6 +198,10 @@ export function GamesExperience() {
 
   async function toggle() {
     if (!ready || !desktop || restoreVisual !== null) return;
+    const request = ++toggleRequestRef.current;
+    try { await gameShellRef.current?.ensureReady(); }
+    catch { return; }
+    if (!mountedRef.current || request !== toggleRequestRef.current || !window.matchMedia("(min-width: 768px)").matches) return;
     const isOpen = !session.isOpen;
     freezeMascotVisual(entryRef.current);
     setSession((previous) => ({ ...previous, isOpen }));
@@ -271,7 +290,7 @@ export function GamesExperience() {
       <div ref={panelRef} id="home-game-frame" className={styles.panel} inert={!ready || phase !== "open" || !desktop || restoreVisual !== null} aria-hidden={!ready || phase === "closed" || phase === "scrolling" || phase === "returning" || phase === "closing" || !desktop || restoreVisual !== null}>
         <div className={styles.panelClip}>
           <div className={styles.panelContent}>
-            <GameModeShell session={session} active={ready && desktop && phase === "open" && restoreVisual === null} resetWhenHidden={!desktop || phase === "closed" || phase === "returning"} onProgress={updateProgress} onResult={handleResult} onGameChange={(currentGameId) => {
+            <DeferredGameModeShell ref={gameShellRef} session={session} active={ready && desktop && phase === "open" && restoreVisual === null} resetWhenHidden={!desktop || phase === "closed" || phase === "returning"} onProgress={updateProgress} onResult={handleResult} onGameChange={(currentGameId) => {
               setSession((previous) => ({ ...previous, currentGameId }));
               setMascotMessage({ id: `default-${++messageSequenceRef.current}`, ...DEFAULT_MESSAGE });
             }} />
@@ -286,7 +305,7 @@ export function GamesExperience() {
         instantFirstEnter={restoreVisual !== null}
       />
       <div ref={entryAnchorRef} className={styles.entryAnchor}>
-        <button ref={entryRef} type="button" className={styles.entry} data-mascot-open={mascotOpen} onClick={toggle} onPointerEnter={() => setMascotHovered(true)} onPointerLeave={() => setMascotHovered(false)} onPointerDown={() => setMascotFocused(false)} onFocus={(event) => setMascotFocused(event.currentTarget.matches(":focus-visible"))} onBlur={() => setMascotFocused(false)} aria-disabled={restoreVisual !== null} aria-expanded={session.isOpen} aria-controls="home-game-frame" aria-label={session.isOpen ? "Закрыть игры" : "Открыть игры"}>
+        <button ref={entryRef} type="button" className={styles.entry} data-mascot-open={mascotOpen} onClick={toggle} onPointerEnter={() => { setMascotHovered(true); void gameShellRef.current?.ensureReady().catch(() => undefined); }} onPointerLeave={() => setMascotHovered(false)} onPointerDown={() => setMascotFocused(false)} onFocus={(event) => { setMascotFocused(event.currentTarget.matches(":focus-visible")); void gameShellRef.current?.ensureReady().catch(() => undefined); }} onBlur={() => setMascotFocused(false)} aria-disabled={restoreVisual !== null} aria-expanded={session.isOpen} aria-controls="home-game-frame" aria-label={session.isOpen ? "Закрыть игры" : "Открыть игры"}>
           <Image className={styles.defaultImage} src="/media/games/games-default.png" width={125} height={72} alt="" loading="eager" unoptimized />
           <Image className={`${styles.hoverImage} ${styles.openHoverImage}`} data-mascot-hover="" src="/media/games/games-hover.png" width={125} height={72} alt="" loading="eager" unoptimized />
           <Image className={`${styles.hoverImage} ${styles.closeHoverImage}`} data-mascot-hover="" src="/media/games/games-hover-exit.png" width={125} height={72} alt="" loading="eager" unoptimized />
