@@ -239,11 +239,15 @@ const HomePreviewFrame = forwardRef<HTMLDivElement, {
       {caption && !planned && captionBounds ? (
         <motion.p
           className={styles.previewCaption}
-          style={captionBounds}
-          initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
-          animate={reducedMotion ? { opacity: showCaption ? 1 : 0 } : { opacity: showCaption ? 1 : 0, y: showCaption ? 0 : isPresent ? 4 : 2 }}
+          style={{ ...captionBounds, willChange: reducedMotion ? "auto" : "transform, opacity" }}
+          transformTemplate={reducedMotion ? undefined : ({ y = 0 }) => `translate3d(0, ${typeof y === "number" ? `${y}px` : y}, 0)`}
+          initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+          animate={reducedMotion ? { opacity: showCaption ? 1 : 0 } : { opacity: showCaption ? 1 : 0, y: showCaption ? 0 : isPresent ? 8 : 2 }}
           exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 2 }}
-          transition={reducedMotion || !showCaption ? { duration: 0.18 } : { type: "spring", stiffness: 100, damping: 20, mass: 1 }}
+          transition={reducedMotion || !showCaption ? { duration: 0.18 } : {
+            y: { type: "tween", duration: 0.9, delay: 0.04, ease: EXPRESSIVE_EASING },
+            opacity: { type: "tween", duration: 0.9, delay: 0.04, ease: [0.4, 0, 0.2, 1] }
+          }}
         >
           {caption}
         </motion.p>

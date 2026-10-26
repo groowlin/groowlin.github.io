@@ -92,6 +92,7 @@ export const workFrontmatterSchema = z.object({
   subtitle: z.string().min(1),
   status: z.enum(["published", "hidden"]),
   preview: homePreviewSchema,
+  previewCaption: z.string().trim().min(1).optional(),
   shortSummary: z
     .object({
       paragraphs: z.array(z.string().min(1)).min(1).max(4),

@@ -220,6 +220,7 @@ export interface WorkFrontmatter {
   subtitle: string;
   status: WorkCaseStatus;
   preview: HomePreview;
+  previewCaption?: string;
   shortSummary?: WorkCaseShortSummary;
   description: string;
   canonical: string;

@@ -395,7 +395,7 @@
 .previewCaption {
   position: absolute;
   box-sizing: border-box;
-  margin: var(--space-sm) 0 0;
+  margin: 16px 0 0;
   padding-inline: var(--home-radius-preview-media);
   color: var(--home-text-secondary);
   font-size: var(--font-size-caption);
